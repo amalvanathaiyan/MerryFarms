@@ -3,6 +3,8 @@ import { requireStaff } from "@/lib/auth"
 import { pick } from "@/lib/i18n-helpers"
 import { LanguageToggle } from "@/components/language-toggle"
 import { FarmNav } from "@/components/farm/farm-nav"
+import Link from "next/link"
+import { Settings } from "lucide-react"
 import { signOut } from "@/app/actions/auth"
 
 export const dynamic = "force-dynamic"
@@ -22,6 +24,11 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
         </div>
         <div className="flex items-center gap-2">
           <LanguageToggle />
+          {staff.roles.includes("owner") && (
+            <Link href="/farm/settings" aria-label={t("settings")} className="text-muted-foreground hover:text-foreground">
+              <Settings className="size-5" />
+            </Link>
+          )}
           <form action={signOut}>
             <button type="submit" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
               {t("signOut")}

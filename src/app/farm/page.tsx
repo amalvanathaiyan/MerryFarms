@@ -5,22 +5,23 @@ import { dayLabel, pick } from "@/lib/i18n-helpers"
 import { formatRupees } from "@/domain/money"
 import { istDate, istInstant } from "@/domain/ist"
 import { cn } from "@/lib/utils"
+import { allBalances } from "@/server/billing"
 
 export default async function TodayPage() {
-  const { db } = await requireStaff()
+  const { db, tenant } = await requireStaff()
   const locale = await getLocale()
   const t = await getTranslations("farm.today")
   const tc = await getTranslations("common")
   const today = istDate(new Date())
 
-  const [toConfirm, open, todays, customers, toPack, lowStock] = await Promise.all([
+  const [toConfirm, open, todays, balances, toPack, lowStock] = await Promise.all([
     db.order.count({ where: { status: "to_confirm" } }),
     db.order.count({ where: { status: { in: ["to_confirm", "confirmed", "packed", "out_for_delivery"] } } }),
     db.order.aggregate({
       where: { status: { not: "cancelled" }, createdAt: { gte: istInstant(today, "00:00") } },
       _sum: { totalPaise: true },
     }),
-    db.customer.count(),
+    allBalances(tenant.id),
     db.order.findMany({
       where: { status: { in: ["to_confirm", "confirmed"] } },
       include: { items: { include: { product: true } }, address: true, slot: true },
@@ -57,7 +58,7 @@ export default async function TodayPage() {
     { label: t("toConfirm"), value: String(toConfirm), href: "/farm/orders", hot: toConfirm > 0 },
     { label: t("open"), value: String(open), href: "/farm/orders?tab=open" },
     { label: t("sales"), value: formatRupees(todays._sum.totalPaise ?? 0) },
-    { label: t("customers"), value: String(customers) },
+    { label: t("dues"), value: formatRupees([...balances.values()].filter((b) => b > 0).reduce((a, b) => a + b, 0)), href: "/farm/customers?dues=1" },
   ]
 
   return (

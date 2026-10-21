@@ -280,6 +280,7 @@ model Customer {
   orders    Order[]
   ledger    LedgerEntry[]
   payments  Payment[]
+  invoices  Invoice[]
 
   @@unique([tenantId, phone])
   @@map("customers")
@@ -326,6 +327,7 @@ model Order {
   needsCall        Boolean       @default(true)
   cancelReason     String?
   note             String?
+  deliveredAt      DateTime?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
@@ -337,6 +339,7 @@ model Order {
   events   OrderEvent[]
   calls    ConfirmationCall[]
   invoices Invoice[]
+  payments Payment[]
 
   @@unique([tenantId, number])
   @@index([tenantId, status])
@@ -398,22 +401,29 @@ model ConfirmationCall {
 // BILLING
 // ─────────────────────────────────────────────────
 
+/// An issued invoice never changes: everything printed on it is frozen in `snapshot`,
+/// so renaming a product or changing the farm's address later cannot alter old invoices.
 model Invoice {
-  id         String      @id @default(uuid())
-  tenantId   String
-  orderId    String?
-  type       InvoiceType
-  number     String // e.g. MF/2026-27/0001
-  fy         String // "2026-27"
-  seq        Int
-  totalPaise Int
-  taxPaise   Int         @default(0)
-  pdfUrl     String?
-  issuedAt   DateTime    @default(now())
+  id          String      @id @default(uuid())
+  tenantId    String
+  orderId     String?
+  customerId  String
+  type        InvoiceType
+  number      String // e.g. MF/2026-27/0001
+  fy          String // "2026-27"
+  seq         Int
+  totalPaise  Int
+  taxPaise    Int         @default(0)
+  snapshot    Json // see InvoiceSnapshot in src/domain/invoices.ts
+  publicToken String      @unique // unguessable; lets the customer open their invoice without login
+  pdfUrl      String?
+  issuedAt    DateTime    @default(now())
 
-  order Order? @relation(fields: [orderId], references: [id])
+  order    Order?   @relation(fields: [orderId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
 
   @@unique([tenantId, number])
+  @@index([tenantId, customerId])
   @@index([tenantId, fy, seq])
   @@map("invoices")
 }
@@ -450,14 +460,17 @@ model Payment {
   id            String        @id @default(uuid())
   tenantId      String
   customerId    String
+  orderId       String?
   method        PaymentMethod
   amountPaise   Int
   status        PaymentStatus @default(received)
   collectedById String?
   reference     String? // UPI reference or Razorpay id
+  note          String?
   at            DateTime      @default(now())
 
   customer Customer @relation(fields: [customerId], references: [id])
+  order    Order?   @relation(fields: [orderId], references: [id])
 
   @@index([tenantId, customerId])
   @@map("payments")

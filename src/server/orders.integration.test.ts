@@ -17,6 +17,7 @@ const TOMORROW_AM = "2026-10-22|slot-am"
 let pg: PGlite
 let server: PGLiteSocketServer
 let svc: typeof import("./orders")
+let billing: typeof import("./billing")
 let tenantDb: typeof import("@/lib/tenant-db").tenantDb
 let prisma: typeof import("@/lib/prisma").prisma
 
@@ -67,6 +68,7 @@ beforeAll(async () => {
   ;({ prisma } = await import("@/lib/prisma"))
   ;({ tenantDb } = await import("@/lib/tenant-db"))
   svc = await import("./orders")
+  billing = await import("./billing")
 
   await prisma.tenant.createMany({ data: [merry, other] })
   for (const t of [merry, other]) {
@@ -163,6 +165,66 @@ describe("confirmation calls", () => {
     const o = await db.order.findFirst({ where: { number: 1001 } }) // 2 eggs trays
     await svc.recordCall(merry.id, o!.id, "cancelled", "staff-1")
     expect((await db.product.findFirst({ where: { id: "p-eggs" } }))!.stockQty).toBe(before + 2)
-    await expect(svc.setOrderStatus(merry.id, o!.id, "delivered", "staff-1")).rejects.toThrow("bad_transition")
+    await expect(svc.setOrderStatus(merry.id, o!.id, "packed", "staff-1")).rejects.toThrow("bad_transition")
+  })
+})
+
+describe("delivery, invoices and khata", () => {
+  const priya = async () => (await tenantDb(merry.id).customer.findFirst({ where: { phone: "+919000010001" } }))!
+  const toDoorstep = async (number: number) => {
+    const o = (await tenantDb(merry.id).order.findFirst({ where: { number } }))!
+    if (o.status === "to_confirm") await svc.recordCall(merry.id, o.id, "confirmed", "staff-1")
+    await svc.setOrderStatus(merry.id, o.id, "packed", "staff-1")
+    await svc.setOrderStatus(merry.id, o.id, "out_for_delivery", "staff-1")
+    return o
+  }
+
+  it("refuses to deliver through the plain status change", async () => {
+    const o = (await tenantDb(merry.id).order.findFirst({ where: { number: 1002 } }))!
+    await expect(svc.setOrderStatus(merry.id, o.id, "delivered", "staff-1")).rejects.toThrow("use_deliver")
+  })
+
+  it("delivers on credit: issues invoice 0001 and leaves the amount as dues", async () => {
+    const o = await toDoorstep(1002)
+    const { invoice } = await billing.deliverOrder(merry.id, o.id, "credit", "staff-1", NOW)
+    expect(invoice).toMatchObject({ number: "MF/2026-27/0001", type: "bill_of_supply", totalPaise: 42_000, seq: 1 })
+    expect(invoice.publicToken.length).toBeGreaterThanOrEqual(20)
+    const snap = billing.readSnapshot(invoice.snapshot)
+    expect(snap.lines[0]).toMatchObject({ nameTa: "முட்டை", qty: 1, amountPaise: 39_000 })
+    expect(snap.deliveryFeePaise).toBe(3000)
+    expect(await billing.customerBalance(merry.id, (await priya()).id)).toBe(42_000)
+    const delivered = (await tenantDb(merry.id).order.findFirst({ where: { id: o.id } }))!
+    expect(delivered.status).toBe("delivered")
+    expect(delivered.deliveredAt).not.toBeNull()
+  })
+
+  it("cannot deliver the same order twice", async () => {
+    const o = (await tenantDb(merry.id).order.findFirst({ where: { number: 1002 } }))!
+    await expect(billing.deliverOrder(merry.id, o.id, "cash", "staff-1", NOW)).rejects.toThrow("bad_transition")
+    expect(await tenantDb(merry.id).invoice.count()).toBe(1)
+  })
+
+  it("delivers paid in cash: next invoice number, no new dues", async () => {
+    const o = await toDoorstep(1003)
+    const { invoice } = await billing.deliverOrder(merry.id, o.id, "cash", "staff-1", NOW)
+    expect(invoice.number).toBe("MF/2026-27/0002")
+    expect(await billing.customerBalance(merry.id, (await priya()).id)).toBe(42_000)
+    const pay = await tenantDb(merry.id).payment.findFirst({ where: { orderId: o.id } })
+    expect(pay).toMatchObject({ method: "cash_on_delivery", amountPaise: o.totalPaise })
+  })
+
+  it("records a later payment against the khata", async () => {
+    const c = await priya()
+    await billing.recordPayment(merry.id, { customerId: c.id, method: "upi_on_delivery", amountPaise: 30_000, byStaffId: "staff-1", reference: "UPI123" })
+    expect(await billing.customerBalance(merry.id, c.id)).toBe(12_000)
+    expect((await billing.allBalances(merry.id)).get(c.id)).toBe(12_000)
+    await expect(billing.recordPayment(merry.id, { customerId: c.id, method: "upi_on_delivery", amountPaise: 0, byStaffId: "s" })).rejects.toThrow("bad_amount")
+  })
+
+  it("keeps invoices and balances separate per farm", async () => {
+    expect(await tenantDb(other.id).invoice.count()).toBe(0)
+    expect((await billing.allBalances(other.id)).size).toBe(0)
+    const c = await priya()
+    await expect(billing.recordPayment(other.id, { customerId: c.id, method: "upi_on_delivery", amountPaise: 100, byStaffId: "s" })).rejects.toThrow("customer_not_found")
   })
 })

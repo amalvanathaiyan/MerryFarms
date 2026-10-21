@@ -1,6 +1,6 @@
 import "server-only"
 import { Prisma, type OrderStatus } from "@prisma/client"
-import { tenantDb } from "@/lib/tenant-db"
+import { tenantDb, type TenantTx } from "@/lib/tenant-db"
 import type { Tenant } from "@/lib/tenant"
 import { afterCall, canTransition, decideCall, type CallOutcome, type CallRules } from "@/domain/orders"
 import { orderTotals } from "@/domain/pricing"
@@ -170,31 +170,51 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
   throw new OrderError("busy_try_again")
 }
 
-/** Moves an order along its lifecycle, restoring stock if it is cancelled. */
-export async function setOrderStatus(tenantId: string, orderId: string, to: OrderStatus, byStaffId: string, note?: string) {
-  const db = tenantDb(tenantId)
-  return db.$transaction(async (tx) => {
-    const order = await tx.order.findFirst({ where: { id: orderId }, include: { items: true } })
-    if (!order) throw new OrderError("not_found")
-    if (!canTransition(order.status, to)) throw new OrderError("bad_transition")
+/**
+ * One status change inside an open transaction: checks the move is allowed, restores
+ * stock on cancel, and logs the event. Used by every path that changes an order's status.
+ */
+export async function transition(
+  tx: TenantTx,
+  tenantId: string,
+  orderId: string,
+  to: OrderStatus,
+  byStaffId: string,
+  note?: string
+) {
+  const order = await tx.order.findFirst({ where: { id: orderId }, include: { items: true } })
+  if (!order) throw new OrderError("not_found")
+  if (!canTransition(order.status, to)) throw new OrderError("bad_transition")
 
-    if (to === "cancelled") {
-      for (const i of order.items) {
-        await tx.product.updateMany({ where: { id: i.productId }, data: { stockQty: { increment: i.qty } } })
-      }
-    }
-    await tx.order.updateMany({
-      where: { id: order.id, status: order.status }, // guards against a double tap racing
-      data: { status: to, cancelReason: to === "cancelled" ? note ?? null : order.cancelReason },
-    })
-    await tx.orderEvent.create({
-      data: { tenantId, orderId: order.id, fromStatus: order.status, toStatus: to, byStaffId, note: note ?? null },
-    })
-    return { ...order, status: to }
+  // Conditional on the old status, so a double tap or two staff at once can't apply it twice.
+  const r = await tx.order.updateMany({
+    where: { id: order.id, status: order.status },
+    data: {
+      status: to,
+      cancelReason: to === "cancelled" ? note ?? null : order.cancelReason,
+      deliveredAt: to === "delivered" ? new Date() : order.deliveredAt,
+    },
   })
+  if (r.count !== 1) throw new OrderError("bad_transition")
+
+  if (to === "cancelled") {
+    for (const i of order.items) {
+      await tx.product.updateMany({ where: { id: i.productId }, data: { stockQty: { increment: i.qty } } })
+    }
+  }
+  await tx.orderEvent.create({
+    data: { tenantId, orderId: order.id, fromStatus: order.status, toStatus: to, byStaffId, note: note ?? null },
+  })
+  return { ...order, status: to }
 }
 
-/** Records a confirmation call and applies its outcome. */
+/** Moves an order along its lifecycle. Delivery goes through billing.deliverOrder instead. */
+export async function setOrderStatus(tenantId: string, orderId: string, to: OrderStatus, byStaffId: string, note?: string) {
+  if (to === "delivered") throw new OrderError("use_deliver")
+  return tenantDb(tenantId).$transaction((tx) => transition(tx, tenantId, orderId, to, byStaffId, note))
+}
+
+/** Records a confirmation call and applies its outcome, together. */
 export async function recordCall(
   tenantId: string,
   orderId: string,
@@ -203,17 +223,18 @@ export async function recordCall(
   note?: string
 ) {
   const db = tenantDb(tenantId)
-  const order = await db.order.findFirst({ where: { id: orderId } })
-  if (!order) throw new OrderError("not_found")
-  if (order.status !== "to_confirm") throw new OrderError("not_waiting_for_call")
-
   const settings = await db.tenantSettings.findFirst()
-  const attempt = (await db.confirmationCall.count({ where: { orderId } })) + 1
-  await db.confirmationCall.create({
-    data: { tenantId, orderId, attempt, outcome, calledById: byStaffId, note: note ?? null },
-  })
+  return db.$transaction(async (tx) => {
+    const order = await tx.order.findFirst({ where: { id: orderId } })
+    if (!order) throw new OrderError("not_found")
+    if (order.status !== "to_confirm") throw new OrderError("not_waiting_for_call")
 
-  const result = afterCall(outcome, attempt, settings?.maxCallAttempts ?? 3)
-  if (result.status) await setOrderStatus(tenantId, orderId, result.status, byStaffId, `call:${outcome}`)
-  return { attempt, ...result }
+    const attempt = (await tx.confirmationCall.count({ where: { orderId } })) + 1
+    await tx.confirmationCall.create({
+      data: { tenantId, orderId, attempt, outcome, calledById: byStaffId, note: note ?? null },
+    })
+    const result = afterCall(outcome, attempt, settings?.maxCallAttempts ?? 3)
+    if (result.status) await transition(tx, tenantId, orderId, result.status, byStaffId, `call:${outcome}`)
+    return { attempt, ...result }
+  })
 }

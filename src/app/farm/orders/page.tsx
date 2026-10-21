@@ -37,7 +37,13 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const [orders, counts] = await Promise.all([
     db.order.findMany({
       where: { status: { in: TABS[tab] } },
-      include: { customer: true, address: true, items: { include: { product: true } }, calls: { orderBy: { at: "desc" } } },
+      include: {
+        customer: true,
+        address: true,
+        items: { include: { product: true } },
+        calls: { orderBy: { at: "desc" } },
+        invoices: { where: { type: { not: "credit_note" } }, select: { id: true } },
+      },
       orderBy: tab === "done" ? { updatedAt: "desc" } : [{ slotDate: "asc" }, { createdAt: "asc" }],
       take: tab === "done" ? 50 : 200,
     }),
@@ -104,7 +110,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold">{t(`status_${o.status}`)}</span>
             </div>
             <div>
-              <span className="font-semibold">{o.customer.name}</span>{" "}
+              <Link href={`/farm/customers/${o.customer.id}`} className="font-semibold underline-offset-4 hover:underline">
+                {o.customer.name}
+              </Link>{" "}
               <span className="select-all text-sm text-muted-foreground tabular-nums">{formatIndianMobile(o.customer.phone)}</span>
               {o.address && (
                 <div className="text-sm text-muted-foreground">
@@ -138,6 +146,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               phone={o.customer.phone}
               callScript={`${items.map((i) => `${i.qty} × ${i.name} (${i.pack})`).join(", ")} · ${slotText} · ${formatRupees(o.totalPaise)}`}
               waLink={waText ? waMeLink(o.customer.phone, waText) : null}
+              invoiceId={o.invoices[0]?.id ?? null}
             />
           </article>
         )

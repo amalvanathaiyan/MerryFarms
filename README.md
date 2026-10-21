@@ -11,11 +11,12 @@ A Tamil-first, multi-tenant platform for small farms that sell direct to custome
 | --- | --- |
 | Customer shop (`/`) | Tamil by default with an English switch; products by category; live stock; delivery slots with cut-off and limits; checkout without login; "send to the farm on WhatsApp" after ordering |
 | Farm app (`/farm`) | Staff sign-in; **Today** (to-confirm count, open orders, sales, packing list, delivery runs, low stock); **Orders** (call button, read-out script, call outcomes, next step, cancel, one-tap WhatsApp Lite message in the customer's language); **Products** (add/edit/delete, categories, price, stock, GST, show/hide); **Slots** (add/edit/delete, days, cut-off, max orders) |
+| Customers & billing | Customer list with search and dues filter; customer page with statement (running balance), payments, dues reminder on WhatsApp, trusted flag, credit limit, offers opt-in with consent date; **Mark delivered** asks cash / UPI / on account and issues the invoice in the same step; bilingual invoice (bill of supply or tax invoice with CGST/SGST) numbered per financial year, frozen at issue; customer invoice link `/i/<token>` with a UPI pay button; farm settings (UPI ID, GSTIN, FSSAI, delivery charges) |
 | Rules | Confirmation-call rules per farm, order lifecycle, IST dates and cut-offs, delivery charges, GST inside prices, invoice numbering per financial year, Indian mobile numbers |
 | Multi-tenancy | `tenantId` on every farm table, enforced by `src/lib/tenant-db.ts`; Supabase API roles locked out by `prisma/sql/rls.sql`; farm resolved from the subdomain or `DEFAULT_TENANT_SLUG` |
 | Installable app | Web app manifest, icons and offline page; service worker built with `npm run build` |
 
-Not yet: invoices/khata screens, customer list, automated WhatsApp (Cloud API), platform admin, editing items on an existing order.
+Not yet: credit notes for returns, PDF files, automated WhatsApp (Cloud API), platform admin, editing items on an existing order, walk-in/phone orders from the farm app.
 
 ## Stack
 

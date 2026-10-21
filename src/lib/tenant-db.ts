@@ -74,3 +74,10 @@ export function tenantDb(tenantId: string) {
 }
 
 export type TenantDb = ReturnType<typeof tenantDb>
+
+// Type-only helper: lets TypeScript pick the interactive overload of $transaction.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const txOf = (db: TenantDb) => db.$transaction(async (tx) => tx)
+
+/** The client inside `tenantDb(id).$transaction(async (tx) => …)`, still tenant-scoped. */
+export type TenantTx = Awaited<ReturnType<typeof txOf>>
