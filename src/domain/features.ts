@@ -50,7 +50,7 @@ export const FEATURES: Record<FeatureKey, FeatureDef> = {
   subscriptions: { defaultOn: false, minPlan: "growth", requires: [], available: true },
   broadcasts: { defaultOn: false, minPlan: "growth", requires: ["whatsappCloud"], available: false },
   whatsappCloud: { defaultOn: false, minPlan: "starter", requires: [], available: false },
-  reports: { defaultOn: true, minPlan: "free", requires: [], available: false },
+  reports: { defaultOn: true, minPlan: "free", requires: [], available: true },
 }
 
 export const FEATURE_KEYS = Object.keys(FEATURES) as FeatureKey[]

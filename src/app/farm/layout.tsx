@@ -4,7 +4,7 @@ import { pick } from "@/lib/i18n-helpers"
 import { LanguageToggle } from "@/components/language-toggle"
 import { FarmNav } from "@/components/farm/farm-nav"
 import Link from "next/link"
-import { MessageCircle, Settings } from "lucide-react"
+import { BarChart3, MessageCircle, Settings } from "lucide-react"
 import { featuresOf } from "@/lib/features"
 import { signOut } from "@/app/actions/auth"
 
@@ -28,6 +28,11 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
           {featuresOf(tenant).whatsappLite && (
             <Link href="/farm/whatsapp" aria-label="WhatsApp" className="opacity-80 hover:opacity-100">
               <MessageCircle className="size-5" />
+            </Link>
+          )}
+          {staff.roles.includes("owner") && featuresOf(tenant).reports && (
+            <Link href="/farm/reports" aria-label={t("reports")} className="opacity-80 hover:opacity-100">
+              <BarChart3 className="size-5" />
             </Link>
           )}
           {staff.roles.includes("owner") && (

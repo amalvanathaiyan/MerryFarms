@@ -28,6 +28,7 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+  --color-chart-1: var(--chart-1);
   --color-header: hsl(var(--header));
   --color-header-foreground: hsl(var(--header-foreground));
   --color-lime: hsl(var(--lime));
@@ -74,6 +75,9 @@
     /* Header bar: pale mint with dark green text instead of a bright block of colour. */
     --header: 130 26% 92%;
     --header-foreground: 150 30% 18%;
+    /* Chart series colour: a touch more colourful than --primary so bars don't read grey.
+       Validated with the dataviz palette checks on the light surface (#2e8b57). */
+    --chart-1: #2e8b57;
     --radius: 0.85rem;
   }
 
@@ -104,6 +108,7 @@
       --yolk-foreground: 46 70% 86%;
       --header: 150 12% 13%;
       --header-foreground: 120 12% 88%;
+      --chart-1: #3fa66a; /* validated on the dark surface */
       color-scheme: dark;
     }
   }
