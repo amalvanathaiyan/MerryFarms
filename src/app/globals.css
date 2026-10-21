@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────
-   Farm4U base theme — vibrant field green, lime, mint and sunflower.
+   Farm4U base theme — calm leaf green, mint, soft lime and sunflower.
    Tenants can later override --primary from their branding.
    Large type by default: many customers are older and read Tamil.
 ───────────────────────────────────────────────── */
@@ -28,6 +28,8 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+  --color-header: hsl(var(--header));
+  --color-header-foreground: hsl(var(--header-foreground));
   --color-lime: hsl(var(--lime));
   --color-lime-foreground: hsl(var(--lime-foreground));
   --color-yolk: hsl(var(--yolk));
@@ -42,60 +44,66 @@
 }
 
 @layer base {
-  /* Vibrant field green, with lime highlights, fresh mint grounds and sunflower callouts.
-     Primary green keeps 4.5:1 contrast with white text. */
+  /* Calm leaf green, easy on the eyes for long use: soft off-white grounds, a muted
+     green for actions, pale mint for highlights, gentle lime and sunflower accents.
+     Primary green keeps at least 4.5:1 contrast with white text. */
   :root {
-    --background: 120 45% 97%;
-    --foreground: 150 30% 11%;
+    --background: 90 20% 97%;
+    --foreground: 150 22% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 150 30% 11%;
+    --card-foreground: 150 22% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 150 30% 11%;
-    --primary: 145 80% 30%;
+    --popover-foreground: 150 22% 15%;
+    --primary: 148 38% 32%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 140 55% 94%;
-    --secondary-foreground: 150 30% 11%;
-    --muted: 130 30% 94%;
-    --muted-foreground: 150 12% 34%;
-    --accent: 140 70% 90%;
-    --accent-foreground: 150 30% 11%;
-    --destructive: 4 74% 46%;
+    --secondary: 120 18% 94%;
+    --secondary-foreground: 150 22% 15%;
+    --muted: 100 14% 94%;
+    --muted-foreground: 150 10% 36%;
+    --accent: 135 28% 91%;
+    --accent-foreground: 150 22% 15%;
+    --destructive: 6 58% 46%;
     --destructive-foreground: 0 0% 100%;
-    --border: 135 30% 84%;
-    --input: 135 25% 76%;
-    --ring: 145 80% 30%;
-    --lime: 84 81% 44%;
-    --lime-foreground: 90 60% 11%;
-    --yolk: 48 100% 88%;
-    --yolk-foreground: 35 90% 20%;
+    --border: 110 14% 86%;
+    --input: 110 12% 78%;
+    --ring: 148 38% 32%;
+    --lime: 84 38% 62%;
+    --lime-foreground: 90 40% 14%;
+    --yolk: 46 80% 90%;
+    --yolk-foreground: 35 70% 22%;
+    /* Header bar: pale mint with dark green text instead of a bright block of colour. */
+    --header: 130 26% 92%;
+    --header-foreground: 150 30% 18%;
     --radius: 0.85rem;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --background: 150 35% 6%;
-      --foreground: 130 30% 92%;
-      --card: 150 30% 9%;
-      --card-foreground: 130 30% 92%;
-      --popover: 150 30% 9%;
-      --popover-foreground: 130 30% 92%;
-      --primary: 142 70% 48%;
-      --primary-foreground: 150 60% 6%;
-      --secondary: 150 25% 14%;
-      --secondary-foreground: 130 30% 92%;
-      --muted: 150 20% 14%;
-      --muted-foreground: 140 12% 64%;
-      --accent: 145 40% 17%;
-      --accent-foreground: 130 30% 92%;
-      --destructive: 6 80% 64%;
-      --destructive-foreground: 150 60% 6%;
-      --border: 145 20% 20%;
-      --input: 145 18% 26%;
-      --ring: 142 70% 48%;
-      --lime: 84 70% 52%;
-      --lime-foreground: 90 60% 8%;
-      --yolk: 45 60% 18%;
-      --yolk-foreground: 48 100% 88%;
+      --background: 150 14% 8%;
+      --foreground: 120 12% 88%;
+      --card: 150 12% 11%;
+      --card-foreground: 120 12% 88%;
+      --popover: 150 12% 11%;
+      --popover-foreground: 120 12% 88%;
+      --primary: 145 30% 56%;
+      --primary-foreground: 150 30% 8%;
+      --secondary: 150 10% 15%;
+      --secondary-foreground: 120 12% 88%;
+      --muted: 150 8% 15%;
+      --muted-foreground: 130 8% 62%;
+      --accent: 145 16% 18%;
+      --accent-foreground: 120 12% 88%;
+      --destructive: 6 55% 62%;
+      --destructive-foreground: 150 30% 8%;
+      --border: 145 8% 21%;
+      --input: 145 8% 27%;
+      --ring: 145 30% 56%;
+      --lime: 84 30% 52%;
+      --lime-foreground: 90 40% 8%;
+      --yolk: 45 35% 18%;
+      --yolk-foreground: 46 70% 86%;
+      --header: 150 12% 13%;
+      --header-foreground: 120 12% 88%;
       color-scheme: dark;
     }
   }

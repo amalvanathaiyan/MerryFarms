@@ -3,7 +3,7 @@
 import { deflateSync } from "node:zlib"
 import { writeFileSync, mkdirSync } from "node:fs"
 
-const GREEN = [15, 138, 66]
+const GREEN = [52, 112, 78]
 const EGG = [252, 239, 211]
 
 function crc32(buf) {

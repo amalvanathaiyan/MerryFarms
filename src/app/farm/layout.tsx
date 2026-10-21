@@ -4,7 +4,8 @@ import { pick } from "@/lib/i18n-helpers"
 import { LanguageToggle } from "@/components/language-toggle"
 import { FarmNav } from "@/components/farm/farm-nav"
 import Link from "next/link"
-import { Settings } from "lucide-react"
+import { MessageCircle, Settings } from "lucide-react"
+import { featuresOf } from "@/lib/features"
 import { signOut } from "@/app/actions/auth"
 
 export const dynamic = "force-dynamic"
@@ -17,13 +18,18 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col">
-      <header className="sticky top-0 z-10 flex items-center justify-between gap-3 bg-primary px-4 py-3 text-primary-foreground shadow-sm">
+      <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-header px-4 py-3 text-header-foreground print:hidden">
         <div className="min-w-0">
           <div className="truncate font-semibold">{pick(locale, tenant.nameTa, tenant.nameEn)}</div>
           <div className="truncate text-xs opacity-80">{staff.name}</div>
         </div>
         <div className="flex items-center gap-2">
           <LanguageToggle />
+          {featuresOf(tenant).whatsappLite && (
+            <Link href="/farm/whatsapp" aria-label="WhatsApp" className="opacity-80 hover:opacity-100">
+              <MessageCircle className="size-5" />
+            </Link>
+          )}
           {staff.roles.includes("owner") && (
             <Link href="/farm/settings" aria-label={t("settings")} className="opacity-80 hover:opacity-100">
               <Settings className="size-5" />

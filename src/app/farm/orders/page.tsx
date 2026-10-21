@@ -10,6 +10,7 @@ import { liteOrderMessage, waMeLink, type LiteMessageKind } from "@/domain/whats
 import { OrderActions } from "@/components/farm/order-actions"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { templateOverrides } from "@/server/messages"
 import { featuresOf } from "@/lib/features"
 
 const TABS: Record<string, OrderStatus[]> = {
@@ -43,7 +44,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const tabs = Object.keys(TABS).filter((k) => k !== "to_confirm" || features.callConfirmation || countFor(k) > 0)
   const tab = rawTab && tabs.includes(rawTab) ? rawTab : tabs[0]
 
-  const [orders] = await Promise.all([
+  const [orders, overrides] = await Promise.all([
     db.order.findMany({
       where: { status: { in: TABS[tab] } },
       include: {
@@ -57,6 +58,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       orderBy: tab === "done" ? { updatedAt: "desc" } : [{ slotDate: "asc" }, { createdAt: "asc" }],
       take: tab === "done" ? 50 : 200,
     }),
+    templateOverrides(tenant.id),
   ])
 
   return (
@@ -108,7 +110,8 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                 slotText: `${dayLabel(o.slotDate, lang, { today: lang === "ta" ? "இன்று" : "Today", tomorrow: lang === "ta" ? "நாளை" : "Tomorrow" })} ${o.slotLabel}`,
                 paymentText: lang === "ta" ? (o.paymentMethod === "cash_on_delivery" ? "டெலிவரியில் பணம்" : "UPI") : o.paymentMethod === "cash_on_delivery" ? "Cash on delivery" : "UPI",
               },
-              lang
+              lang,
+              overrides
             )
           : null
         const lastNoAnswer = o.calls.filter((c) => c.outcome === "no_answer").length

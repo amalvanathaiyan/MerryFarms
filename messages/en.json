@@ -362,6 +362,39 @@
       "refundTotal": "To refund",
       "submit": "Record return",
       "earlier": "Earlier returns"
+    },
+    "whatsapp": {
+      "title": "WhatsApp",
+      "shareTitle": "Share on WhatsApp",
+      "shareShop": "Shop link",
+      "sharePrices": "Today's price list",
+      "sendWhatsApp": "Send on WhatsApp",
+      "copy": "Copy",
+      "copied": "Copied",
+      "shareHint": "Send it to a customer, a group or your Status.",
+      "printQr": "Print QR",
+      "qrTitle": "Shop QR code",
+      "qrHint": "Stick it on egg trays, bags and bills. Scanning it opens your shop.",
+      "qrScan": "Scan to order",
+      "templatesTitle": "Message wording",
+      "templatesHint": "Change any message you send to customers into your own words.",
+      "customised": "Customised",
+      "placeholders": "Insert detail:",
+      "preview": "What the customer sees",
+      "unknownPlaceholders": "Unknown detail: {names}. Pick from the list above.",
+      "save": "Save",
+      "saved": "Saved",
+      "reset": "Reset to default",
+      "tpl_received": "Order received",
+      "tpl_confirmed": "Order confirmed",
+      "tpl_out_for_delivery": "Out for delivery",
+      "tpl_delivered": "Delivered",
+      "tpl_cancelled": "Order cancelled",
+      "tpl_missed_call": "Missed call",
+      "tpl_dues": "Dues reminder",
+      "tpl_invoice": "Sending an invoice",
+      "tpl_share_shop": "Sharing the shop link",
+      "tpl_price_list": "Price list"
     }
   },
   "login": {
@@ -417,6 +450,8 @@
     "nothing_to_return": "Pick at least one item to return.",
     "too_many_returned": "You can't return more than was delivered.",
     "not_on_order": "That item isn't on this order.",
-    "fee_needs_full_return": "The delivery charge can only be refunded when the whole order comes back."
+    "fee_needs_full_return": "The delivery charge can only be refunded when the whole order comes back.",
+    "template_too_long": "The message is too long (up to 1000 characters).",
+    "template_unknown": "The message has an unknown detail."
   }
 }

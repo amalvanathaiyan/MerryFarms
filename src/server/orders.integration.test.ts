@@ -399,3 +399,12 @@ describe("returns and credit notes", () => {
     await expect(returns.processReturn(small.id, o.id, { ...base, items: [{ productId: "p-small", qty: 1 }], refundMethod: "cash" }, "staff-1", NOW)).rejects.toThrow("returns_off")
   })
 })
+
+describe("message templates per farm", () => {
+  it("uses each farm's own wording and never another farm's", async () => {
+    const { templateOverrides } = await import("./messages")
+    await tenantDb(merry.id).messageTemplate.create({ data: { tenantId: merry.id, key: "delivered", bodyTa: "நன்றி {name}! மீண்டும் வாங்குங்கள்." } })
+    expect((await templateOverrides(merry.id)).delivered?.ta).toBe("நன்றி {name}! மீண்டும் வாங்குங்கள்.")
+    expect((await templateOverrides(other.id)).delivered).toBeUndefined()
+  })
+})
