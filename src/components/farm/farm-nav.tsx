@@ -18,7 +18,7 @@ export function FarmNav({ toConfirm }: { toConfirm: number }) {
   const t = useTranslations("farm.nav")
   const path = usePathname()
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-10 mx-auto grid max-w-2xl grid-cols-5 border-t bg-card pb-[env(safe-area-inset-bottom,0px)]">
+    <nav className="fixed inset-x-0 bottom-0 z-10 mx-auto grid max-w-2xl grid-cols-5 border-t bg-card pb-[env(safe-area-inset-bottom,0px)] print:hidden">
       {ITEMS.map(({ href, key, icon: Icon }) => {
         const active = href === "/farm" ? path === "/farm" : path.startsWith(href)
         return (

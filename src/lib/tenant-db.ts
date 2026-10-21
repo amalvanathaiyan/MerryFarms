@@ -18,6 +18,7 @@ const TENANT_MODELS = new Set([
   "LedgerEntry",
   "Payment",
   "OrderReturn",
+  "MessageTemplate",
 ])
 
 const WHERE_OPS = new Set([

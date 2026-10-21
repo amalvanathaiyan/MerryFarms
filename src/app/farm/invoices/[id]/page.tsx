@@ -11,6 +11,8 @@ import { readSnapshot } from "@/server/billing"
 import { formatRupees } from "@/domain/money"
 import { waMeLink } from "@/domain/whatsapp-lite"
 import { featuresOf } from "@/lib/features"
+import { templateOverrides } from "@/server/messages"
+import { fillTemplate, templateText } from "@/domain/templates"
 
 export default async function FarmInvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -26,10 +28,13 @@ export default async function FarmInvoicePage({ params }: { params: Promise<{ id
   const link = await absoluteUrl(`/i/${invoice.publicToken}`)
   const lang = invoice.customer.language
   const farmName = lang === "ta" ? s.farm.nameTa : s.farm.nameEn
-  const text =
-    lang === "ta"
-      ? `வணக்கம் ${s.customer.name}, ${farmName} பில் ${s.number}: ${formatRupees(s.totalPaise)}.\n${link}`
-      : `Hello ${s.customer.name}, your ${farmName} bill ${s.number}: ${formatRupees(s.totalPaise)}.\n${link}`
+  const text = fillTemplate(templateText("invoice", lang, await templateOverrides(tenant.id)), {
+    name: s.customer.name,
+    farm: farmName,
+    number: s.number,
+    amount: formatRupees(s.totalPaise),
+    link,
+  })
 
   return (
     <div className="flex flex-col gap-4">

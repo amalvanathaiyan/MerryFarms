@@ -105,9 +105,9 @@ export function Shop({ data }: { data: ShopData }) {
   }
 
   const header = (
-    <header className="sticky top-0 z-10 flex items-center justify-between gap-3 bg-primary px-4 py-3 text-primary-foreground shadow-sm">
+    <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-header px-4 py-3 text-header-foreground">
       <div className="flex min-w-0 items-center gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-lime text-sm font-bold text-lime-foreground">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
           {data.farm.orderPrefix}
         </span>
         <span className="truncate text-lg font-semibold">{data.farm.name}</span>

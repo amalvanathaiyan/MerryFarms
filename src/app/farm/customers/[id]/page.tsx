@@ -15,6 +15,8 @@ import { CustomerEditor } from "@/components/farm/customer-editor"
 import { PaymentForm } from "@/components/farm/payment-form"
 import { cn } from "@/lib/utils"
 import { featuresOf } from "@/lib/features"
+import { templateOverrides } from "@/server/messages"
+import { fillTemplate, templateText } from "@/domain/templates"
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -39,10 +41,12 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const labels = { today: tc("today"), tomorrow: tc("tomorrow") }
 
   const farmName = customer.language === "ta" ? tenant.nameTa : tenant.nameEn
-  const duesText =
-    customer.language === "ta"
-      ? `வணக்கம் ${customer.name}, ${farmName} கணக்கில் நிலுவை ${formatRupees(balance)}.${tenant.upiId ? `\nUPI: ${tenant.upiId}` : ""}\nநன்றி!`
-      : `Hello ${customer.name}, your balance with ${farmName} is ${formatRupees(balance)}.${tenant.upiId ? `\nUPI: ${tenant.upiId}` : ""}\nThank you!`
+  const duesText = fillTemplate(templateText("dues", customer.language, await templateOverrides(tenant.id)), {
+    name: customer.name,
+    farm: farmName,
+    amount: formatRupees(balance),
+    upi: tenant.upiId ?? "",
+  })
   const overLimit = customer.creditLimitPaise > 0 && !withinCreditLimit(balance, customer.creditLimitPaise, 0)
 
   return (

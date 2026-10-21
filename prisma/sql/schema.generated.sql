@@ -354,6 +354,18 @@ CREATE TABLE "order_returns" (
     CONSTRAINT "order_returns_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "message_templates" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "bodyTa" TEXT,
+    "bodyEn" TEXT,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "message_templates_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -422,6 +434,9 @@ CREATE INDEX "payments_tenantId_customerId_idx" ON "payments"("tenantId", "custo
 
 -- CreateIndex
 CREATE INDEX "order_returns_tenantId_orderId_idx" ON "order_returns"("tenantId", "orderId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "message_templates_tenantId_key_key" ON "message_templates"("tenantId", "key");
 
 -- AddForeignKey
 ALTER TABLE "tenant_settings" ADD CONSTRAINT "tenant_settings_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;

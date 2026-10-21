@@ -528,3 +528,17 @@ model OrderReturn {
   @@index([tenantId, orderId])
   @@map("order_returns")
 }
+
+/// The farm's own wording for a WhatsApp message (see src/domain/templates.ts).
+/// Empty text falls back to the built-in default for that language.
+model MessageTemplate {
+  id        String   @id @default(uuid())
+  tenantId  String
+  key       String // a TemplateKey, e.g. "confirmed"
+  bodyTa    String?
+  bodyEn    String?
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, key])
+  @@map("message_templates")
+}
