@@ -122,6 +122,10 @@ model Tenant {
   whatsappAccessToken   String? // Cloud API only, encrypted at rest
   whatsappWabaId        String? // Cloud API only
 
+  // Feature switches chosen by the farm owner; see src/domain/features.ts.
+  // What is actually on = plan allows it AND the farm switched it on.
+  features Json @default("{}")
+
   // Delivery charges
   deliveryFeePaise Int @default(3000)
   freeAbovePaise   Int @default(50000) // 0 = never free

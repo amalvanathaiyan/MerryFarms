@@ -6,6 +6,7 @@ import { afterCall, canTransition, decideCall, type CallOutcome, type CallRules 
 import { orderTotals } from "@/domain/pricing"
 import { slotKey, slotRangeLabel, upcomingSlots } from "@/domain/slots"
 import { addDays, istDate } from "@/domain/ist"
+import { featuresOf } from "@/lib/features"
 
 export class OrderError extends Error {
   constructor(public code: string) {
@@ -75,6 +76,7 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
 
   const settings = await db.tenantSettings.findFirst()
   const rules: CallRules = settings ?? DEFAULT_RULES
+  const features = featuresOf(tenant)
 
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -83,8 +85,10 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
           where: { id: { in: [...qtyById.keys()] }, isActive: true, deletedAt: null },
         })
         if (products.length !== qtyById.size) throw new OrderError("product_unavailable")
-        for (const p of products) {
-          if (p.stockQty < qtyById.get(p.id)!) throw new OrderError("out_of_stock")
+        if (features.stockTracking) {
+          for (const p of products) {
+            if (p.stockQty < qtyById.get(p.id)!) throw new OrderError("out_of_stock")
+          }
         }
 
         const lines = products.map((p) => ({
@@ -111,7 +115,9 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
           take: 10,
         })
         const sorted = history.map((h) => h.totalPaise).sort((a, b) => a - b)
-        const decision = decideCall(rules, {
+        const decision = !features.callConfirmation
+          ? ({ needsCall: false, reason: "calls_off" } as const)
+          : decideCall(rules, {
           channel: input.channel,
           paymentMethod: input.paymentMethod,
           totalPaise: totals.totalPaise,
@@ -151,7 +157,7 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
           include: { items: true },
         })
 
-        for (const l of lines) {
+        for (const l of features.stockTracking ? lines : []) {
           // Conditional decrement: fails (count 0) if another order took the stock meanwhile.
           const r = await tx.product.updateMany({
             where: { id: l.productId, stockQty: { gte: l.qty } },

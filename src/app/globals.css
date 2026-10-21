@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────
-   Farm4U base theme — field green and egg yolk.
+   Farm4U base theme — vibrant field green, lime, mint and sunflower.
    Tenants can later override --primary from their branding.
    Large type by default: many customers are older and read Tamil.
 ───────────────────────────────────────────────── */
@@ -28,6 +28,8 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+  --color-lime: hsl(var(--lime));
+  --color-lime-foreground: hsl(var(--lime-foreground));
   --color-yolk: hsl(var(--yolk));
   --color-yolk-foreground: hsl(var(--yolk-foreground));
 
@@ -40,54 +42,60 @@
 }
 
 @layer base {
+  /* Vibrant field green, with lime highlights, fresh mint grounds and sunflower callouts.
+     Primary green keeps 4.5:1 contrast with white text. */
   :root {
-    --background: 96 18% 92%;
-    --foreground: 140 17% 13%;
+    --background: 120 45% 97%;
+    --foreground: 150 30% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 140 17% 13%;
+    --card-foreground: 150 30% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 140 17% 13%;
-    --primary: 137 40% 30%;
+    --popover-foreground: 150 30% 11%;
+    --primary: 145 80% 30%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 96 20% 96%;
-    --secondary-foreground: 140 17% 13%;
-    --muted: 96 15% 94%;
-    --muted-foreground: 140 8% 38%;
-    --accent: 130 30% 89%;
-    --accent-foreground: 140 17% 13%;
-    --destructive: 9 61% 44%;
+    --secondary: 140 55% 94%;
+    --secondary-foreground: 150 30% 11%;
+    --muted: 130 30% 94%;
+    --muted-foreground: 150 12% 34%;
+    --accent: 140 70% 90%;
+    --accent-foreground: 150 30% 11%;
+    --destructive: 4 74% 46%;
     --destructive-foreground: 0 0% 100%;
-    --border: 100 13% 85%;
-    --input: 100 13% 80%;
-    --ring: 137 40% 30%;
-    --yolk: 41 88% 91%;
-    --yolk-foreground: 40 100% 18%;
-    --radius: 0.75rem;
+    --border: 135 30% 84%;
+    --input: 135 25% 76%;
+    --ring: 145 80% 30%;
+    --lime: 84 81% 44%;
+    --lime-foreground: 90 60% 11%;
+    --yolk: 48 100% 88%;
+    --yolk-foreground: 35 90% 20%;
+    --radius: 0.85rem;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --background: 140 14% 7%;
-      --foreground: 130 15% 91%;
-      --card: 140 13% 11%;
-      --card-foreground: 130 15% 91%;
-      --popover: 140 13% 11%;
-      --popover-foreground: 130 15% 91%;
-      --primary: 137 38% 60%;
-      --primary-foreground: 140 40% 8%;
-      --secondary: 140 12% 15%;
-      --secondary-foreground: 130 15% 91%;
-      --muted: 140 12% 15%;
-      --muted-foreground: 135 8% 62%;
-      --accent: 140 20% 18%;
-      --accent-foreground: 130 15% 91%;
-      --destructive: 10 70% 66%;
-      --destructive-foreground: 140 40% 8%;
-      --border: 135 12% 20%;
-      --input: 135 12% 26%;
-      --ring: 137 38% 60%;
-      --yolk: 40 45% 16%;
-      --yolk-foreground: 41 88% 91%;
+      --background: 150 35% 6%;
+      --foreground: 130 30% 92%;
+      --card: 150 30% 9%;
+      --card-foreground: 130 30% 92%;
+      --popover: 150 30% 9%;
+      --popover-foreground: 130 30% 92%;
+      --primary: 142 70% 48%;
+      --primary-foreground: 150 60% 6%;
+      --secondary: 150 25% 14%;
+      --secondary-foreground: 130 30% 92%;
+      --muted: 150 20% 14%;
+      --muted-foreground: 140 12% 64%;
+      --accent: 145 40% 17%;
+      --accent-foreground: 130 30% 92%;
+      --destructive: 6 80% 64%;
+      --destructive-foreground: 150 60% 6%;
+      --border: 145 20% 20%;
+      --input: 145 18% 26%;
+      --ring: 142 70% 48%;
+      --lime: 84 70% 52%;
+      --lime-foreground: 90 60% 8%;
+      --yolk: 45 60% 18%;
+      --yolk-foreground: 48 100% 88%;
       color-scheme: dark;
     }
   }

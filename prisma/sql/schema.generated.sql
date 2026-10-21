@@ -57,6 +57,7 @@ CREATE TABLE "tenants" (
     "whatsappPhoneNumberId" TEXT,
     "whatsappAccessToken" TEXT,
     "whatsappWabaId" TEXT,
+    "features" JSONB NOT NULL DEFAULT '{}',
     "deliveryFeePaise" INTEGER NOT NULL DEFAULT 3000,
     "freeAbovePaise" INTEGER NOT NULL DEFAULT 50000,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

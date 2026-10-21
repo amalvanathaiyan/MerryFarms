@@ -17,7 +17,7 @@ type Customer = {
   notes: string
 }
 
-export function CustomerEditor({ customer, canEdit }: { customer: Customer; canEdit: boolean }) {
+export function CustomerEditor({ customer, canEdit, showCredit, showTrusted }: { customer: Customer; canEdit: boolean; showCredit: boolean; showTrusted: boolean }) {
   const t = useTranslations("farm.customers")
   const te = useTranslations("errors")
   const [c, setC] = useState(customer)
@@ -55,12 +55,14 @@ export function CustomerEditor({ customer, canEdit }: { customer: Customer; canE
             ))}
           </select>
         </label>
-        <Toggle label={t("trustedLabel")} hint={t("trustedHint")} checked={c.isTrusted} onChange={(v) => set("isTrusted", v)} />
+        {showTrusted && <Toggle label={t("trustedLabel")} hint={t("trustedHint")} checked={c.isTrusted} onChange={(v) => set("isTrusted", v)} />}
+        {showCredit && (
         <label className="flex flex-col gap-1.5 text-sm font-semibold">
           {t("creditLimit")}
           <Input type="number" min={0} step="50" inputMode="numeric" value={c.creditLimitRupees} onChange={(e) => set("creditLimitRupees", Number(e.target.value))} className="h-11 font-normal" />
           <span className="font-normal text-muted-foreground">{t("creditLimitHint")}</span>
         </label>
+        )}
         <Toggle label={t("optIn")} hint={t("optInHint")} checked={c.marketingOptIn} onChange={(v) => set("marketingOptIn", v)} />
         <label className="flex flex-col gap-1.5 text-sm font-semibold">
           {t("notes")}

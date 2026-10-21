@@ -11,7 +11,7 @@ export function LanguageToggle({ className }: { className?: string }) {
   const current = useLocale()
   const [pending, start] = useTransition()
   return (
-    <div className={cn("inline-flex rounded-full border bg-card p-0.5 text-sm", className)} role="group" aria-label="மொழி / Language">
+    <div className={cn("inline-flex rounded-full border bg-card p-0.5 text-sm text-card-foreground", className)} role="group" aria-label="மொழி / Language">
       {locales.map((l) => (
         <button
           key={l}

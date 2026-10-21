@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { changeOrderStatus, logCall } from "@/app/actions/farm-orders"
 import { deliver } from "@/app/actions/billing"
 import { nextStep, type OrderStatus } from "@/domain/orders"
+import { cn } from "@/lib/utils"
 
 const OUTCOMES = ["confirmed", "changed", "cancelled", "no_answer", "wrong_number"] as const
 
@@ -18,6 +19,7 @@ export function OrderActions({
   callScript,
   waLink,
   invoiceId,
+  allowCredit,
 }: {
   orderId: string
   status: OrderStatus
@@ -25,6 +27,7 @@ export function OrderActions({
   callScript: string
   waLink: string | null
   invoiceId: string | null
+  allowCredit: boolean
 }) {
   const t = useTranslations("farm.orders")
   const te = useTranslations("errors")
@@ -84,8 +87,8 @@ export function OrderActions({
       {next === "delivered" && (
         <div className="flex flex-col gap-2 rounded-lg border border-dashed p-2">
           <span className="text-sm font-semibold">{t("howPaid")}</span>
-          <div className="grid grid-cols-3 gap-2">
-            {(["cash", "upi", "credit"] as const).map((p) => (
+          <div className={cn("grid gap-2", allowCredit ? "grid-cols-3" : "grid-cols-2")}>
+            {(allowCredit ? (["cash", "upi", "credit"] as const) : (["cash", "upi"] as const)).map((p) => (
               <Button key={p} variant={p === "credit" ? "outline" : "default"} disabled={pending} onClick={() => run(() => deliver({ orderId, payment: p }))}>
                 {t(`paid_${p}`)}
               </Button>

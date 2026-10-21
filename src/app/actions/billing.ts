@@ -8,6 +8,7 @@ import { rupeesToPaise } from "@/domain/money"
 import { isValidUpiId } from "@/domain/upi"
 import { normaliseIndianMobile } from "@/domain/phone"
 import { deliverOrder, recordPayment } from "@/server/billing"
+import { cannotEnable, FEATURE_KEYS, parseChoices } from "@/domain/features"
 import { OrderError } from "@/server/orders"
 
 type Result = { ok: true; invoiceId?: string } | { ok: false; error: string }
@@ -27,7 +28,7 @@ export async function deliver(raw: unknown): Promise<Result> {
   try {
     const { invoice } = await deliverOrder(tenant.id, parsed.data.orderId, parsed.data.payment, staff.id)
     revalidatePath("/farm", "layout")
-    return { ok: true, invoiceId: invoice.id }
+    return { ok: true, invoiceId: invoice?.id }
   } catch (e) {
     return fail(e)
   }
@@ -134,6 +135,25 @@ export async function saveFarmSettings(raw: unknown): Promise<Result> {
       freeAbovePaise: rupeesToPaise(s.freeAboveRupees),
     },
   })
+  revalidatePath("/", "layout")
+  return { ok: true }
+}
+
+const featuresSchema = z.record(z.string(), z.boolean())
+
+/** The owner switches farm features on or off. Locked features (plan, not built yet) stay off. */
+export async function saveFeatures(raw: unknown): Promise<Result> {
+  const parsed = featuresSchema.safeParse(raw)
+  if (!parsed.success) return { ok: false, error: "invalid" }
+  const { tenant } = await requireStaff(OWNER_ONLY)
+  const choices = parseChoices(tenant.features)
+  for (const key of FEATURE_KEYS) {
+    const want = parsed.data[key]
+    if (typeof want !== "boolean") continue
+    if (want && cannotEnable(tenant.plan, key)) continue
+    choices[key] = want
+  }
+  await prisma.tenant.update({ where: { id: tenant.id }, data: { features: choices } })
   revalidatePath("/", "layout")
   return { ok: true }
 }

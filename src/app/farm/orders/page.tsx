@@ -9,6 +9,7 @@ import { formatIndianMobile } from "@/domain/phone"
 import { liteOrderMessage, waMeLink, type LiteMessageKind } from "@/domain/whatsapp-lite"
 import { OrderActions } from "@/components/farm/order-actions"
 import { cn } from "@/lib/utils"
+import { featuresOf } from "@/lib/features"
 
 const TABS: Record<string, OrderStatus[]> = {
   to_confirm: ["to_confirm"],
@@ -26,15 +27,21 @@ const MESSAGE_FOR: Partial<Record<OrderStatus, LiteMessageKind>> = {
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { tab: rawTab } = await searchParams
-  const tab = rawTab && rawTab in TABS ? rawTab : "to_confirm"
   const { tenant, db } = await requireStaff()
+  const features = featuresOf(tenant)
   const locale = await getLocale()
   const t = await getTranslations("farm.orders")
   const tc = await getTranslations("common")
   const ts = await getTranslations("shop")
   const labels = { today: tc("today"), tomorrow: tc("tomorrow") }
 
-  const [orders, counts] = await Promise.all([
+  const counts = await db.order.groupBy({ by: ["status"], _count: { _all: true } })
+  const countFor = (k: string) => counts.filter((c) => TABS[k].includes(c.status)).reduce((a, c) => a + c._count._all, 0)
+  // The call tab only shows while calls are on, or while old orders still wait in it.
+  const tabs = Object.keys(TABS).filter((k) => k !== "to_confirm" || features.callConfirmation || countFor(k) > 0)
+  const tab = rawTab && tabs.includes(rawTab) ? rawTab : tabs[0]
+
+  const [orders] = await Promise.all([
     db.order.findMany({
       where: { status: { in: TABS[tab] } },
       include: {
@@ -47,14 +54,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       orderBy: tab === "done" ? { updatedAt: "desc" } : [{ slotDate: "asc" }, { createdAt: "asc" }],
       take: tab === "done" ? 50 : 200,
     }),
-    db.order.groupBy({ by: ["status"], _count: { _all: true } }),
   ])
-  const countFor = (k: string) => counts.filter((c) => TABS[k].includes(c.status)).reduce((a, c) => a + c._count._all, 0)
 
   return (
     <div className="flex flex-col gap-4">
       <nav className="flex gap-2" aria-label="Order status">
-        {Object.keys(TABS).map((k) => (
+        {tabs.map((k) => (
           <Link
             key={k}
             href={`/farm/orders?tab=${k}`}
@@ -145,8 +150,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               status={o.status}
               phone={o.customer.phone}
               callScript={`${items.map((i) => `${i.qty} × ${i.name} (${i.pack})`).join(", ")} · ${slotText} · ${formatRupees(o.totalPaise)}`}
-              waLink={waText ? waMeLink(o.customer.phone, waText) : null}
+              waLink={features.whatsappLite && waText ? waMeLink(o.customer.phone, waText) : null}
               invoiceId={o.invoices[0]?.id ?? null}
+              allowCredit={features.creditAccounts}
             />
           </article>
         )

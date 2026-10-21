@@ -1,9 +1,10 @@
 import { getTranslations } from "next-intl/server"
 import { requireStaff } from "@/lib/auth"
 import { CatalogueManager } from "@/components/farm/catalogue-manager"
+import { featuresOf } from "@/lib/features"
 
 export default async function CataloguePage() {
-  const { db, staff } = await requireStaff()
+  const { db, staff, tenant } = await requireStaff()
   const t = await getTranslations("farm.catalogue")
   const [categories, products] = await Promise.all([
     db.category.findMany({ orderBy: { sortOrder: "asc" } }),
@@ -15,6 +16,7 @@ export default async function CataloguePage() {
       <h1 className="text-xl font-bold">{t("title")}</h1>
       <CatalogueManager
         canEdit={staff.roles.includes("owner")}
+        tracksStock={featuresOf(tenant).stockTracking}
         categories={categories.map(({ id, nameTa, nameEn }) => ({ id, nameTa, nameEn }))}
         products={products.map((p) => ({
           id: p.id,

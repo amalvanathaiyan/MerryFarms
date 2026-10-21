@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { CustomerEditor } from "@/components/farm/customer-editor"
 import { PaymentForm } from "@/components/farm/payment-form"
 import { cn } from "@/lib/utils"
+import { featuresOf } from "@/lib/features"
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -22,6 +23,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const t = await getTranslations("farm.customers")
   const to = await getTranslations("farm.orders")
   const tc = await getTranslations("common")
+  const features = featuresOf(tenant)
 
   const customer = await db.customer.findFirst({ where: { id }, include: { addresses: { orderBy: { createdAt: "desc" }, take: 3 } } })
   if (!customer) notFound()
@@ -57,20 +59,22 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
               </p>
             )}
           </div>
+          {features.creditAccounts && (
           <div className="shrink-0 text-right">
             <div className="text-xs text-muted-foreground">{t("balance")}</div>
             <div className={cn("text-2xl font-bold tabular-nums", balance > 0 && "text-destructive")}>{formatRupees(Math.abs(balance))}</div>
             {balance < 0 && <div className="text-xs">{t("advance")}</div>}
           </div>
+          )}
         </div>
-        {overLimit && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">{t("overLimit", { limit: formatRupees(customer.creditLimitPaise) })}</p>}
+        {features.creditAccounts && overLimit && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">{t("overLimit", { limit: formatRupees(customer.creditLimitPaise) })}</p>}
         <div className="flex flex-wrap gap-2">
           <Button asChild className="flex-1">
             <a href={`tel:${customer.phone}`}>
               <Phone /> {to("call")}
             </a>
           </Button>
-          {balance > 0 && (
+          {features.creditAccounts && features.whatsappLite && balance > 0 && (
             <Button asChild variant="outline" className="flex-1">
               <a href={waMeLink(customer.phone, duesText)} target="_blank" rel="noreferrer">
                 <MessageCircle /> {t("sendDues")}
@@ -80,8 +84,9 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         </div>
       </section>
 
-      <PaymentForm customerId={customer.id} suggestedRupees={balance > 0 ? balance / 100 : undefined} />
+      {features.creditAccounts && <PaymentForm customerId={customer.id} suggestedRupees={balance > 0 ? balance / 100 : undefined} />}
 
+      {features.creditAccounts && (
       <section className="rounded-2xl border bg-card p-4">
         <h2 className="mb-2 text-lg font-semibold">{t("statement")}</h2>
         {statement.length === 0 ? (
@@ -117,6 +122,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           </div>
         )}
       </section>
+      )}
 
       <section className="rounded-2xl border bg-card p-4">
         <h2 className="mb-2 text-lg font-semibold">{t("recentOrders")}</h2>
@@ -148,6 +154,8 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
 
       <CustomerEditor
         canEdit={staff.roles.includes("owner") || staff.roles.includes("order_desk")}
+        showCredit={features.creditAccounts}
+        showTrusted={features.callConfirmation}
         customer={{
           id: customer.id,
           name: customer.name,
