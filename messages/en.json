@@ -98,7 +98,7 @@
       "outcome_cancelled": "Said no",
       "outcome_no_answer": "No answer",
       "outcome_wrong_number": "Wrong number",
-      "changedHint": "Write the change in the note; editing orders comes in the next version.",
+      "changedHint": "If the customer wants a change, tap 'Changed', edit the order and save; it is then confirmed.",
       "attempts": "Called {count, plural, one {once} other {# times}}",
       "needsOwner": "Owner to decide",
       "cancel": "Cancel order",
@@ -113,7 +113,10 @@
       "paid_cash": "Cash",
       "paid_upi": "UPI",
       "paid_credit": "On account",
-      "invoice": "Invoice"
+      "invoice": "Invoice",
+      "newOrder": "+ New order",
+      "atFarm": "Bought at the farm",
+      "edit": "Edit"
     },
     "catalogue": {
       "title": "Products & prices",
@@ -294,6 +297,36 @@
         "title": "Reports",
         "hint": "Daily sales, product totals and Excel exports for your accountant."
       }
+    },
+    "orderForm": {
+      "newTitle": "New order",
+      "editTitle": "Edit order {code}",
+      "fromCallHint": "Make the changes agreed on the call and save. Saving confirms the order.",
+      "notEditable": "Orders can't be changed once they're packed.",
+      "channel": "How did the order come in?",
+      "channel_phone": "Phone",
+      "channel_whatsapp": "WhatsApp",
+      "channel_walk_in": "At the farm",
+      "whatsappHint": "Enter an order that came in on WhatsApp. It joins the list to confirm by call.",
+      "customer": "Customer",
+      "searchCustomer": "Search name or number",
+      "orNew": "Or a new customer:",
+      "change": "Change",
+      "items": "Items",
+      "newAddress": "New address",
+      "slotFullWarning": "This slot is full. You can still add it, but check the delivery load.",
+      "afterCutoffWarning": "The online cut-off has passed. As staff you can still add it.",
+      "pay_upi_on_delivery": "UPI on delivery",
+      "pay_cash_on_delivery": "Cash on delivery",
+      "pay_credit": "On account",
+      "paidNow": "How are they paying now?",
+      "handover_cash": "Cash",
+      "handover_upi": "UPI",
+      "handover_credit": "On account",
+      "placeOrder": "Add order",
+      "completeSale": "Complete sale",
+      "saveChanges": "Save changes",
+      "saveAndConfirm": "Save and confirm"
     }
   },
   "login": {
@@ -340,6 +373,9 @@
     "gstin_invalid": "That GSTIN doesn't look right (15 characters).",
     "fssai_invalid": "The FSSAI number must be 14 digits.",
     "shop_ordering_off": "This farm isn't taking web orders right now. Please call or WhatsApp them.",
-    "credit_off": "Credit accounts are switched off for this farm."
+    "credit_off": "Credit accounts are switched off for this farm.",
+    "address_required": "A delivery address is needed.",
+    "address_not_found": "Address not found.",
+    "not_editable": "This order can't be changed now."
   }
 }

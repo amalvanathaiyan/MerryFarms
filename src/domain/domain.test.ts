@@ -3,7 +3,7 @@ import { addDays, financialYear, istDate, istInstant, weekday } from "./ist"
 import { formatRupees, includedTax } from "./money"
 import { deliveryFee, orderTotals } from "./pricing"
 import { slotRangeLabel, upcomingSlots, validateSlotRule, type SlotRule } from "./slots"
-import { afterCall, canTransition, decideCall, nextStep, type CallRules } from "./orders"
+import { afterCall, canTransition, decideCall, isEditable, nextStep, stockDeltas, type CallRules } from "./orders"
 import { invoiceNumber, invoiceTypeFor } from "./invoices"
 import { formatIndianMobile, normaliseIndianMobile } from "./phone"
 import { liteOrderMessage, waMeLink } from "./whatsapp-lite"
@@ -97,6 +97,16 @@ describe("delivery slots", () => {
     ])
   })
 
+  it("lets staff book after the online cut-off, but not once the slot has started", () => {
+    // 20:00 IST: tomorrow-morning's 19:00 cut-off has passed for customers…
+    const evening = new Date("2026-10-21T14:30:00Z")
+    expect(upcomingSlots(slots, {}, evening, { wantOpen: 1 })[0].key).toBe("2026-10-22|eve")
+    // …but staff can still book it.
+    expect(upcomingSlots(slots, {}, evening, { wantOpen: 1, ignoreCutoff: true })[0].key).toBe("2026-10-22|am")
+    // Today's evening slot (17:00) has already started either way.
+    expect(upcomingSlots(slots, {}, evening, { ignoreCutoff: true }).some((o) => o.key === "2026-10-21|eve")).toBe(false)
+  })
+
   it("respects days of week and inactive slots", () => {
     const saturdayOnly: SlotRule[] = [{ ...slots[1], daysOfWeek: [6] }, { ...slots[0], isActive: false }]
     expect(upcomingSlots(saturdayOnly, {}, now, { wantOpen: 1 })[0].date).toBe("2026-10-24")
@@ -118,8 +128,26 @@ describe("order lifecycle", () => {
     expect(canTransition("to_confirm", "packed")).toBe(false)
     expect(canTransition("out_for_delivery", "cancelled")).toBe(false)
     expect(canTransition("delivered", "cancelled")).toBe(false)
+    expect(canTransition("confirmed", "delivered")).toBe(true) // pickup / walk-in
+    expect(canTransition("to_confirm", "delivered")).toBe(false)
     expect(nextStep("packed")).toBe("out_for_delivery")
     expect(nextStep("delivered")).toBeNull()
+  })
+
+  it("allows edits only before packing", () => {
+    expect(isEditable("to_confirm")).toBe(true)
+    expect(isEditable("confirmed")).toBe(true)
+    expect(isEditable("packed")).toBe(false)
+    expect(isEditable("delivered")).toBe(false)
+  })
+
+  it("works out stock changes when items are edited", () => {
+    const d = stockDeltas(
+      [{ productId: "eggs", qty: 2 }, { productId: "chicken", qty: 1 }],
+      [{ productId: "eggs", qty: 3 }, { productId: "milk", qty: 1 }]
+    )
+    expect(Object.fromEntries(d)).toEqual({ eggs: 1, chicken: -1, milk: 1 })
+    expect(stockDeltas([{ productId: "eggs", qty: 2 }], [{ productId: "eggs", qty: 2 }]).size).toBe(0)
   })
 
   it("retries unanswered calls, then hands over to the owner", () => {

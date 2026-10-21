@@ -3,11 +3,11 @@
 import { useState, useTransition } from "react"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
-import { FileText, MessageCircle, Phone } from "lucide-react"
+import { FileText, MessageCircle, Pencil, Phone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { changeOrderStatus, logCall } from "@/app/actions/farm-orders"
 import { deliver } from "@/app/actions/billing"
-import { nextStep, type OrderStatus } from "@/domain/orders"
+import { isEditable, nextStep, type OrderStatus } from "@/domain/orders"
 import { cn } from "@/lib/utils"
 
 const OUTCOMES = ["confirmed", "changed", "cancelled", "no_answer", "wrong_number"] as const
@@ -20,6 +20,7 @@ export function OrderActions({
   waLink,
   invoiceId,
   allowCredit,
+  canEdit,
 }: {
   orderId: string
   status: OrderStatus
@@ -28,6 +29,8 @@ export function OrderActions({
   waLink: string | null
   invoiceId: string | null
   allowCredit: boolean
+  /** Order desk staff, and not a walk-in sale. */
+  canEdit: boolean
 }) {
   const t = useTranslations("farm.orders")
   const te = useTranslations("errors")
@@ -68,7 +71,13 @@ export function OrderActions({
             className="h-10 rounded-md border border-input bg-transparent px-3"
           />
           <div className="grid grid-cols-2 gap-2">
-            {OUTCOMES.map((o) => (
+            {OUTCOMES.map((o) =>
+              o === "changed" && canEdit ? (
+                // A change agreed on the call: edit the order, and saving confirms it.
+                <Button key={o} asChild variant="outline">
+                  <Link href={`/farm/orders/${orderId}/edit?call=1`}>{t(`outcome_${o}`)}</Link>
+                </Button>
+              ) : (
               <Button
                 key={o}
                 variant={o === "confirmed" ? "default" : "outline"}
@@ -78,7 +87,8 @@ export function OrderActions({
               >
                 {t(`outcome_${o}`)}
               </Button>
-            ))}
+              )
+            )}
           </div>
           <p className="text-xs text-muted-foreground">{t("changedHint")}</p>
         </>
@@ -108,6 +118,13 @@ export function OrderActions({
             <a href={waLink} target="_blank" rel="noreferrer">
               <MessageCircle /> {t("whatsapp")}
             </a>
+          </Button>
+        )}
+        {canEdit && isEditable(status) && status !== "to_confirm" && (
+          <Button asChild variant="outline" className="flex-1">
+            <Link href={`/farm/orders/${orderId}/edit`}>
+              <Pencil /> {t("edit")}
+            </Link>
           </Button>
         )}
         {invoiceId && (

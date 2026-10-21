@@ -2,7 +2,7 @@ import "server-only"
 import { Prisma, type OrderStatus } from "@prisma/client"
 import { tenantDb, type TenantTx } from "@/lib/tenant-db"
 import type { Tenant } from "@/lib/tenant"
-import { afterCall, canTransition, decideCall, type CallOutcome, type CallRules } from "@/domain/orders"
+import { afterCall, canTransition, decideCall, isEditable, stockDeltas, type CallOutcome, type CallRules } from "@/domain/orders"
 import { orderTotals } from "@/domain/pricing"
 import { slotKey, slotRangeLabel, upcomingSlots } from "@/domain/slots"
 import { addDays, istDate } from "@/domain/ist"
@@ -38,22 +38,46 @@ export async function bookedCounts(tenantId: string, now = new Date(), days = 10
   return counts
 }
 
-export async function openSlotOptions(tenantId: string, now = new Date()) {
+/**
+ * Delivery slots that can be picked now. Customers see slots until their cut-off;
+ * staff (`forStaff`) can book any slot that hasn't started yet, full ones included.
+ */
+export async function openSlotOptions(tenantId: string, now = new Date(), opts: { forStaff?: boolean } = {}) {
   const db = tenantDb(tenantId)
   const slots = await db.deliverySlot.findMany({ where: { isActive: true } })
-  const options = upcomingSlots(slots, await bookedCounts(tenantId, now), now)
+  const options = upcomingSlots(slots, await bookedCounts(tenantId, now), now, opts.forStaff ? { ignoreCutoff: true, daysAhead: 7, wantOpen: 100 } : {})
   return options.map((o) => ({ ...o, slot: slots.find((s) => s.id === o.slotId)! }))
 }
 
 export interface PlaceOrderInput {
   channel: "web" | "whatsapp" | "phone" | "walk_in"
   customer: { phone: string; name: string; language: "ta" | "en" }
-  address: { line: string; landmark?: string }
+  /** An existing address of this customer (`id`), a new one (`line`), or none for walk-ins. */
+  address: { id?: string; line?: string; landmark?: string } | null
   items: { productId: string; qty: number }[]
-  slotKey: string
+  /** `${date}|${slotId}`; null only for walk-in sales at the farm. */
+  slotKey: string | null
   paymentMethod: "upi_on_delivery" | "cash_on_delivery" | "upi_prepaid" | "credit"
   note?: string
   byStaffId?: string
+  /** Staff booking: allowed after the online cut-off and into a full slot. */
+  staffOverride?: boolean
+}
+
+/** Merges duplicate lines so stock checks see the real quantity. */
+function mergeItems(items: { productId: string; qty: number }[]) {
+  const qtyById = new Map<string, number>()
+  for (const i of items) qtyById.set(i.productId, (qtyById.get(i.productId) ?? 0) + i.qty)
+  return qtyById
+}
+
+/** Validates a slot choice and returns what the order stores about it. */
+async function resolveSlot(tenantId: string, key: string, now: Date, staffOverride: boolean) {
+  const [slotDate, slotId] = key.split("|")
+  const option = (await openSlotOptions(tenantId, now, { forStaff: staffOverride })).find((o) => o.key === key)
+  if (!option || !slotDate || !slotId) throw new OrderError("slot_closed")
+  if (option.full && !staffOverride) throw new OrderError("slot_full")
+  return { slotId, slotDate, slotLabel: slotRangeLabel(option.slot.startTime, option.slot.endTime) }
 }
 
 /**
@@ -64,19 +88,22 @@ export interface PlaceOrderInput {
 export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = new Date()) {
   if (input.items.length === 0) throw new OrderError("empty_cart")
   const db = tenantDb(tenant.id)
+  const qtyById = mergeItems(input.items)
 
-  // Merge duplicate lines so stock checks see the real quantity.
-  const qtyById = new Map<string, number>()
-  for (const i of input.items) qtyById.set(i.productId, (qtyById.get(i.productId) ?? 0) + i.qty)
-
-  const [slotDate, slotId] = input.slotKey.split("|")
-  const option = (await openSlotOptions(tenant.id, now)).find((o) => o.key === input.slotKey)
-  if (!option || !slotDate || !slotId) throw new OrderError("slot_closed")
-  if (option.full) throw new OrderError("slot_full")
+  const isWalkIn = input.channel === "walk_in"
+  const slot = isWalkIn
+    ? { slotId: null, slotDate: istDate(now), slotLabel: "" }
+    : input.slotKey
+      ? await resolveSlot(tenant.id, input.slotKey, now, !!input.staffOverride)
+      : (() => {
+          throw new OrderError("slot_closed")
+        })()
+  if (!isWalkIn && !input.address?.id && !input.address?.line) throw new OrderError("address_required")
 
   const settings = await db.tenantSettings.findFirst()
   const rules: CallRules = settings ?? DEFAULT_RULES
   const features = featuresOf(tenant)
+  if (input.paymentMethod === "credit" && !features.creditAccounts) throw new OrderError("credit_off")
 
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -97,16 +124,27 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
           unitPricePaise: p.pricePaise,
           gstRate: p.gstRate,
         }))
-        const totals = orderTotals(lines, tenant)
+        // Walk-ins carry their goods home: no delivery charge.
+        const totals = orderTotals(lines, isWalkIn ? { deliveryFeePaise: 0, freeAbovePaise: 0 } : tenant)
 
         const customer = await tx.customer.upsert({
           where: { tenantId_phone: { tenantId: tenant.id, phone: input.customer.phone } },
           update: { name: input.customer.name },
           create: { tenantId: tenant.id, phone: input.customer.phone, name: input.customer.name, language: input.customer.language },
         })
-        const address = await tx.address.create({
-          data: { tenantId: tenant.id, customerId: customer.id, line: input.address.line, landmark: input.address.landmark || null },
-        })
+
+        let addressId: string | null = null
+        if (input.address?.id) {
+          const existing = await tx.address.findFirst({ where: { id: input.address.id, customerId: customer.id } })
+          if (!existing) throw new OrderError("address_not_found")
+          addressId = existing.id
+        } else if (input.address?.line) {
+          addressId = (
+            await tx.address.create({
+              data: { tenantId: tenant.id, customerId: customer.id, line: input.address.line, landmark: input.address.landmark || null },
+            })
+          ).id
+        }
 
         const history = await tx.order.findMany({
           where: { customerId: customer.id, status: "delivered" },
@@ -118,15 +156,15 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
         const decision = !features.callConfirmation
           ? ({ needsCall: false, reason: "calls_off" } as const)
           : decideCall(rules, {
-          channel: input.channel,
-          paymentMethod: input.paymentMethod,
-          totalPaise: totals.totalPaise,
-          customer: {
-            isTrusted: customer.isTrusted,
-            deliveredOrders: history.length,
-            usualOrderPaise: sorted.length ? sorted[Math.floor(sorted.length / 2)] : null,
-          },
-        })
+              channel: input.channel,
+              paymentMethod: input.paymentMethod,
+              totalPaise: totals.totalPaise,
+              customer: {
+                isTrusted: customer.isTrusted,
+                deliveredOrders: history.length,
+                usualOrderPaise: sorted.length ? sorted[Math.floor(sorted.length / 2)] : null,
+              },
+            })
 
         const last = await tx.order.aggregate({ _max: { number: true } })
         const number = (last._max.number ?? 1000) + 1
@@ -137,12 +175,10 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
             tenantId: tenant.id,
             number,
             customerId: customer.id,
-            addressId: address.id,
+            addressId,
             channel: input.channel,
             status,
-            slotId,
-            slotDate,
-            slotLabel: slotRangeLabel(option.slot.startTime, option.slot.endTime),
+            ...slot,
             paymentMethod: input.paymentMethod,
             subtotalPaise: totals.subtotalPaise,
             deliveryFeePaise: totals.deliveryFeePaise,
@@ -174,6 +210,109 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
     }
   }
   throw new OrderError("busy_try_again")
+}
+
+export interface EditOrderInput {
+  items: { productId: string; qty: number }[]
+  slotKey: string
+  address: { id?: string; line?: string; landmark?: string }
+  paymentMethod: "upi_on_delivery" | "cash_on_delivery" | "upi_prepaid" | "credit"
+  note?: string
+  /** Set when the edit is the result of a confirmation call ("Changed"): confirms the order too. */
+  fromCall?: boolean
+}
+
+/**
+ * Changes an order that isn't packed yet: items, slot, address, payment, note.
+ * Products already on the order keep the price agreed when it was placed;
+ * newly added products take today's price. Stock moves by the difference only.
+ */
+export async function editOrder(tenant: Tenant, orderId: string, input: EditOrderInput, byStaffId: string, now = new Date()) {
+  if (input.items.length === 0) throw new OrderError("empty_cart")
+  const db = tenantDb(tenant.id)
+  const features = featuresOf(tenant)
+  if (input.paymentMethod === "credit" && !features.creditAccounts) throw new OrderError("credit_off")
+  const qtyById = mergeItems(input.items)
+  const settings = await db.tenantSettings.findFirst()
+
+  const current = await db.order.findFirst({ where: { id: orderId }, include: { items: true } })
+  if (!current) throw new OrderError("not_found")
+  if (current.channel === "walk_in") throw new OrderError("not_editable")
+  const sameSlot = current.slotId && input.slotKey === slotKey(current.slotDate, current.slotId)
+  // Keeping the slot it already has is always fine; moving it is checked like a staff booking.
+  const slot = sameSlot
+    ? { slotId: current.slotId, slotDate: current.slotDate, slotLabel: current.slotLabel }
+    : await resolveSlot(tenant.id, input.slotKey, now, true)
+
+  return db.$transaction(async (tx) => {
+    const order = await tx.order.findFirst({ where: { id: orderId }, include: { items: true } })
+    if (!order) throw new OrderError("not_found")
+    if (!isEditable(order.status)) throw new OrderError("not_editable")
+
+    const products = await tx.product.findMany({ where: { id: { in: [...qtyById.keys()] }, deletedAt: null } })
+    if (products.length !== qtyById.size) throw new OrderError("product_unavailable")
+    const agreed = new Map(order.items.map((i) => [i.productId, i]))
+    for (const p of products) {
+      // A product hidden from the shop can stay on an order it was already on, but not be added.
+      if (!p.isActive && !agreed.has(p.id)) throw new OrderError("product_unavailable")
+    }
+
+    const lines = products.map((p) => ({
+      productId: p.id,
+      qty: qtyById.get(p.id)!,
+      unitPricePaise: agreed.get(p.id)?.unitPricePaise ?? p.pricePaise,
+      gstRate: agreed.get(p.id)?.gstRate ?? p.gstRate,
+    }))
+
+    if (features.stockTracking) {
+      for (const [productId, delta] of stockDeltas(order.items, lines)) {
+        if (delta > 0) {
+          const r = await tx.product.updateMany({ where: { id: productId, stockQty: { gte: delta } }, data: { stockQty: { decrement: delta } } })
+          if (r.count !== 1) throw new OrderError("out_of_stock")
+        } else {
+          await tx.product.updateMany({ where: { id: productId }, data: { stockQty: { increment: -delta } } })
+        }
+      }
+    }
+
+    let addressId = order.addressId
+    if (input.address.id) {
+      const existing = await tx.address.findFirst({ where: { id: input.address.id, customerId: order.customerId } })
+      if (!existing) throw new OrderError("address_not_found")
+      addressId = existing.id
+    } else if (input.address.line) {
+      addressId = (
+        await tx.address.create({
+          data: { tenantId: tenant.id, customerId: order.customerId, line: input.address.line, landmark: input.address.landmark || null },
+        })
+      ).id
+    }
+
+    const totals = orderTotals(lines, tenant)
+    await tx.orderItem.deleteMany({ where: { orderId } })
+    await tx.orderItem.createMany({ data: lines.map((l) => ({ ...l, orderId, tenantId: tenant.id })) })
+    const r = await tx.order.updateMany({
+      where: { id: orderId, status: order.status },
+      data: {
+        ...slot,
+        addressId,
+        paymentMethod: input.paymentMethod,
+        note: input.note || null,
+        subtotalPaise: totals.subtotalPaise,
+        deliveryFeePaise: totals.deliveryFeePaise,
+        totalPaise: totals.totalPaise,
+      },
+    })
+    if (r.count !== 1) throw new OrderError("not_editable")
+    await tx.orderEvent.create({
+      data: { tenantId: tenant.id, orderId, fromStatus: order.status, toStatus: order.status, byStaffId, note: "edited" },
+    })
+
+    if (input.fromCall && order.status === "to_confirm") {
+      await callInTx(tx, tenant.id, orderId, "changed", byStaffId, undefined, settings?.maxCallAttempts ?? 3)
+    }
+    return { ...totals }
+  })
 }
 
 /**
@@ -220,6 +359,29 @@ export async function setOrderStatus(tenantId: string, orderId: string, to: Orde
   return tenantDb(tenantId).$transaction((tx) => transition(tx, tenantId, orderId, to, byStaffId, note))
 }
 
+/** Logs one call attempt and applies its outcome, inside an open transaction. */
+async function callInTx(
+  tx: TenantTx,
+  tenantId: string,
+  orderId: string,
+  outcome: CallOutcome,
+  byStaffId: string,
+  note: string | undefined,
+  maxAttempts: number
+) {
+  const order = await tx.order.findFirst({ where: { id: orderId } })
+  if (!order) throw new OrderError("not_found")
+  if (order.status !== "to_confirm") throw new OrderError("not_waiting_for_call")
+
+  const attempt = (await tx.confirmationCall.count({ where: { orderId } })) + 1
+  await tx.confirmationCall.create({
+    data: { tenantId, orderId, attempt, outcome, calledById: byStaffId, note: note ?? null },
+  })
+  const result = afterCall(outcome, attempt, maxAttempts)
+  if (result.status) await transition(tx, tenantId, orderId, result.status, byStaffId, `call:${outcome}`)
+  return { attempt, ...result }
+}
+
 /** Records a confirmation call and applies its outcome, together. */
 export async function recordCall(
   tenantId: string,
@@ -230,17 +392,5 @@ export async function recordCall(
 ) {
   const db = tenantDb(tenantId)
   const settings = await db.tenantSettings.findFirst()
-  return db.$transaction(async (tx) => {
-    const order = await tx.order.findFirst({ where: { id: orderId } })
-    if (!order) throw new OrderError("not_found")
-    if (order.status !== "to_confirm") throw new OrderError("not_waiting_for_call")
-
-    const attempt = (await tx.confirmationCall.count({ where: { orderId } })) + 1
-    await tx.confirmationCall.create({
-      data: { tenantId, orderId, attempt, outcome, calledById: byStaffId, note: note ?? null },
-    })
-    const result = afterCall(outcome, attempt, settings?.maxCallAttempts ?? 3)
-    if (result.status) await transition(tx, tenantId, orderId, result.status, byStaffId, `call:${outcome}`)
-    return { attempt, ...result }
-  })
+  return db.$transaction((tx) => callInTx(tx, tenantId, orderId, outcome, byStaffId, note, settings?.maxCallAttempts ?? 3))
 }

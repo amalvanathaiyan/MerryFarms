@@ -48,6 +48,7 @@ export function validateSlotRule(s: Pick<SlotRule, "startTime" | "endTime" | "da
 
 /**
  * Upcoming delivery options a customer can still pick.
+ * With `ignoreCutoff` (staff booking), a slot stays open until it starts.
  * A slot occurrence is open until `start - cutoffHours`; it is marked full once
  * `bookedCounts[key]` reaches maxOrders (full ones are returned so the UI can show them).
  * Stops once `wantOpen` open options are found or `daysAhead` days are scanned.
@@ -56,7 +57,7 @@ export function upcomingSlots(
   slots: SlotRule[],
   bookedCounts: Record<string, number>,
   now: Date,
-  opts: { daysAhead?: number; wantOpen?: number } = {}
+  opts: { daysAhead?: number; wantOpen?: number; ignoreCutoff?: boolean } = {}
 ): SlotOption[] {
   const daysAhead = opts.daysAhead ?? 10
   const wantOpen = opts.wantOpen ?? 4
@@ -70,8 +71,11 @@ export function upcomingSlots(
     const dow = weekday(date)
     for (const s of active) {
       if (!s.daysOfWeek.includes(dow)) continue
-      const cutoffAt = new Date(istInstant(date, s.startTime).getTime() - s.cutoffHours * 3_600_000)
-      if (cutoffAt.getTime() <= now.getTime()) continue
+      const startAt = istInstant(date, s.startTime)
+      const cutoffAt = new Date(startAt.getTime() - s.cutoffHours * 3_600_000)
+      // Staff taking a phone order may book after the online cut-off, but never into the past.
+      const closesAt = opts.ignoreCutoff ? startAt : cutoffAt
+      if (closesAt.getTime() <= now.getTime()) continue
       const key = slotKey(date, s.id)
       const booked = bookedCounts[key] ?? 0
       const full = booked >= s.maxOrders
