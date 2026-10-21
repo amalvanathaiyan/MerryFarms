@@ -1,0 +1,464 @@
+// MerryFarms (Farm4U) — Prisma schema
+// Multi-tenant farm-shop platform. Database: Supabase Postgres (free tier at launch).
+// Tenant isolation: tenantId on every farm-owned model, enforced in code by
+// src/lib/tenant-db.ts, plus RLS enabled with no public policies (prisma/sql/rls.sql).
+// Money is stored in paise (Int). Bilingual text is stored as Ta/En column pairs.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────
+
+enum TenantStatus {
+  trial
+  active
+  suspended
+}
+
+enum Plan {
+  free
+  starter
+  growth
+  pro
+}
+
+enum WhatsAppMode {
+  lite   // farm's own WhatsApp Business app + one-tap prefilled messages
+  cloud  // Meta WhatsApp Cloud API
+}
+
+enum Language {
+  ta
+  en
+}
+
+enum StaffRole {
+  owner
+  order_desk
+  packing
+  delivery
+}
+
+enum OrderStatus {
+  to_confirm
+  confirmed
+  packed
+  out_for_delivery
+  delivered
+  cancelled
+}
+
+enum OrderChannel {
+  whatsapp
+  web
+  phone
+  walk_in
+}
+
+enum PaymentMethod {
+  upi_on_delivery
+  cash_on_delivery
+  upi_prepaid
+  credit
+}
+
+enum CallOutcome {
+  confirmed
+  changed
+  cancelled
+  no_answer
+  wrong_number
+}
+
+enum InvoiceType {
+  tax_invoice
+  bill_of_supply
+  credit_note
+}
+
+enum LedgerType {
+  charge
+  payment
+  adjustment
+}
+
+enum PaymentStatus {
+  received
+  pending
+  failed
+  refunded
+}
+
+// ─────────────────────────────────────────────────
+// TENANT & STAFF
+// ─────────────────────────────────────────────────
+
+model Tenant {
+  id              String       @id @default(uuid())
+  slug            String       @unique // subdomain, e.g. "merryfarms"
+  nameTa          String
+  nameEn          String
+  status          TenantStatus @default(trial)
+  plan            Plan         @default(free)
+  trialEndsAt     DateTime?
+  defaultLanguage Language     @default(ta)
+  phone           String // farm contact number shown to customers
+  upiId           String? // payments go straight to the farm
+  gstin           String?
+  fssaiNo         String?
+  invoicePrefix   String       @default("INV")
+
+  // WhatsApp
+  whatsappMode          WhatsAppMode @default(lite)
+  whatsappNumber        String? // number customers chat with
+  whatsappPhoneNumberId String? // Cloud API only
+  whatsappAccessToken   String? // Cloud API only, encrypted at rest
+  whatsappWabaId        String? // Cloud API only
+
+  // Delivery charges
+  deliveryFeePaise Int @default(3000)
+  freeAbovePaise   Int @default(50000) // 0 = never free
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  settings   TenantSettings?
+  staff      StaffMember[]
+  categories Category[]
+  products   Product[]
+  slots      DeliverySlot[]
+  customers  Customer[]
+  orders     Order[]
+
+  @@map("tenants")
+}
+
+/// Which orders need a confirmation call. Each farm sets its own rules.
+model TenantSettings {
+  id                       String  @id @default(uuid())
+  tenantId                 String  @unique
+  callWhatsAppOrders       Boolean @default(true)
+  callWebOrdersFromNew     Boolean @default(true)
+  newCustomerOrderCount    Int     @default(3) // fewer delivered orders than this = "new"
+  callAboveTotalPaise      Int     @default(150000)
+  callAboveUsualMultiple   Int     @default(3)
+  skipCallForTrusted       Boolean @default(true)
+  skipCallForPrepaid       Boolean @default(true)
+  callRetryMinutes         Int     @default(30)
+  maxCallAttempts          Int     @default(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_settings")
+}
+
+model StaffMember {
+  id         String      @id @default(uuid())
+  tenantId   String
+  authUserId String // Supabase auth.users id
+  name       String
+  phone      String?
+  email      String?
+  roles      StaffRole[]
+  language   Language    @default(ta)
+  isActive   Boolean     @default(true)
+  createdAt  DateTime    @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, authUserId])
+  @@index([authUserId])
+  @@map("staff_members")
+}
+
+/// Platform owners (Farm4U). Not tied to a tenant.
+model PlatformAdmin {
+  id         String   @id @default(uuid())
+  authUserId String   @unique
+  name       String
+  createdAt  DateTime @default(now())
+
+  @@map("platform_admins")
+}
+
+// ─────────────────────────────────────────────────
+// CATALOGUE & DELIVERY
+// ─────────────────────────────────────────────────
+
+model Category {
+  id             String  @id @default(uuid())
+  tenantId       String
+  nameTa         String
+  nameEn         String
+  sortOrder      Int     @default(0)
+  showOnWhatsApp Boolean @default(true)
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@index([tenantId])
+  @@map("categories")
+}
+
+model Product {
+  id         String    @id @default(uuid())
+  tenantId   String
+  categoryId String
+  nameTa     String
+  nameEn     String
+  packTa     String // e.g. "30 முட்டை"
+  packEn     String // e.g. "Tray of 30"
+  noteTa     String?
+  noteEn     String?
+  pricePaise Int // GST-inclusive selling price
+  stockQty   Int       @default(0)
+  stockUnit  String    @default("packs")
+  hsn        String?
+  gstRate    Int       @default(0) // percent; 0 = exempt
+  imageUrl   String?
+  onWeb      Boolean   @default(true)
+  onWhatsApp Boolean   @default(true)
+  isActive   Boolean   @default(true)
+  sortOrder  Int       @default(0)
+  deletedAt  DateTime? // soft delete keeps old orders readable
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category   Category    @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
+
+  @@index([tenantId, categoryId])
+  @@map("products")
+}
+
+model DeliverySlot {
+  id          String  @id @default(uuid())
+  tenantId    String
+  nameTa      String
+  nameEn      String
+  startTime   String // "07:00", farm local time (IST)
+  endTime     String // "09:00"
+  daysOfWeek  Int[] // 0 = Sunday … 6 = Saturday
+  cutoffHours Int     @default(12)
+  maxOrders   Int     @default(20)
+  isActive    Boolean @default(true)
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@index([tenantId])
+  @@map("delivery_slots")
+}
+
+// ─────────────────────────────────────────────────
+// CUSTOMERS
+// ─────────────────────────────────────────────────
+
+model Customer {
+  id               String    @id @default(uuid())
+  tenantId         String
+  phone            String // E.164, e.g. +919000010001
+  name             String
+  language         Language  @default(ta)
+  isTrusted        Boolean   @default(false) // owner-marked; may skip the call
+  creditLimitPaise Int       @default(0) // 0 = no credit (khata)
+  marketingOptIn   Boolean   @default(false)
+  optInAt          DateTime?
+  notes            String?
+  createdAt        DateTime  @default(now())
+
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  addresses Address[]
+  orders    Order[]
+  ledger    LedgerEntry[]
+  payments  Payment[]
+
+  @@unique([tenantId, phone])
+  @@map("customers")
+}
+
+model Address {
+  id         String   @id @default(uuid())
+  tenantId   String
+  customerId String
+  line       String
+  landmark   String?
+  pincode    String?
+  lat        Float?
+  lng        Float?
+  isDefault  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orders   Order[]
+
+  @@index([tenantId, customerId])
+  @@map("addresses")
+}
+
+// ─────────────────────────────────────────────────
+// ORDERS
+// ─────────────────────────────────────────────────
+
+model Order {
+  id               String        @id @default(uuid())
+  tenantId         String
+  number           Int // per-tenant running number, shown as MF-1047
+  customerId       String
+  addressId        String?
+  channel          OrderChannel
+  status           OrderStatus   @default(to_confirm)
+  slotId           String?
+  slotDate         String // "2026-10-21", IST date of delivery
+  slotLabel        String // copied at order time, e.g. "7–9 AM"
+  paymentMethod    PaymentMethod
+  subtotalPaise    Int
+  deliveryFeePaise Int
+  totalPaise       Int
+  needsCall        Boolean       @default(true)
+  cancelReason     String?
+  note             String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer           @relation(fields: [customerId], references: [id])
+  address  Address?           @relation(fields: [addressId], references: [id])
+  slot     DeliverySlot?      @relation(fields: [slotId], references: [id])
+  items    OrderItem[]
+  events   OrderEvent[]
+  calls    ConfirmationCall[]
+  invoices Invoice[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, status])
+  @@index([tenantId, slotDate, slotId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String @id @default(uuid())
+  tenantId       String
+  orderId        String
+  productId      String
+  qty            Int
+  unitPricePaise Int // copied at order time
+  gstRate        Int // copied at order time
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([tenantId, orderId])
+  @@map("order_items")
+}
+
+/// Audit trail of every status change on an order.
+model OrderEvent {
+  id         String       @id @default(uuid())
+  tenantId   String
+  orderId    String
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  byStaffId  String?
+  note       String?
+  at         DateTime     @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, orderId])
+  @@map("order_events")
+}
+
+model ConfirmationCall {
+  id          String      @id @default(uuid())
+  tenantId    String
+  orderId     String
+  attempt     Int
+  outcome     CallOutcome
+  calledById  String?
+  note        String?
+  durationSec Int?
+  at          DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, orderId])
+  @@map("confirmation_calls")
+}
+
+// ─────────────────────────────────────────────────
+// BILLING
+// ─────────────────────────────────────────────────
+
+model Invoice {
+  id         String      @id @default(uuid())
+  tenantId   String
+  orderId    String?
+  type       InvoiceType
+  number     String // e.g. MF/2026-27/0001
+  fy         String // "2026-27"
+  seq        Int
+  totalPaise Int
+  taxPaise   Int         @default(0)
+  pdfUrl     String?
+  issuedAt   DateTime    @default(now())
+
+  order Order? @relation(fields: [orderId], references: [id])
+
+  @@unique([tenantId, number])
+  @@index([tenantId, fy, seq])
+  @@map("invoices")
+}
+
+/// Next invoice sequence per tenant per financial year.
+model InvoiceCounter {
+  tenantId String
+  fy       String
+  nextSeq  Int    @default(1)
+
+  @@id([tenantId, fy])
+  @@map("invoice_counters")
+}
+
+/// Khata: a customer's balance is the sum of their entries (charges positive, payments negative).
+model LedgerEntry {
+  id          String     @id @default(uuid())
+  tenantId    String
+  customerId  String
+  type        LedgerType
+  amountPaise Int
+  refType     String? // "order" | "payment" | "invoice"
+  refId       String?
+  note        String?
+  at          DateTime   @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId, customerId])
+  @@map("ledger_entries")
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  tenantId      String
+  customerId    String
+  method        PaymentMethod
+  amountPaise   Int
+  status        PaymentStatus @default(received)
+  collectedById String?
+  reference     String? // UPI reference or Razorpay id
+  at            DateTime      @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId, customerId])
+  @@map("payments")
+}

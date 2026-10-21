@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────
+   Farm4U base theme — field green and egg yolk.
+   Tenants can later override --primary from their branding.
+   Large type by default: many customers are older and read Tamil.
+───────────────────────────────────────────────── */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-yolk: hsl(var(--yolk));
+  --color-yolk-foreground: hsl(var(--yolk-foreground));
+
+  --font-sans: var(--font-tamil), "Noto Sans", system-ui, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  :root {
+    --background: 96 18% 92%;
+    --foreground: 140 17% 13%;
+    --card: 0 0% 100%;
+    --card-foreground: 140 17% 13%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 140 17% 13%;
+    --primary: 137 40% 30%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 96 20% 96%;
+    --secondary-foreground: 140 17% 13%;
+    --muted: 96 15% 94%;
+    --muted-foreground: 140 8% 38%;
+    --accent: 130 30% 89%;
+    --accent-foreground: 140 17% 13%;
+    --destructive: 9 61% 44%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 100 13% 85%;
+    --input: 100 13% 80%;
+    --ring: 137 40% 30%;
+    --yolk: 41 88% 91%;
+    --yolk-foreground: 40 100% 18%;
+    --radius: 0.75rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: 140 14% 7%;
+      --foreground: 130 15% 91%;
+      --card: 140 13% 11%;
+      --card-foreground: 130 15% 91%;
+      --popover: 140 13% 11%;
+      --popover-foreground: 130 15% 91%;
+      --primary: 137 38% 60%;
+      --primary-foreground: 140 40% 8%;
+      --secondary: 140 12% 15%;
+      --secondary-foreground: 130 15% 91%;
+      --muted: 140 12% 15%;
+      --muted-foreground: 135 8% 62%;
+      --accent: 140 20% 18%;
+      --accent-foreground: 130 15% 91%;
+      --destructive: 10 70% 66%;
+      --destructive-foreground: 140 40% 8%;
+      --border: 135 12% 20%;
+      --input: 135 12% 26%;
+      --ring: 137 38% 60%;
+      --yolk: 40 45% 16%;
+      --yolk-foreground: 41 88% 91%;
+      color-scheme: dark;
+    }
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    font-size: 16px;
+    /* Tamil vowel signs need extra line height */
+    line-height: 1.6;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px; /* stops iOS zooming into inputs */
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+}
