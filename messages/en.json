@@ -11,7 +11,8 @@
     "signOut": "Sign out",
     "today": "Today",
     "tomorrow": "Tomorrow",
-    "saved": "Saved"
+    "saved": "Saved",
+    "settings": "Settings"
   },
   "shop": {
     "hello": "Hello!",
@@ -58,19 +59,20 @@
       "today": "Today",
       "orders": "Orders",
       "catalogue": "Products",
-      "slots": "Slots"
+      "slots": "Slots",
+      "customers": "Customers"
     },
     "today": {
       "toConfirm": "To confirm by call",
       "open": "Open orders",
       "sales": "Sales today",
-      "customers": "Customers",
       "packing": "To pack",
       "nothingToPack": "Nothing to pack yet.",
       "lowStock": "{name}: only {count} {unit} left",
       "runs": "Delivery runs",
       "noRuns": "No deliveries planned.",
-      "stops": "{count, plural, one {# stop} other {# stops}}"
+      "stops": "{count, plural, one {# stop} other {# stops}}",
+      "dues": "Dues to collect"
     },
     "orders": {
       "tab_to_confirm": "To call",
@@ -104,7 +106,12 @@
       "channel_web": "Web shop",
       "channel_whatsapp": "WhatsApp",
       "channel_phone": "Phone",
-      "channel_walk_in": "Walk-in"
+      "channel_walk_in": "Walk-in",
+      "howPaid": "How was it paid?",
+      "paid_cash": "Cash",
+      "paid_upi": "UPI",
+      "paid_credit": "On account",
+      "invoice": "Invoice"
     },
     "catalogue": {
       "title": "Products & prices",
@@ -152,6 +159,88 @@
       "summary": "{days} · order {hours} h before · max {max}",
       "everyDay": "Every day",
       "none": "No slots yet. Customers can't check out until you add one."
+    },
+    "invoice": {
+      "sendWhatsApp": "Send invoice on WhatsApp",
+      "print": "Print",
+      "customer": "Customer"
+    },
+    "customers": {
+      "title": "Customers",
+      "withDues": "With dues",
+      "search": "Search name or number",
+      "none": "No customers found.",
+      "trusted": "Trusted",
+      "new": "New",
+      "khata": "Khata",
+      "advance": "Advance",
+      "orders": "{count, plural, one {# order} other {# orders}}",
+      "balance": "Balance",
+      "overLimit": "Over the credit limit of {limit}. The owner should decide on new credit orders.",
+      "sendDues": "Send dues reminder on WhatsApp",
+      "statement": "Statement",
+      "noEntries": "No account entries yet.",
+      "date": "Date",
+      "entry": "Entry",
+      "amount": "Amount",
+      "type_charge": "Order",
+      "type_payment": "Payment received",
+      "type_adjustment": "Adjustment",
+      "recentOrders": "Recent orders",
+      "noOrders": "No orders yet.",
+      "recordPayment": "Record a payment",
+      "paymentSaved": "Saved",
+      "amountRupees": "Amount (₹)",
+      "methodUpi": "UPI",
+      "methodCash": "Cash",
+      "reference": "UPI reference (optional)",
+      "savePayment": "Save payment",
+      "cancel": "Cancel",
+      "profile": "Details",
+      "name": "Name",
+      "language": "Message language",
+      "trustedLabel": "Trusted customer",
+      "trustedHint": "Small, usual orders skip the confirmation call. Large orders are still called.",
+      "creditLimit": "Credit limit (₹)",
+      "creditLimitHint": "0 means no buying on account.",
+      "optIn": "Wants offer messages",
+      "optInHint": "Turn on only if the customer agreed.",
+      "notes": "Notes",
+      "notesHint": "e.g. Call son's number after 6 PM",
+      "save": "Save",
+      "saved": "Saved"
+    },
+    "settings": {
+      "title": "Farm settings",
+      "farm": "Farm",
+      "nameTa": "Farm name (Tamil)",
+      "nameEn": "Farm name (English)",
+      "phone": "Contact number",
+      "whatsapp": "WhatsApp Business number",
+      "whatsappHint": "Leave empty to use the contact number.",
+      "billing": "Billing & payments",
+      "upiId": "UPI ID",
+      "upiHint": "Customers pay straight into your account. No fees.",
+      "gstin": "GSTIN (if registered)",
+      "gstinHint": "Leave empty if not registered; invoices become a bill of supply.",
+      "fssai": "FSSAI registration number",
+      "fssaiHint": "14 digits. Printed on invoices.",
+      "delivery": "Delivery charge",
+      "deliveryFee": "Per order (₹)",
+      "freeAbove": "Free above (₹)",
+      "freeAboveHint": "0 means always charged.",
+      "save": "Save",
+      "saved": "Saved"
+    },
+    "units": {
+      "packs": "packs",
+      "trays": "trays",
+      "kg": "kg",
+      "birds": "birds",
+      "litres": "litres",
+      "pieces": "pieces",
+      "boxes": "boxes",
+      "jars": "jars"
     }
   },
   "login": {
@@ -160,7 +249,9 @@
     "password": "Password",
     "signIn": "Sign in",
     "error": "Wrong email or password.",
-    "notStaff": "This account isn't on this farm's staff list."
+    "notStaff": "This account isn't on this farm's staff list.",
+    "demoTitle": "Demo sign-in (this computer only)",
+    "demoHint": "Sign in as a sample staff member to try the app. This doesn't exist on the real shop."
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -188,6 +279,12 @@
     "slot_bad_day": "Some details are missing or wrong. Check and try again.",
     "slot_bad_cutoff": "Cut-off must be between 0 and 168 hours.",
     "slot_bad_capacity": "Max orders must be at least 1.",
-    "slot_not_found": "Slot not found."
+    "slot_not_found": "Slot not found.",
+    "use_deliver": "To deliver, choose how the order was paid.",
+    "bad_amount": "Enter a valid amount.",
+    "customer_not_found": "Customer not found.",
+    "upi_invalid": "That UPI ID doesn't look right (e.g. name@okaxis).",
+    "gstin_invalid": "That GSTIN doesn't look right (15 characters).",
+    "fssai_invalid": "The FSSAI number must be 14 digits."
   }
 }

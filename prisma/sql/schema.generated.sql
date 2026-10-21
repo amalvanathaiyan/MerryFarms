@@ -216,6 +216,7 @@ CREATE TABLE "orders" (
     "needsCall" BOOLEAN NOT NULL DEFAULT true,
     "cancelReason" TEXT,
     "note" TEXT,
+    "deliveredAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -269,12 +270,15 @@ CREATE TABLE "invoices" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
     "orderId" TEXT,
+    "customerId" TEXT NOT NULL,
     "type" "InvoiceType" NOT NULL,
     "number" TEXT NOT NULL,
     "fy" TEXT NOT NULL,
     "seq" INTEGER NOT NULL,
     "totalPaise" INTEGER NOT NULL,
     "taxPaise" INTEGER NOT NULL DEFAULT 0,
+    "snapshot" JSONB NOT NULL,
+    "publicToken" TEXT NOT NULL,
     "pdfUrl" TEXT,
     "issuedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -310,11 +314,13 @@ CREATE TABLE "payments" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
     "customerId" TEXT NOT NULL,
+    "orderId" TEXT,
     "method" "PaymentMethod" NOT NULL,
     "amountPaise" INTEGER NOT NULL,
     "status" "PaymentStatus" NOT NULL DEFAULT 'received',
     "collectedById" TEXT,
     "reference" TEXT,
+    "note" TEXT,
     "at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "payments_pkey" PRIMARY KEY ("id")
@@ -367,6 +373,12 @@ CREATE INDEX "order_events_tenantId_orderId_idx" ON "order_events"("tenantId", "
 
 -- CreateIndex
 CREATE INDEX "confirmation_calls_tenantId_orderId_idx" ON "confirmation_calls"("tenantId", "orderId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "invoices_publicToken_key" ON "invoices"("publicToken");
+
+-- CreateIndex
+CREATE INDEX "invoices_tenantId_customerId_idx" ON "invoices"("tenantId", "customerId");
 
 -- CreateIndex
 CREATE INDEX "invoices_tenantId_fy_seq_idx" ON "invoices"("tenantId", "fy", "seq");
@@ -432,8 +444,14 @@ ALTER TABLE "confirmation_calls" ADD CONSTRAINT "confirmation_calls_orderId_fkey
 ALTER TABLE "invoices" ADD CONSTRAINT "invoices_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "orders"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "invoices" ADD CONSTRAINT "invoices_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "ledger_entries" ADD CONSTRAINT "ledger_entries_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "payments" ADD CONSTRAINT "payments_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "payments" ADD CONSTRAINT "payments_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "orders"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 

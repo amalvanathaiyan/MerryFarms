@@ -7,7 +7,8 @@ import { OrderError, recordCall, setOrderStatus } from "@/server/orders"
 
 const statusSchema = z.object({
   orderId: z.string().min(1),
-  to: z.enum(["confirmed", "packed", "out_for_delivery", "delivered", "cancelled"]),
+  // Delivery is separate (actions/billing.ts) because it issues the invoice and records payment.
+  to: z.enum(["confirmed", "packed", "out_for_delivery", "cancelled"]),
   note: z.string().trim().max(200).optional(),
 })
 

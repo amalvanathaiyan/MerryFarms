@@ -2,9 +2,11 @@
 
 import { useState, useTransition } from "react"
 import { useTranslations } from "next-intl"
-import { MessageCircle, Phone } from "lucide-react"
+import Link from "next/link"
+import { FileText, MessageCircle, Phone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { changeOrderStatus, logCall } from "@/app/actions/farm-orders"
+import { deliver } from "@/app/actions/billing"
 import { nextStep, type OrderStatus } from "@/domain/orders"
 
 const OUTCOMES = ["confirmed", "changed", "cancelled", "no_answer", "wrong_number"] as const
@@ -15,12 +17,14 @@ export function OrderActions({
   phone,
   callScript,
   waLink,
+  invoiceId,
 }: {
   orderId: string
   status: OrderStatus
   phone: string
   callScript: string
   waLink: string | null
+  invoiceId: string | null
 }) {
   const t = useTranslations("farm.orders")
   const te = useTranslations("errors")
@@ -77,8 +81,21 @@ export function OrderActions({
         </>
       )}
 
+      {next === "delivered" && (
+        <div className="flex flex-col gap-2 rounded-lg border border-dashed p-2">
+          <span className="text-sm font-semibold">{t("howPaid")}</span>
+          <div className="grid grid-cols-3 gap-2">
+            {(["cash", "upi", "credit"] as const).map((p) => (
+              <Button key={p} variant={p === "credit" ? "outline" : "default"} disabled={pending} onClick={() => run(() => deliver({ orderId, payment: p }))}>
+                {t(`paid_${p}`)}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-2">
-        {next && (
+        {next && next !== "delivered" && (
           <Button className="flex-1" disabled={pending} onClick={() => run(() => changeOrderStatus({ orderId, to: next }))}>
             {t(`next_${next}`)}
           </Button>
@@ -88,6 +105,13 @@ export function OrderActions({
             <a href={waLink} target="_blank" rel="noreferrer">
               <MessageCircle /> {t("whatsapp")}
             </a>
+          </Button>
+        )}
+        {invoiceId && (
+          <Button asChild variant="outline" className="flex-1">
+            <Link href={`/farm/invoices/${invoiceId}`}>
+              <FileText /> {t("invoice")}
+            </Link>
           </Button>
         )}
         {canCancel && status !== "to_confirm" && (

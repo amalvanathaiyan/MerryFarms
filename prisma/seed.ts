@@ -3,7 +3,7 @@
  * Safe to re-run: it only creates what is missing.
  *
  *   npm run db:seed            catalogue and slots only (use this for the real shop)
- *   npm run db:seed -- --demo  also adds 3 clearly marked sample customers and orders
+ *   npm run db:seed -- --demo  also adds demo staff (for demo sign-in), 5 sample customers and orders
  */
 import { config } from "dotenv"
 config({ path: ".env.local", quiet: true })
@@ -93,39 +93,74 @@ async function main() {
   console.log(`Delivery slots: ${await prisma.deliverySlot.count({ where: { tenantId: tenant.id } })}`)
 
   if (demo) {
-    const samples = [
-      { phone: "+919000010001", name: "மாதிரி வாடிக்கையாளர் 1 (Sample)" },
-      { phone: "+919000010002", name: "மாதிரி வாடிக்கையாளர் 2 (Sample)" },
-      { phone: "+919000010003", name: "Sample customer 3" },
+    // Demo farm details so invoices and UPI links have something to show.
+    await prisma.tenant.update({ where: { id: tenant.id }, data: { upiId: tenant.upiId ?? "merryfarms@okaxis", fssaiNo: tenant.fssaiNo ?? "12345678901234" } })
+
+    // Demo staff: signed in with the demo buttons on /login (npm run demo only).
+    const staff = [
+      { authUserId: "demo-owner", name: "உரிமையாளர் · Owner (demo)", roles: ["owner"] as const },
+      { authUserId: "demo-desk", name: "ஆர்டர் மேசை · Order desk (demo)", roles: ["order_desk", "packing"] as const },
+      { authUserId: "demo-delivery", name: "டெலிவரி · Delivery (demo)", roles: ["delivery"] as const },
+    ]
+    for (const st of staff) {
+      await prisma.staffMember.upsert({
+        where: { tenantId_authUserId: { tenantId: tenant.id, authUserId: st.authUserId } },
+        update: {},
+        create: { tenantId: tenant.id, authUserId: st.authUserId, name: st.name, roles: [...st.roles] },
+      })
+    }
+
+    type Sample = {
+      phone: string
+      name: string
+      line: string
+      landmark: string | null
+      status: "to_confirm" | "confirmed" | "out_for_delivery"
+      channel: "whatsapp" | "web"
+      items: [number, number][] // [product index, qty]
+    }
+    const samples: Sample[] = [
+      { phone: "+919000010001", name: "பிரியா (Sample)", line: "12, ஏரிக்கரை சாலை", landmark: "கோவில் அருகில்", status: "to_confirm", channel: "whatsapp", items: [[1, 2]] },
+      { phone: "+919000010002", name: "கார்த்திக் (Sample)", line: "4/2, கோவில் தெரு", landmark: "பால் பூத் எதிரில்", status: "to_confirm", channel: "web", items: [[0, 1], [2, 1]] },
+      { phone: "+919000010003", name: "Meena (Sample)", line: "7, Gandhi Nagar 2nd Cross", landmark: null, status: "confirmed", channel: "web", items: [[3, 1]] },
+      { phone: "+919000010004", name: "அருண் (Sample)", line: "21, சந்தை சாலை", landmark: null, status: "out_for_delivery", channel: "whatsapp", items: [[1, 1]] },
+      { phone: "+919000010005", name: "Fathima (Sample)", line: "9, Station Road", landmark: "Near bus stand", status: "out_for_delivery", channel: "web", items: [[0, 2]] },
     ]
     const products = await prisma.product.findMany({ where: { tenantId: tenant.id }, orderBy: { sortOrder: "asc" } })
     const slot = await prisma.deliverySlot.findFirst({ where: { tenantId: tenant.id }, orderBy: { startTime: "asc" } })
     const tomorrow = new Date(Date.now() + 330 * 60_000 + 86_400_000).toISOString().slice(0, 10)
+    const today = new Date(Date.now() + 330 * 60_000).toISOString().slice(0, 10)
     let number = ((await prisma.order.aggregate({ where: { tenantId: tenant.id }, _max: { number: true } }))._max.number ?? 1000) + 1
-    for (const [i, s] of samples.entries()) {
+    for (const s of samples) {
       const customer = await prisma.customer.upsert({
         where: { tenantId_phone: { tenantId: tenant.id, phone: s.phone } },
         update: {},
-        create: { tenantId: tenant.id, phone: s.phone, name: s.name, notes: "Demo data — delete before going live" },
+        create: { tenantId: tenant.id, phone: s.phone, name: s.name, language: /[a-z]/i.test(s.name[0]) ? "en" : "ta", notes: "Demo data — delete before going live" },
       })
-      const p = products[i % products.length]
+      const address = await prisma.address.create({ data: { tenantId: tenant.id, customerId: customer.id, line: s.line, landmark: s.landmark } })
+      const lines = s.items.map(([i, qty]) => ({ p: products[i], qty }))
+      const subtotal = lines.reduce((a, l) => a + l.p.pricePaise * l.qty, 0)
+      const fee = subtotal >= tenant.freeAbovePaise ? 0 : tenant.deliveryFeePaise
+      const onTheWay = s.status === "out_for_delivery"
       await prisma.order.create({
         data: {
           tenantId: tenant.id,
           number: number++,
           customerId: customer.id,
-          channel: i === 0 ? "whatsapp" : "web",
-          status: i === 2 ? "confirmed" : "to_confirm",
+          addressId: address.id,
+          channel: s.channel,
+          status: s.status,
+          needsCall: s.status === "to_confirm",
           slotId: slot?.id,
-          slotDate: tomorrow,
+          slotDate: onTheWay ? today : tomorrow,
           slotLabel: slot ? slotRangeLabel(slot.startTime, slot.endTime) : "7–9 AM",
           paymentMethod: "upi_on_delivery",
-          subtotalPaise: p.pricePaise,
-          deliveryFeePaise: p.pricePaise >= 50000 ? 0 : 3000,
-          totalPaise: p.pricePaise + (p.pricePaise >= 50000 ? 0 : 3000),
+          subtotalPaise: subtotal,
+          deliveryFeePaise: fee,
+          totalPaise: subtotal + fee,
           note: "Demo order",
-          items: { create: { tenantId: tenant.id, productId: p.id, qty: 1, unitPricePaise: p.pricePaise, gstRate: 0 } },
-          events: { create: { tenantId: tenant.id, toStatus: i === 2 ? "confirmed" : "to_confirm", note: "demo" } },
+          items: { create: lines.map((l) => ({ tenantId: tenant.id, productId: l.p.id, qty: l.qty, unitPricePaise: l.p.pricePaise, gstRate: l.p.gstRate })) },
+          events: { create: { tenantId: tenant.id, toStatus: s.status, note: "demo" } },
         },
       })
     }

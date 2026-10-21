@@ -3,12 +3,13 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { CalendarClock, ClipboardList, Package, Sun } from "lucide-react"
+import { CalendarClock, ClipboardList, Package, Sun, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const ITEMS = [
   { href: "/farm", key: "today", icon: Sun },
   { href: "/farm/orders", key: "orders", icon: ClipboardList },
+  { href: "/farm/customers", key: "customers", icon: Users },
   { href: "/farm/catalogue", key: "catalogue", icon: Package },
   { href: "/farm/slots", key: "slots", icon: CalendarClock },
 ] as const
@@ -17,7 +18,7 @@ export function FarmNav({ toConfirm }: { toConfirm: number }) {
   const t = useTranslations("farm.nav")
   const path = usePathname()
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-10 mx-auto grid max-w-2xl grid-cols-4 border-t bg-card pb-[env(safe-area-inset-bottom,0px)]">
+    <nav className="fixed inset-x-0 bottom-0 z-10 mx-auto grid max-w-2xl grid-cols-5 border-t bg-card pb-[env(safe-area-inset-bottom,0px)]">
       {ITEMS.map(({ href, key, icon: Icon }) => {
         const active = href === "/farm" ? path === "/farm" : path.startsWith(href)
         return (
