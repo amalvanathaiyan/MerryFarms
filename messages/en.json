@@ -231,6 +231,16 @@
       "freeAboveHint": "0 means always charged.",
       "save": "Save",
       "saved": "Saved"
+    },
+    "units": {
+      "packs": "packs",
+      "trays": "trays",
+      "kg": "kg",
+      "birds": "birds",
+      "litres": "litres",
+      "pieces": "pieces",
+      "boxes": "boxes",
+      "jars": "jars"
     }
   },
   "login": {
@@ -239,7 +249,9 @@
     "password": "Password",
     "signIn": "Sign in",
     "error": "Wrong email or password.",
-    "notStaff": "This account isn't on this farm's staff list."
+    "notStaff": "This account isn't on this farm's staff list.",
+    "demoTitle": "Demo sign-in (this computer only)",
+    "demoHint": "Sign in as a sample staff member to try the app. This doesn't exist on the real shop."
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",

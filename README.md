@@ -22,6 +22,20 @@ Not yet: credit notes for returns, PDF files, automated WhatsApp (Cloud API), pl
 
 Next.js 16, React 19, TypeScript, Tailwind 4 + shadcn/ui, next-intl (`ta`, `en`), Prisma 7 on Supabase Postgres (free tier at launch), Supabase Auth for staff, Vitest + PGlite for tests.
 
+## Try it in one command
+
+```bash
+npm install
+npm run demo
+```
+
+This starts a fresh local database, adds Merry Farms with demo staff, customers and orders, and starts the app.
+
+- Customer shop: http://localhost:3000
+- Farm app: http://localhost:3000/login → pick a **demo sign-in** (Owner, Order desk or Delivery)
+
+Demo sign-in works only in development with `DEMO_LOGIN=1` (set by `npm run demo`); a production build ignores it. The demo data is wiped each time you run it.
+
 ## Run it locally (no Supabase needed)
 
 ```bash

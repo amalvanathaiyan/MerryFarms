@@ -34,6 +34,8 @@ export function CatalogueManager({ categories, products, canEdit }: { categories
   const t = useTranslations("farm.catalogue")
   const tc = useTranslations("common")
   const te = useTranslations("errors")
+  const tu = useTranslations("farm.units")
+  const unitName = (u: string) => (tu.has(u) ? tu(u) : u)
   const locale = useLocale()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -122,7 +124,9 @@ export function CatalogueManager({ categories, products, canEdit }: { categories
           <Labelled label={t("unit")}>
             <select className="h-9 rounded-md border border-input bg-transparent px-2" value={draft.stockUnit} onChange={(e) => set("stockUnit", e.target.value)}>
               {UNITS.map((u) => (
-                <option key={u}>{u}</option>
+                <option key={u} value={u}>
+                  {unitName(u)}
+                </option>
               ))}
             </select>
           </Labelled>
@@ -227,7 +231,7 @@ export function CatalogueManager({ categories, products, canEdit }: { categories
                     <div className="min-w-0">
                       <div className="font-semibold">{pick(locale, p.nameTa, p.nameEn)}</div>
                       <div className={cn("text-sm text-muted-foreground", p.stockQty <= 5 && "font-semibold text-destructive")}>
-                        {pick(locale, p.packTa, p.packEn)} · {t("left", { count: p.stockQty, unit: p.stockUnit })}
+                        {pick(locale, p.packTa, p.packEn)} · {t("left", { count: p.stockQty, unit: unitName(p.stockUnit) })}
                       </div>
                     </div>
                     <label className="flex shrink-0 flex-col items-center gap-0.5 text-xs text-muted-foreground">

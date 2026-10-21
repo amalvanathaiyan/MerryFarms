@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import { isLocale } from "./i18n/routing"
+import { DEMO_AUTH_PREFIX, DEMO_COOKIE, isDemoLoginEnabled } from "./lib/demo-auth"
 
 /**
  * Multi-tenant proxy (Next.js 16 — renamed from middleware)
@@ -10,7 +11,8 @@ import { isLocale } from "./i18n/routing"
  *      merryfarms.localhost   → "merryfarms"   (local dev)
  *      anything else          → DEFAULT_TENANT_SLUG (single-farm launch on a free host)
  * 2. Passes the language on as x-locale: NEXT_LOCALE cookie, else Tamil.
- * 3. On farm-app pages, refreshes the Supabase session and sends signed-out users to /login.
+ * 3. On farm-app pages, refreshes the Supabase session and sends signed-out users to /login
+ *    (in local demo mode, a demo sign-in cookie is accepted instead — see lib/demo-auth.ts).
  */
 
 function tenantSlugFromHost(host: string): string | null {
@@ -36,6 +38,10 @@ export async function proxy(request: NextRequest) {
   let response = next()
 
   const isFarmApp = pathname.startsWith("/farm")
+  // Demo mode (local only): the page itself checks the demo staff member belongs to this farm.
+  if (isFarmApp && isDemoLoginEnabled() && request.cookies.get(DEMO_COOKIE)?.value.startsWith(DEMO_AUTH_PREFIX)) {
+    return response
+  }
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!isFarmApp || !supabaseUrl || !supabaseKey) return response
