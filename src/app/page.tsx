@@ -6,6 +6,7 @@ import { slotRangeLabel } from "@/domain/slots"
 import { istDate } from "@/domain/ist"
 import { openSlotOptions } from "@/server/orders"
 import { Shop, type ShopData } from "@/components/shop/shop"
+import { featuresOf } from "@/lib/features"
 
 export const dynamic = "force-dynamic"
 
@@ -34,6 +35,7 @@ export default async function ShopPage() {
   ])
 
   const labels = { today: t("today"), tomorrow: t("tomorrow") }
+  const features = featuresOf(tenant)
   const firstOpen = options.find((o) => !o.full)
 
   const data: ShopData = {
@@ -45,6 +47,8 @@ export default async function ShopPage() {
       deliveryFeePaise: tenant.deliveryFeePaise,
       freeAbovePaise: tenant.freeAbovePaise,
       paused: tenant.status === "suspended",
+      webOrdering: features.webShop,
+      tracksStock: features.stockTracking,
     },
     categories: categories
       .filter((c) => products.some((p) => p.categoryId === c.id))

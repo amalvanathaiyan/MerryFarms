@@ -6,6 +6,7 @@ import { formatRupees } from "@/domain/money"
 import { istDate, istInstant } from "@/domain/ist"
 import { cn } from "@/lib/utils"
 import { allBalances } from "@/server/billing"
+import { featuresOf } from "@/lib/features"
 
 export default async function TodayPage() {
   const { db, tenant } = await requireStaff()
@@ -15,6 +16,7 @@ export default async function TodayPage() {
   const tu = await getTranslations("farm.units")
   const unitName = (u: string) => (tu.has(u) ? tu(u) : u)
   const today = istDate(new Date())
+  const features = featuresOf(tenant)
 
   const [toConfirm, open, todays, balances, toPack, lowStock] = await Promise.all([
     db.order.count({ where: { status: "to_confirm" } }),
@@ -56,12 +58,13 @@ export default async function TodayPage() {
     runs.set(key, run)
   }
 
-  const tiles = [
-    { label: t("toConfirm"), value: String(toConfirm), href: "/farm/orders", hot: toConfirm > 0 },
+  type Tile = { label: string; value: string; href?: string; hot?: boolean }
+  const tiles = ([
+    (features.callConfirmation || toConfirm > 0) && { label: t("toConfirm"), value: String(toConfirm), href: "/farm/orders", hot: toConfirm > 0 },
     { label: t("open"), value: String(open), href: "/farm/orders?tab=open" },
     { label: t("sales"), value: formatRupees(todays._sum.totalPaise ?? 0) },
-    { label: t("dues"), value: formatRupees([...balances.values()].filter((b) => b > 0).reduce((a, b) => a + b, 0)), href: "/farm/customers?dues=1" },
-  ]
+    features.creditAccounts && { label: t("dues"), value: formatRupees([...balances.values()].filter((b) => b > 0).reduce((a, b) => a + b, 0)), href: "/farm/customers?dues=1" },
+  ] as (Tile | false)[]).filter((x): x is Tile => !!x)
 
   return (
     <div className="flex flex-col gap-5">
@@ -86,7 +89,7 @@ export default async function TodayPage() {
         })}
       </div>
 
-      {lowStock.map((p) => (
+      {features.stockTracking && lowStock.map((p) => (
         <p key={p.id} className="rounded-xl bg-destructive/10 px-4 py-3 font-medium text-destructive">
           {t("lowStock", { name: `${pick(locale, p.nameTa, p.nameEn)} (${pick(locale, p.packTa, p.packEn)})`, count: p.stockQty, unit: unitName(p.stockUnit) })}
         </p>

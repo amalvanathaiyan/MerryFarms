@@ -22,6 +22,8 @@ export interface ShopData {
     deliveryFeePaise: number
     freeAbovePaise: number
     paused: boolean
+    webOrdering: boolean
+    tracksStock: boolean
   }
   categories: { id: string; name: string }[]
   products: {
@@ -66,12 +68,14 @@ export function Shop({ data }: { data: ShopData }) {
   const subtotal = lines.reduce((a, l) => a + l.qty * l.product.pricePaise, 0)
   const fee = deliveryFee(subtotal, data.farm)
   const total = subtotal + fee
-  const canOrder = !data.farm.paused && data.slots.some((s) => !s.full)
+  const canOrder = !data.farm.paused && data.farm.webOrdering && data.slots.some((s) => !s.full)
+  // Without stock tracking, the farm decides availability by hiding products; no stock limit applies.
+  const maxQty = (p: { stockQty: number }) => (data.farm.tracksStock ? p.stockQty : 50)
 
   const change = (id: string, delta: number) => {
     const p = byId.get(id)
     if (!p) return
-    setCart((c) => ({ ...c, [id]: Math.max(0, Math.min(p.stockQty, (c[id] ?? 0) + delta)) }))
+    setCart((c) => ({ ...c, [id]: Math.max(0, Math.min(maxQty(p), (c[id] ?? 0) + delta)) }))
   }
 
   const submit = (e: React.FormEvent) => {
@@ -101,9 +105,9 @@ export function Shop({ data }: { data: ShopData }) {
   }
 
   const header = (
-    <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-background/95 px-4 py-3 backdrop-blur">
+    <header className="sticky top-0 z-10 flex items-center justify-between gap-3 bg-primary px-4 py-3 text-primary-foreground shadow-sm">
       <div className="flex min-w-0 items-center gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-lime text-sm font-bold text-lime-foreground">
           {data.farm.orderPrefix}
         </span>
         <span className="truncate text-lg font-semibold">{data.farm.name}</span>
@@ -157,7 +161,7 @@ export function Shop({ data }: { data: ShopData }) {
                     {product.pack} · {formatRupees(product.pricePaise * qty)}
                   </div>
                 </div>
-                <Stepper qty={qty} max={product.stockQty} onChange={(d) => change(product.id, d)} labels={{ add: t("addOne"), remove: t("removeOne") }} />
+                <Stepper qty={qty} max={maxQty(product)} onChange={(d) => change(product.id, d)} labels={{ add: t("addOne"), remove: t("removeOne") }} />
               </li>
             ))}
           </ul>
@@ -235,6 +239,24 @@ export function Shop({ data }: { data: ShopData }) {
       <main className="flex flex-col gap-5 px-4 pt-4">
         <h1 className="text-2xl font-bold">{t("hello")}</h1>
 
+        {!data.farm.webOrdering && !data.farm.paused && (
+          <section className="flex flex-col gap-3 rounded-2xl border-2 border-primary bg-accent p-4">
+            <p className="font-medium">{t("orderingOff")}</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button asChild size="lg">
+                <a href={`tel:${data.farm.phone}`}>
+                  <Phone /> {t("callFarm")}
+                </a>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <a href={waMeLink(data.farm.whatsappNumber, t("hello"))} target="_blank" rel="noreferrer">
+                  {t("whatsappFarm")}
+                </a>
+              </Button>
+            </div>
+          </section>
+        )}
+
         {data.farm.paused ? (
           <p className="rounded-xl bg-destructive/10 p-4 font-medium text-destructive">{te("shop_paused")}</p>
         ) : data.nextDelivery ? (
@@ -261,7 +283,7 @@ export function Shop({ data }: { data: ShopData }) {
               .filter((p) => p.categoryId === c.id)
               .map((p) => {
                 const qty = cart[p.id] ?? 0
-                const soldOut = p.stockQty <= 0
+                const soldOut = data.farm.tracksStock && p.stockQty <= 0
                 return (
                   <article key={p.id} className={cn("flex items-center justify-between gap-3 rounded-2xl border bg-card p-4", soldOut && "opacity-60")}>
                     <div className="min-w-0">
@@ -274,12 +296,12 @@ export function Shop({ data }: { data: ShopData }) {
                     </div>
                     {soldOut ? (
                       <span className="shrink-0 rounded-full border px-3 py-1 text-sm">{t("soldOut")}</span>
-                    ) : qty === 0 ? (
+                    ) : !data.farm.webOrdering ? null : qty === 0 ? (
                       <Button variant="outline" size="lg" className="shrink-0 border-primary text-primary" disabled={!canOrder} onClick={() => change(p.id, 1)}>
                         {t("add")}
                       </Button>
                     ) : (
-                      <Stepper qty={qty} max={p.stockQty} onChange={(d) => change(p.id, d)} labels={{ add: t("addOne"), remove: t("removeOne") }} />
+                      <Stepper qty={qty} max={maxQty(p)} onChange={(d) => change(p.id, d)} labels={{ add: t("addOne"), remove: t("removeOne") }} />
                     )}
                   </article>
                 )

@@ -6,21 +6,26 @@ import { buildInvoiceSnapshot, financialYear, invoiceNumber, type InvoiceSnapsho
 import { ledgerBalance } from "@/domain/ledger"
 import { orderCode } from "@/domain/orders"
 import { OrderError, transition } from "./orders"
+import { featuresOf } from "@/lib/features"
+import { prisma } from "@/lib/prisma"
 
 export type DeliveryPayment = "cash" | "upi" | "credit"
 
 /**
  * Marks an order delivered and settles it, in one transaction:
- * issues the invoice, charges the customer's account, and records the payment
- * when cash or UPI was collected on the doorstep ("credit" leaves it as dues).
+ * issues the invoice (if the farm uses invoices), charges the customer's account,
+ * and records the payment when cash or UPI was collected ("credit" leaves it as dues,
+ * and is refused if the farm has credit accounts switched off).
  */
 export async function deliverOrder(tenantId: string, orderId: string, payment: DeliveryPayment, byStaffId: string, now = new Date()) {
   const db = tenantDb(tenantId)
+  const features = featuresOf(await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } }))
+  if (payment === "credit" && !features.creditAccounts) throw new OrderError("credit_off")
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       return await db.$transaction(async (tx) => {
         const order = await transition(tx, tenantId, orderId, "delivered", byStaffId, `paid:${payment}`)
-        const invoice = await issueInvoice(tx, tenantId, order.id, now)
+        const invoice = features.invoices ? await issueInvoice(tx, tenantId, order.id, now) : null
 
         await tx.ledgerEntry.create({
           data: { tenantId, customerId: order.customerId, type: "charge", amountPaise: order.totalPaise, refType: "order", refId: order.id },

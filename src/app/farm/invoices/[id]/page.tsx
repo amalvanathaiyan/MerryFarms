@@ -10,10 +10,11 @@ import { Button } from "@/components/ui/button"
 import { readSnapshot } from "@/server/billing"
 import { formatRupees } from "@/domain/money"
 import { waMeLink } from "@/domain/whatsapp-lite"
+import { featuresOf } from "@/lib/features"
 
 export default async function FarmInvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { db } = await requireStaff()
+  const { db, tenant } = await requireStaff()
   const t = await getTranslations("farm.invoice")
   const invoice = await db.invoice.findFirst({ where: { id }, include: { customer: true } })
   if (!invoice) notFound()
@@ -30,11 +31,13 @@ export default async function FarmInvoicePage({ params }: { params: Promise<{ id
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap gap-2 print:hidden">
-        <Button asChild className="flex-1">
-          <a href={waMeLink(invoice.customer.phone, text)} target="_blank" rel="noreferrer">
-            <MessageCircle /> {t("sendWhatsApp")}
-          </a>
-        </Button>
+        {featuresOf(tenant).whatsappLite && (
+          <Button asChild className="flex-1">
+            <a href={waMeLink(invoice.customer.phone, text)} target="_blank" rel="noreferrer">
+              <MessageCircle /> {t("sendWhatsApp")}
+            </a>
+          </Button>
+        )}
         <PrintButton label={t("print")} />
         <Button asChild variant="ghost">
           <Link href={`/farm/customers/${invoice.customerId}`}>{t("customer")}</Link>

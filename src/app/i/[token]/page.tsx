@@ -7,6 +7,7 @@ import { PrintButton } from "@/components/print-button"
 import { Button } from "@/components/ui/button"
 import { readSnapshot } from "@/server/billing"
 import { upiPayLink } from "@/domain/upi"
+import { featuresOf } from "@/lib/features"
 
 export const dynamic = "force-dynamic"
 export const metadata: Metadata = { robots: { index: false, follow: false } }
@@ -24,7 +25,8 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
   if (!invoice || (tenant && invoice.tenantId !== tenant.id)) notFound()
 
   const s = readSnapshot(invoice.snapshot)
-  const pay = s.farm.upiId ? upiPayLink({ upiId: s.farm.upiId, payeeName: s.farm.nameEn, amountPaise: s.totalPaise, note: s.number }) : null
+  const farm = tenant ?? (await prisma.tenant.findUnique({ where: { id: invoice.tenantId } }))
+  const pay = farm && featuresOf(farm).upiPayments && s.farm.upiId ? upiPayLink({ upiId: s.farm.upiId, payeeName: s.farm.nameEn, amountPaise: s.totalPaise, note: s.number }) : null
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6 print:p-0">

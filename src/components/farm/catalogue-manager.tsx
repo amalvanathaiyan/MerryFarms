@@ -30,7 +30,7 @@ type Draft = Omit<Product, "id"> & { id?: string }
 
 const UNITS = ["packs", "trays", "kg", "birds", "litres", "pieces", "boxes", "jars"]
 
-export function CatalogueManager({ categories, products, canEdit }: { categories: Category[]; products: Product[]; canEdit: boolean }) {
+export function CatalogueManager({ categories, products, canEdit, tracksStock }: { categories: Category[]; products: Product[]; canEdit: boolean; tracksStock: boolean }) {
   const t = useTranslations("farm.catalogue")
   const tc = useTranslations("common")
   const te = useTranslations("errors")
@@ -114,13 +114,16 @@ export function CatalogueManager({ categories, products, canEdit }: { categories
             <Input lang="en" value={draft.noteEn} onChange={(e) => set("noteEn", e.target.value)} />
           </Labelled>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className={cn("grid gap-3", tracksStock ? "grid-cols-3" : "grid-cols-1")}>
           <Labelled label={t("price")}>
             <Input required type="number" min={1} step="0.5" inputMode="decimal" value={draft.priceRupees || ""} onChange={(e) => set("priceRupees", Number(e.target.value))} />
           </Labelled>
+          {tracksStock && (
           <Labelled label={t("stock")}>
             <Input required type="number" min={0} inputMode="numeric" value={draft.stockQty} onChange={(e) => set("stockQty", Number(e.target.value))} />
           </Labelled>
+          )}
+          {tracksStock && (
           <Labelled label={t("unit")}>
             <select className="h-9 rounded-md border border-input bg-transparent px-2" value={draft.stockUnit} onChange={(e) => set("stockUnit", e.target.value)}>
               {UNITS.map((u) => (
@@ -130,6 +133,7 @@ export function CatalogueManager({ categories, products, canEdit }: { categories
               ))}
             </select>
           </Labelled>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Labelled label={t("gst")}>
@@ -230,8 +234,9 @@ export function CatalogueManager({ categories, products, canEdit }: { categories
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="font-semibold">{pick(locale, p.nameTa, p.nameEn)}</div>
-                      <div className={cn("text-sm text-muted-foreground", p.stockQty <= 5 && "font-semibold text-destructive")}>
-                        {pick(locale, p.packTa, p.packEn)} · {t("left", { count: p.stockQty, unit: unitName(p.stockUnit) })}
+                      <div className={cn("text-sm text-muted-foreground", tracksStock && p.stockQty <= 5 && "font-semibold text-destructive")}>
+                        {pick(locale, p.packTa, p.packEn)}
+                        {tracksStock && ` · ${t("left", { count: p.stockQty, unit: unitName(p.stockUnit) })}`}
                       </div>
                     </div>
                     <label className="flex shrink-0 flex-col items-center gap-0.5 text-xs text-muted-foreground">
@@ -263,7 +268,7 @@ export function CatalogueManager({ categories, products, canEdit }: { categories
                         if (v > 0 && v !== p.priceRupees) run(() => quickUpdateProduct({ id: p.id, priceRupees: v }))
                       }}
                     />
-                    <div className="flex items-center overflow-hidden rounded-lg border">
+                    {tracksStock && <div className="flex items-center overflow-hidden rounded-lg border">
                       <button type="button" className="grid size-10 place-items-center" disabled={pending || p.stockQty === 0} aria-label="−1" onClick={() => run(() => quickUpdateProduct({ id: p.id, stockQty: p.stockQty - 1 }))}>
                         <Minus className="size-4" />
                       </button>
@@ -271,7 +276,7 @@ export function CatalogueManager({ categories, products, canEdit }: { categories
                       <button type="button" className="grid size-10 place-items-center" disabled={pending} aria-label="+1" onClick={() => run(() => quickUpdateProduct({ id: p.id, stockQty: p.stockQty + 1 }))}>
                         <Plus className="size-4" />
                       </button>
-                    </div>
+                    </div>}
                     {canEdit && (
                       <Button variant="link" className="ml-auto" onClick={() => setDraft(p)}>
                         {tc("edit")}

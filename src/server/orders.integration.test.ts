@@ -21,7 +21,7 @@ let billing: typeof import("./billing")
 let tenantDb: typeof import("@/lib/tenant-db").tenantDb
 let prisma: typeof import("@/lib/prisma").prisma
 
-const tenantRow = (id: string, slug: string) => ({
+const tenantRow = (id: string, slug: string, features: Record<string, boolean> = {}) => ({
   id,
   slug,
   nameTa: slug,
@@ -41,12 +41,15 @@ const tenantRow = (id: string, slug: string) => ({
   whatsappWabaId: null,
   deliveryFeePaise: 3000,
   freeAbovePaise: 50_000,
+  features,
   trialEndsAt: null,
   createdAt: NOW,
   updatedAt: NOW,
 })
 const merry = tenantRow("t1", "merryfarms")
 const other = tenantRow("t2", "otherfarm")
+// A small farm that doesn't count stock, confirm by call, give credit or issue invoices.
+const small = tenantRow("t3", "smallfarm", { stockTracking: false, callConfirmation: false, creditAccounts: false, invoices: false })
 
 const order = (over: Partial<import("./orders").PlaceOrderInput> = {}): import("./orders").PlaceOrderInput => ({
   channel: "web",
@@ -70,17 +73,20 @@ beforeAll(async () => {
   svc = await import("./orders")
   billing = await import("./billing")
 
-  await prisma.tenant.createMany({ data: [merry, other] })
-  for (const t of [merry, other]) {
+  await prisma.tenant.createMany({ data: [merry, other, small] })
+  for (const t of [merry, other, small]) {
     const db = tenantDb(t.id)
     await db.category.create({ data: { id: `${t.id}-cat`, tenantId: t.id, nameTa: "முட்டை", nameEn: "Eggs" } })
     await db.deliverySlot.create({
-      data: { id: t.id === "t1" ? "slot-am" : "slot-am-2", tenantId: t.id, nameTa: "காலை", nameEn: "Morning", startTime: "07:00", endTime: "09:00", daysOfWeek: [0, 1, 2, 3, 4, 5, 6], cutoffHours: 12, maxOrders: 3 },
+      data: { id: { t1: "slot-am", t2: "slot-am-2", t3: "slot-am-3" }[t.id]!, tenantId: t.id, nameTa: "காலை", nameEn: "Morning", startTime: "07:00", endTime: "09:00", daysOfWeek: [0, 1, 2, 3, 4, 5, 6], cutoffHours: 12, maxOrders: 3 },
     })
   }
   const db = tenantDb(merry.id)
   await db.product.create({
     data: { id: "p-eggs", tenantId: merry.id, categoryId: "t1-cat", nameTa: "முட்டை", nameEn: "Eggs", packTa: "30", packEn: "Tray of 30", pricePaise: 39_000, stockQty: 10 },
+  })
+  await tenantDb(small.id).product.create({
+    data: { id: "p-small", tenantId: small.id, categoryId: "t3-cat", nameTa: "முட்டை", nameEn: "Eggs", packTa: "6", packEn: "6 eggs", pricePaise: 9_000, stockQty: 0 },
   })
   await tenantDb(other.id).product.create({
     data: { id: "p-other", tenantId: other.id, categoryId: "t2-cat", nameTa: "பால்", nameEn: "Milk", packTa: "1 L", packEn: "1 L", pricePaise: 9_000, stockQty: 10 },
@@ -188,8 +194,8 @@ describe("delivery, invoices and khata", () => {
     const o = await toDoorstep(1002)
     const { invoice } = await billing.deliverOrder(merry.id, o.id, "credit", "staff-1", NOW)
     expect(invoice).toMatchObject({ number: "MF/2026-27/0001", type: "bill_of_supply", totalPaise: 42_000, seq: 1 })
-    expect(invoice.publicToken.length).toBeGreaterThanOrEqual(20)
-    const snap = billing.readSnapshot(invoice.snapshot)
+    expect(invoice!.publicToken.length).toBeGreaterThanOrEqual(20)
+    const snap = billing.readSnapshot(invoice!.snapshot)
     expect(snap.lines[0]).toMatchObject({ nameTa: "முட்டை", qty: 1, amountPaise: 39_000 })
     expect(snap.deliveryFeePaise).toBe(3000)
     expect(await billing.customerBalance(merry.id, (await priya()).id)).toBe(42_000)
@@ -207,7 +213,7 @@ describe("delivery, invoices and khata", () => {
   it("delivers paid in cash: next invoice number, no new dues", async () => {
     const o = await toDoorstep(1003)
     const { invoice } = await billing.deliverOrder(merry.id, o.id, "cash", "staff-1", NOW)
-    expect(invoice.number).toBe("MF/2026-27/0002")
+    expect(invoice!.number).toBe("MF/2026-27/0002")
     expect(await billing.customerBalance(merry.id, (await priya()).id)).toBe(42_000)
     const pay = await tenantDb(merry.id).payment.findFirst({ where: { orderId: o.id } })
     expect(pay).toMatchObject({ method: "cash_on_delivery", amountPaise: o.totalPaise })
@@ -226,5 +232,27 @@ describe("delivery, invoices and khata", () => {
     expect((await billing.allBalances(other.id)).size).toBe(0)
     const c = await priya()
     await expect(billing.recordPayment(other.id, { customerId: c.id, method: "upi_on_delivery", amountPaise: 100, byStaffId: "s" })).rejects.toThrow("customer_not_found")
+  })
+})
+
+describe("feature switches change what the server does", () => {
+  const smallOrder = () => order({ items: [{ productId: "p-small", qty: 5 }], slotKey: "2026-10-22|slot-am-3" })
+
+  it("skips stock checks and the confirmation call when those are off", async () => {
+    const { order: o, decision } = await svc.placeOrder(small, smallOrder(), NOW)
+    expect(o.status).toBe("confirmed")
+    expect(decision.reason).toBe("calls_off")
+    // Stock stays untouched (0) and the order still went through.
+    expect((await tenantDb(small.id).product.findFirst({ where: { id: "p-small" } }))!.stockQty).toBe(0)
+  })
+
+  it("refuses 'on account' when credit accounts are off, and issues no invoice", async () => {
+    const o = (await tenantDb(small.id).order.findFirst({ where: { status: "confirmed" } }))!
+    await svc.setOrderStatus(small.id, o.id, "out_for_delivery", "staff-1")
+    await expect(billing.deliverOrder(small.id, o.id, "credit", "staff-1", NOW)).rejects.toThrow("credit_off")
+    const { invoice } = await billing.deliverOrder(small.id, o.id, "cash", "staff-1", NOW)
+    expect(invoice).toBeNull()
+    expect(await tenantDb(small.id).invoice.count()).toBe(0)
+    expect(await tenantDb(small.id).payment.count()).toBe(1)
   })
 })

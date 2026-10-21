@@ -4,6 +4,7 @@ import { z } from "zod"
 import { requireTenant } from "@/lib/tenant"
 import { normaliseIndianMobile } from "@/domain/phone"
 import { OrderError, placeOrder } from "@/server/orders"
+import { featuresOf } from "@/lib/features"
 
 const schema = z.object({
   name: z.string().trim().min(1).max(80),
@@ -35,6 +36,7 @@ export async function placeWebOrder(raw: unknown): Promise<PlaceWebOrderResult> 
 
   const tenant = await requireTenant()
   if (tenant.status === "suspended") return { ok: false, error: "shop_paused" }
+  if (!featuresOf(tenant).webShop) return { ok: false, error: "shop_ordering_off" }
 
   try {
     const { order, decision } = await placeOrder(tenant, {

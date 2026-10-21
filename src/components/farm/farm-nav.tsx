@@ -26,9 +26,11 @@ export function FarmNav({ toConfirm }: { toConfirm: number }) {
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={cn("relative flex flex-col items-center gap-0.5 py-2.5 text-xs font-medium", active ? "text-primary" : "text-muted-foreground")}
+            className={cn("relative flex flex-col items-center gap-0.5 py-2.5 text-xs font-medium", active ? "font-semibold text-primary" : "text-muted-foreground")}
           >
-            <Icon className="size-6" />
+            <span className={cn("grid h-8 w-12 place-items-center rounded-full transition-colors", active && "bg-accent")}>
+              <Icon className="size-6" />
+            </span>
             {t(key)}
             {key === "orders" && toConfirm > 0 && (
               <span className="absolute left-1/2 top-1 ml-2 min-w-5 rounded-full bg-destructive px-1 text-center text-[11px] font-bold leading-5 text-destructive-foreground tabular-nums">

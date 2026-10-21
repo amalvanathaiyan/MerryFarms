@@ -52,7 +52,9 @@
     "placedWhatsApp": "Send to the farm on WhatsApp",
     "orderMore": "Order more",
     "callFarm": "Call the farm",
-    "waOrderText": "Hello! My order {code}:\n{items}\nTotal {total}\n{name}"
+    "waOrderText": "Hello! My order {code}:\n{items}\nTotal {total}\n{name}",
+    "orderingOff": "To order, call the farm or send them a WhatsApp message.",
+    "whatsappFarm": "Order on WhatsApp"
   },
   "farm": {
     "nav": {
@@ -241,6 +243,57 @@
       "pieces": "pieces",
       "boxes": "boxes",
       "jars": "jars"
+    },
+    "features": {
+      "title": "Features",
+      "hint": "Switch on only what your farm needs. You can change this any time.",
+      "comingSoon": "Coming soon",
+      "needsPlan": "On a higher plan",
+      "needs": "Needs '{feature}' to be on.",
+      "webShop": {
+        "title": "Web shop ordering",
+        "hint": "Customers order straight from the shop link. When off, they browse and then call or WhatsApp you."
+      },
+      "callConfirmation": {
+        "title": "Confirm orders by call",
+        "hint": "Orders wait until someone calls the customer. When off, orders are confirmed at once."
+      },
+      "stockTracking": {
+        "title": "Stock tracking",
+        "hint": "Counts stock for each product and shows 'sold out' at zero. Turn off if your supply varies day to day."
+      },
+      "creditAccounts": {
+        "title": "Credit accounts (khata)",
+        "hint": "Regular customers can pay later; dues and credit limits are tracked."
+      },
+      "invoices": {
+        "title": "Invoices",
+        "hint": "A numbered invoice is issued automatically on delivery."
+      },
+      "whatsappLite": {
+        "title": "WhatsApp message buttons",
+        "hint": "Send a ready-made WhatsApp message to the customer in one tap."
+      },
+      "upiPayments": {
+        "title": "UPI payment links",
+        "hint": "Shows a 'Pay by UPI' button on invoices (needs your UPI ID)."
+      },
+      "subscriptions": {
+        "title": "Weekly / daily plans",
+        "hint": "Repeat orders such as eggs every week or milk every day. Turn on only if your supply is steady."
+      },
+      "broadcasts": {
+        "title": "WhatsApp broadcasts",
+        "hint": "Tell opted-in customers about a fresh batch in one go."
+      },
+      "whatsappCloud": {
+        "title": "Automated WhatsApp",
+        "hint": "Menus, order forms and automatic updates inside WhatsApp. A small charge per message."
+      },
+      "reports": {
+        "title": "Reports",
+        "hint": "Daily sales, product totals and Excel exports for your accountant."
+      }
     }
   },
   "login": {
@@ -285,6 +338,8 @@
     "customer_not_found": "Customer not found.",
     "upi_invalid": "That UPI ID doesn't look right (e.g. name@okaxis).",
     "gstin_invalid": "That GSTIN doesn't look right (15 characters).",
-    "fssai_invalid": "The FSSAI number must be 14 digits."
+    "fssai_invalid": "The FSSAI number must be 14 digits.",
+    "shop_ordering_off": "This farm isn't taking web orders right now. Please call or WhatsApp them.",
+    "credit_off": "Credit accounts are switched off for this farm."
   }
 }
