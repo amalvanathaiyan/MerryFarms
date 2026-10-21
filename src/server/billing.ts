@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto"
 import { Prisma } from "@prisma/client"
 import { tenantDb, type TenantTx } from "@/lib/tenant-db"
 import { buildInvoiceSnapshot, financialYear, invoiceNumber, type InvoiceSnapshot } from "@/domain/invoices"
-import { ledgerBalance } from "@/domain/ledger"
+import { ledgerBalance, signedAmount } from "@/domain/ledger"
 import { orderCode } from "@/domain/orders"
 import { OrderError, transition } from "./orders"
 import { featuresOf } from "@/lib/features"
@@ -26,6 +26,7 @@ export async function deliverOrder(tenantId: string, orderId: string, payment: D
       return await db.$transaction(async (tx) => {
         const order = await transition(tx, tenantId, orderId, "delivered", byStaffId, `paid:${payment}`)
         const invoice = features.invoices ? await issueInvoice(tx, tenantId, order.id, now) : null
+
 
         await tx.ledgerEntry.create({
           data: { tenantId, customerId: order.customerId, type: "charge", amountPaise: order.totalPaise, refType: "order", refId: order.id },
@@ -50,6 +51,19 @@ export async function deliverOrder(tenantId: string, orderId: string, payment: D
   throw new OrderError("busy_try_again")
 }
 
+/**
+ * Next number in a farm's document series for a financial year ("INV" invoices, "CN" credit notes).
+ * The upsert takes a row lock, so concurrent documents get consecutive numbers.
+ */
+export async function nextSeq(tx: TenantTx, tenantId: string, series: "INV" | "CN", fy: string) {
+  const counter = await tx.invoiceCounter.upsert({
+    where: { tenantId_series_fy: { tenantId, series, fy } },
+    create: { tenantId, series, fy, nextSeq: 2 },
+    update: { nextSeq: { increment: 1 } },
+  })
+  return counter.nextSeq - 1
+}
+
 /** Issues the invoice for an order (once; a second call returns the existing one). */
 export async function issueInvoice(tx: TenantTx, tenantId: string, orderId: string, now = new Date()) {
   const existing = await tx.invoice.findFirst({ where: { orderId, type: { not: "credit_note" } } })
@@ -63,13 +77,7 @@ export async function issueInvoice(tx: TenantTx, tenantId: string, orderId: stri
   })
 
   const fy = financialYear(now)
-  // Upsert takes a row lock, so concurrent deliveries get consecutive numbers.
-  const counter = await tx.invoiceCounter.upsert({
-    where: { tenantId_fy: { tenantId, fy } },
-    create: { tenantId, fy, nextSeq: 2 },
-    update: { nextSeq: { increment: 1 } },
-  })
-  const seq = counter.nextSeq - 1
+  const seq = await nextSeq(tx, tenantId, "INV", fy)
   const number = invoiceNumber(tenant.invoicePrefix, fy, seq)
 
   const snapshot = buildInvoiceSnapshot({
@@ -165,7 +173,7 @@ export async function allBalances(tenantId: string) {
   const out = new Map<string, number>()
   for (const r of rows) {
     const sum = r._sum.amountPaise ?? 0
-    out.set(r.customerId, (out.get(r.customerId) ?? 0) + (r.type === "payment" ? -sum : sum))
+    out.set(r.customerId, (out.get(r.customerId) ?? 0) + signedAmount(r.type, sum))
   }
   return out
 }

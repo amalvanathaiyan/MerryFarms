@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
-import { FileText, MessageCircle, Pencil, Phone } from "lucide-react"
+import { FileText, MessageCircle, Pencil, Phone, Undo2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { changeOrderStatus, logCall } from "@/app/actions/farm-orders"
 import { deliver } from "@/app/actions/billing"
@@ -21,6 +21,7 @@ export function OrderActions({
   invoiceId,
   allowCredit,
   canEdit,
+  canReturn,
 }: {
   orderId: string
   status: OrderStatus
@@ -31,6 +32,8 @@ export function OrderActions({
   allowCredit: boolean
   /** Order desk staff, and not a walk-in sale. */
   canEdit: boolean
+  /** Returns switched on, order desk staff, and the order is delivered. */
+  canReturn: boolean
 }) {
   const t = useTranslations("farm.orders")
   const te = useTranslations("errors")
@@ -124,6 +127,13 @@ export function OrderActions({
           <Button asChild variant="outline" className="flex-1">
             <Link href={`/farm/orders/${orderId}/edit`}>
               <Pencil /> {t("edit")}
+            </Link>
+          </Button>
+        )}
+        {canReturn && status === "delivered" && (
+          <Button asChild variant="outline" className="flex-1">
+            <Link href={`/farm/orders/${orderId}/return`}>
+              <Undo2 /> {t("returnRefund")}
             </Link>
           </Button>
         )}

@@ -32,7 +32,13 @@ CREATE TYPE "CallOutcome" AS ENUM ('confirmed', 'changed', 'cancelled', 'no_answ
 CREATE TYPE "InvoiceType" AS ENUM ('tax_invoice', 'bill_of_supply', 'credit_note');
 
 -- CreateEnum
-CREATE TYPE "LedgerType" AS ENUM ('charge', 'payment', 'adjustment');
+CREATE TYPE "LedgerType" AS ENUM ('charge', 'payment', 'adjustment', 'credit_note', 'refund');
+
+-- CreateEnum
+CREATE TYPE "ReturnReason" AS ENUM ('damaged', 'short_delivered', 'returned', 'quality', 'other');
+
+-- CreateEnum
+CREATE TYPE "RefundMethod" AS ENUM ('account', 'cash', 'upi');
 
 -- CreateEnum
 CREATE TYPE "PaymentStatus" AS ENUM ('received', 'pending', 'failed', 'refunded');
@@ -282,6 +288,7 @@ CREATE TABLE "invoices" (
     "publicToken" TEXT NOT NULL,
     "pdfUrl" TEXT,
     "issuedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "refInvoiceId" TEXT,
 
     CONSTRAINT "invoices_pkey" PRIMARY KEY ("id")
 );
@@ -289,10 +296,11 @@ CREATE TABLE "invoices" (
 -- CreateTable
 CREATE TABLE "invoice_counters" (
     "tenantId" TEXT NOT NULL,
+    "series" TEXT NOT NULL DEFAULT 'INV',
     "fy" TEXT NOT NULL,
     "nextSeq" INTEGER NOT NULL DEFAULT 1,
 
-    CONSTRAINT "invoice_counters_pkey" PRIMARY KEY ("tenantId","fy")
+    CONSTRAINT "invoice_counters_pkey" PRIMARY KEY ("tenantId","series","fy")
 );
 
 -- CreateTable
@@ -325,6 +333,25 @@ CREATE TABLE "payments" (
     "at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "payments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "order_returns" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "orderId" TEXT NOT NULL,
+    "items" JSONB NOT NULL,
+    "reason" "ReturnReason" NOT NULL,
+    "note" TEXT,
+    "amountPaise" INTEGER NOT NULL,
+    "deliveryFeePaise" INTEGER NOT NULL DEFAULT 0,
+    "refundMethod" "RefundMethod" NOT NULL,
+    "restocked" BOOLEAN NOT NULL DEFAULT false,
+    "creditNoteId" TEXT,
+    "byStaffId" TEXT,
+    "at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "order_returns_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -393,6 +420,9 @@ CREATE INDEX "ledger_entries_tenantId_customerId_idx" ON "ledger_entries"("tenan
 -- CreateIndex
 CREATE INDEX "payments_tenantId_customerId_idx" ON "payments"("tenantId", "customerId");
 
+-- CreateIndex
+CREATE INDEX "order_returns_tenantId_orderId_idx" ON "order_returns"("tenantId", "orderId");
+
 -- AddForeignKey
 ALTER TABLE "tenant_settings" ADD CONSTRAINT "tenant_settings_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -448,6 +478,9 @@ ALTER TABLE "invoices" ADD CONSTRAINT "invoices_orderId_fkey" FOREIGN KEY ("orde
 ALTER TABLE "invoices" ADD CONSTRAINT "invoices_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "invoices" ADD CONSTRAINT "invoices_refInvoiceId_fkey" FOREIGN KEY ("refInvoiceId") REFERENCES "invoices"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "ledger_entries" ADD CONSTRAINT "ledger_entries_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -455,4 +488,10 @@ ALTER TABLE "payments" ADD CONSTRAINT "payments_customerId_fkey" FOREIGN KEY ("c
 
 -- AddForeignKey
 ALTER TABLE "payments" ADD CONSTRAINT "payments_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "orders"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "order_returns" ADD CONSTRAINT "order_returns_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "order_returns" ADD CONSTRAINT "order_returns_creditNoteId_fkey" FOREIGN KEY ("creditNoteId") REFERENCES "invoices"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 

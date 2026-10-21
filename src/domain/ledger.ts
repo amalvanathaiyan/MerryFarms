@@ -4,12 +4,19 @@
  * Balance > 0 means the customer owes the farm; < 0 means the farm holds an advance.
  */
 
-export type LedgerType = "charge" | "payment" | "adjustment"
+export type LedgerType = "charge" | "payment" | "adjustment" | "credit_note" | "refund"
 
 export function signedAmount(type: LedgerType, amountPaise: number): number {
-  if (type === "charge") return amountPaise
-  if (type === "payment") return -amountPaise
-  return amountPaise
+  switch (type) {
+    case "charge": // order delivered
+    case "refund": // farm paid money back
+      return amountPaise
+    case "payment": // money received
+    case "credit_note": // goods came back
+      return -amountPaise
+    case "adjustment": // carries its own sign
+      return amountPaise
+  }
 }
 
 export function ledgerBalance(entries: { type: LedgerType; amountPaise: number }[]): number {

@@ -6,6 +6,11 @@ export function invoiceNumber(prefix: string, fy: string, seq: number): string {
   return `${prefix}/${fy}/${String(seq).padStart(4, "0")}`
 }
 
+/** Credit notes run their own series: "MF-CN/2026-27/0001". */
+export function creditNoteNumber(prefix: string, fy: string, seq: number): string {
+  return invoiceNumber(`${prefix}-CN`, fy, seq)
+}
+
 export { financialYear }
 
 /**
@@ -19,7 +24,10 @@ export function invoiceTypeFor(gstin: string | null | undefined, lineRates: numb
 /** Everything printed on an invoice, frozen at the moment it is issued. */
 export interface InvoiceSnapshot {
   version: 1
-  type: "tax_invoice" | "bill_of_supply"
+  type: "tax_invoice" | "bill_of_supply" | "credit_note"
+  /** Credit notes only: the invoice being corrected and why. */
+  against?: { number: string; type: "tax_invoice" | "bill_of_supply" }
+  reason?: string
   number: string
   issuedAt: string // ISO instant
   orderCode: string
@@ -53,6 +61,8 @@ export interface SnapshotInput {
   customer: InvoiceSnapshot["customer"]
   lines: Omit<InvoiceSnapshot["lines"][number], "amountPaise" | "taxPaise">[]
   deliveryFeePaise: number
+  /** Build a credit note against this invoice instead of an invoice. */
+  creditNoteFor?: { number: string; type: "tax_invoice" | "bill_of_supply"; reason: string }
 }
 
 export function buildInvoiceSnapshot(input: SnapshotInput): InvoiceSnapshot {
@@ -60,10 +70,12 @@ export function buildInvoiceSnapshot(input: SnapshotInput): InvoiceSnapshot {
     const amountPaise = l.qty * l.unitPricePaise
     return { ...l, amountPaise, taxPaise: includedTax(amountPaise, l.gstRate) }
   })
-  const type = invoiceTypeFor(input.farm.gstin, lines.map((l) => l.gstRate))
+  // A credit note follows the tax treatment of the invoice it corrects.
+  const taxed = input.creditNoteFor ? input.creditNoteFor.type === "tax_invoice" : invoiceTypeFor(input.farm.gstin, lines.map((l) => l.gstRate)) === "tax_invoice"
+  const type = input.creditNoteFor ? "credit_note" : taxed ? "tax_invoice" : "bill_of_supply"
 
   const byRate = new Map<number, { taxablePaise: number; taxPaise: number }>()
-  if (type === "tax_invoice") {
+  if (taxed) {
     for (const l of lines) {
       if (l.gstRate <= 0) continue
       const r = byRate.get(l.gstRate) ?? { taxablePaise: 0, taxPaise: 0 }
@@ -83,6 +95,7 @@ export function buildInvoiceSnapshot(input: SnapshotInput): InvoiceSnapshot {
   return {
     version: 1,
     type,
+    ...(input.creditNoteFor && { against: { number: input.creditNoteFor.number, type: input.creditNoteFor.type }, reason: input.creditNoteFor.reason }),
     number: input.number,
     issuedAt: input.issuedAt.toISOString(),
     orderCode: input.orderCode,

@@ -116,7 +116,9 @@
       "invoice": "Invoice",
       "newOrder": "+ New order",
       "atFarm": "Bought at the farm",
-      "edit": "Edit"
+      "edit": "Edit",
+      "returnRefund": "Return / refund",
+      "returnedAmount": "Returned: {amount}"
     },
     "catalogue": {
       "title": "Products & prices",
@@ -168,7 +170,8 @@
     "invoice": {
       "sendWhatsApp": "Send invoice on WhatsApp",
       "print": "Print",
-      "customer": "Customer"
+      "customer": "Customer",
+      "against": "Against"
     },
     "customers": {
       "title": "Customers",
@@ -213,7 +216,9 @@
       "notes": "Notes",
       "notesHint": "e.g. Call son's number after 6 PM",
       "save": "Save",
-      "saved": "Saved"
+      "saved": "Saved",
+      "type_credit_note": "Goods returned",
+      "type_refund": "Money refunded"
     },
     "settings": {
       "title": "Farm settings",
@@ -296,6 +301,10 @@
       "reports": {
         "title": "Reports",
         "hint": "Daily sales, product totals and Excel exports for your accountant."
+      },
+      "returns": {
+        "title": "Returns & credit notes",
+        "hint": "Refund or credit customers for damaged, short or returned goods."
       }
     },
     "orderForm": {
@@ -327,6 +336,32 @@
       "completeSale": "Complete sale",
       "saveChanges": "Save changes",
       "saveAndConfirm": "Save and confirm"
+    },
+    "returns": {
+      "title": "{code} — return",
+      "onlyDelivered": "Returns can only be recorded for delivered orders.",
+      "allReturned": "Everything on this order has already been returned.",
+      "whatCameBack": "What came back?",
+      "canReturn": "up to {count}",
+      "reason": "Reason",
+      "reason_damaged": "Damaged",
+      "reason_short_delivered": "Short delivered",
+      "reason_returned": "Customer returned it",
+      "reason_quality": "Quality problem",
+      "reason_other": "Other",
+      "settle": "How to settle it?",
+      "refund_account": "Credit their account",
+      "refund_cash": "Refund cash",
+      "refund_upi": "Refund by UPI",
+      "restock": "Put back in stock",
+      "restockHint": "Only if it's fit to sell again.",
+      "refundFee": "Refund the {amount} delivery charge",
+      "refundFeeHint": "Only when the whole order came back.",
+      "note": "Note (optional)",
+      "creditTotal": "Credit to account",
+      "refundTotal": "To refund",
+      "submit": "Record return",
+      "earlier": "Earlier returns"
     }
   },
   "login": {
@@ -376,6 +411,12 @@
     "credit_off": "Credit accounts are switched off for this farm.",
     "address_required": "A delivery address is needed.",
     "address_not_found": "Address not found.",
-    "not_editable": "This order can't be changed now."
+    "not_editable": "This order can't be changed now.",
+    "returns_off": "Returns are switched off for this farm.",
+    "not_delivered": "Returns are only for delivered orders.",
+    "nothing_to_return": "Pick at least one item to return.",
+    "too_many_returned": "You can't return more than was delivered.",
+    "not_on_order": "That item isn't on this order.",
+    "fee_needs_full_return": "The delivery charge can only be refunded when the whole order comes back."
   }
 }

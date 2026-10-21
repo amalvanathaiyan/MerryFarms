@@ -18,6 +18,7 @@ export type FeatureKey =
   | "stockTracking"
   | "creditAccounts"
   | "invoices"
+  | "returns"
   | "whatsappLite"
   | "upiPayments"
   | "subscriptions"
@@ -42,6 +43,7 @@ export const FEATURES: Record<FeatureKey, FeatureDef> = {
   stockTracking: { defaultOn: true, minPlan: "free", requires: [], available: true },
   creditAccounts: { defaultOn: true, minPlan: "free", requires: [], available: true },
   invoices: { defaultOn: true, minPlan: "free", requires: [], available: true },
+  returns: { defaultOn: true, minPlan: "free", requires: [], available: true },
   whatsappLite: { defaultOn: true, minPlan: "free", requires: [], available: true },
   upiPayments: { defaultOn: true, minPlan: "free", requires: [], available: true },
   // Off by default: many small farms can't promise eggs every week.
