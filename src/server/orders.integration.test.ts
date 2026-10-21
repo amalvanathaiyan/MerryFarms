@@ -408,3 +408,78 @@ describe("message templates per farm", () => {
     expect((await templateOverrides(other.id)).delivered).toBeUndefined()
   })
 })
+
+describe("weekly and daily plans", () => {
+  let plans: typeof import("./plans")
+  const planFarm = tenantRow("t4", "planfarm", { subscriptions: true })
+  const pf = { ...planFarm, plan: "growth" as const }
+  const pdb = () => tenantDb(pf.id)
+  let customerId = ""
+  let addressId = ""
+  const THU = "2026-10-22" // NOW is Wed 15:30 IST, so Thursday is tomorrow
+
+  beforeAll(async () => {
+    plans = await import("./plans")
+    await prisma.tenant.create({ data: pf })
+    await pdb().category.create({ data: { id: "t4-cat", tenantId: pf.id, nameTa: "முட்டை", nameEn: "Eggs" } })
+    await pdb().deliverySlot.create({ data: { id: "slot-t4", tenantId: pf.id, nameTa: "காலை", nameEn: "Morning", startTime: "07:00", endTime: "09:00", daysOfWeek: [0, 1, 2, 3, 4, 5, 6], cutoffHours: 12, maxOrders: 1 } })
+    await pdb().product.create({ data: { id: "p-t4", tenantId: pf.id, categoryId: "t4-cat", nameTa: "முட்டை", nameEn: "Eggs", packTa: "30", packEn: "Tray of 30", pricePaise: 39_000, stockQty: 3 } })
+    const c = await pdb().customer.create({ data: { tenantId: pf.id, phone: "+919000040001", name: "Plan customer" } })
+    customerId = c.id
+    addressId = (await pdb().address.create({ data: { tenantId: pf.id, customerId: c.id, line: "1, Main Road" } })).id
+  })
+
+  const input = () => ({ customerId, addressId, slotId: "slot-t4", items: [{ productId: "p-t4", qty: 1 }], daysOfWeek: [4], paymentMethod: "cash_on_delivery" as const, discountPct: 5, startDate: "2026-10-21" })
+
+  it("is refused while plans are switched off or not in the farm's plan", async () => {
+    await expect(plans.createPlan(merry, { ...input(), customerId: "x" })).rejects.toThrow("plans_off")
+  })
+
+  it("creates tomorrow's order at the plan price, with no call, and never twice", async () => {
+    const plan = await plans.createPlan(pf, input())
+    const r1 = await plans.generatePlanOrders(pf, NOW)
+    expect(r1.created).toEqual([{ planId: plan.id, orderNumber: 1001, date: THU }])
+    const o = (await pdb().order.findFirst({ where: { subscriptionId: plan.id } }))!
+    expect(o).toMatchObject({ status: "confirmed", needsCall: false, slotDate: THU, subtotalPaise: 37_100 })
+    const r2 = await plans.generatePlanOrders(pf, NOW)
+    expect(r2.created).toEqual([])
+    expect(await pdb().order.count({ where: { subscriptionId: plan.id } })).toBe(1)
+  })
+
+  it("skipping a day cancels that day's order and puts stock back; un-skipping brings it back", async () => {
+    const plan = (await pdb().subscription.findFirst())!
+    await plans.changePlan(pf.id, plan.id, { kind: "skip", date: THU })
+    expect(await pdb().order.count({ where: { subscriptionId: plan.id, status: { not: "cancelled" } } })).toBe(0)
+    expect((await pdb().product.findFirst({ where: { id: "p-t4" } }))!.stockQty).toBe(3)
+    expect((await plans.generatePlanOrders(pf, NOW)).created).toEqual([])
+    await plans.changePlan(pf.id, plan.id, { kind: "unskip", date: THU })
+    expect((await plans.generatePlanOrders(pf, NOW)).created).toHaveLength(1)
+  })
+
+  it("books a plan order even into a full slot (the slot holds 1)", async () => {
+    const second = await plans.createPlan(pf, { ...input(), discountPct: 0 })
+    const r = await plans.generatePlanOrders(pf, NOW)
+    expect(r.created.map((c) => c.planId)).toEqual([second.id])
+  })
+
+  it("holds a plan order back when stock runs out, and says why", async () => {
+    await pdb().product.updateMany({ where: { id: "p-t4" }, data: { stockQty: 0 } })
+    const third = await plans.createPlan(pf, input())
+    const r = await plans.generatePlanOrders(pf, NOW)
+    expect(r.held).toEqual([{ planId: third.id, customerName: "Plan customer", date: THU, reason: "out_of_stock" }])
+  })
+
+  it("makes nothing while paused, and resumes", async () => {
+    await pdb().product.updateMany({ where: { id: "p-t4" }, data: { stockQty: 10 } })
+    const third = (await pdb().subscription.findFirst({ orderBy: { createdAt: "desc" } }))!
+    await plans.changePlan(pf.id, third.id, { kind: "pause", until: "2026-10-31" })
+    expect((await plans.generatePlanOrders(pf, NOW)).created).toEqual([])
+    await plans.changePlan(pf.id, third.id, { kind: "resume" })
+    expect((await plans.generatePlanOrders(pf, NOW)).created.map((c) => c.planId)).toEqual([third.id])
+  })
+
+  it("the scheduled job covers every farm with plans on", async () => {
+    const all = await plans.generateAllPlanOrders(NOW)
+    expect(all.map((a) => a.slug)).toEqual(["planfarm"])
+  })
+})

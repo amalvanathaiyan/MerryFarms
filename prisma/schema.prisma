@@ -91,6 +91,12 @@ enum LedgerType {
   refund // + money paid back to the customer
 }
 
+enum SubscriptionStatus {
+  active
+  paused
+  cancelled
+}
+
 enum ReturnReason {
   damaged
   short_delivered
@@ -271,8 +277,9 @@ model DeliverySlot {
   maxOrders   Int     @default(20)
   isActive    Boolean @default(true)
 
-  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  orders Order[]
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders        Order[]
+  subscriptions Subscription[]
 
   @@index([tenantId])
   @@map("delivery_slots")
@@ -295,12 +302,13 @@ model Customer {
   notes            String?
   createdAt        DateTime  @default(now())
 
-  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  addresses Address[]
-  orders    Order[]
-  ledger    LedgerEntry[]
-  payments  Payment[]
-  invoices  Invoice[]
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  addresses     Address[]
+  orders        Order[]
+  ledger        LedgerEntry[]
+  payments      Payment[]
+  invoices      Invoice[]
+  subscriptions Subscription[]
 
   @@unique([tenantId, phone])
   @@map("customers")
@@ -348,21 +356,24 @@ model Order {
   cancelReason     String?
   note             String?
   deliveredAt      DateTime?
+  subscriptionId   String? // set when a weekly/daily plan created this order
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
-  tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer Customer           @relation(fields: [customerId], references: [id])
-  address  Address?           @relation(fields: [addressId], references: [id])
-  slot     DeliverySlot?      @relation(fields: [slotId], references: [id])
-  items    OrderItem[]
-  events   OrderEvent[]
-  calls    ConfirmationCall[]
-  invoices Invoice[]
-  payments Payment[]
-  returns  OrderReturn[]
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer     Customer           @relation(fields: [customerId], references: [id])
+  address      Address?           @relation(fields: [addressId], references: [id])
+  slot         DeliverySlot?      @relation(fields: [slotId], references: [id])
+  items        OrderItem[]
+  events       OrderEvent[]
+  calls        ConfirmationCall[]
+  invoices     Invoice[]
+  payments     Payment[]
+  returns      OrderReturn[]
+  subscription Subscription?      @relation(fields: [subscriptionId], references: [id])
 
   @@unique([tenantId, number])
+  @@unique([subscriptionId, slotDate]) // a plan never creates two orders for the same day
   @@index([tenantId, status])
   @@index([tenantId, slotDate, slotId])
   @@map("orders")
@@ -541,4 +552,33 @@ model MessageTemplate {
 
   @@unique([tenantId, key])
   @@map("message_templates")
+}
+
+/// A weekly or daily plan: the same order on chosen days (eggs every Sunday, milk every day).
+/// Orders are created a day or two ahead; see src/server/plans.ts.
+model Subscription {
+  id            String             @id @default(uuid())
+  tenantId      String
+  customerId    String
+  addressId     String?
+  slotId        String
+  /// [{ productId, qty }]
+  items         Json
+  daysOfWeek    Int[] // 0 = Sunday … 6 = Saturday
+  paymentMethod PaymentMethod
+  discountPct   Int                @default(0) // plan price, e.g. 5 = 5% off
+  status        SubscriptionStatus @default(active)
+  startDate     String // IST "YYYY-MM-DD"
+  pausedUntil   String? // paused up to and including this date
+  skipDates     String[] // single days the customer doesn't want
+  note          String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  customer Customer     @relation(fields: [customerId], references: [id])
+  slot     DeliverySlot @relation(fields: [slotId], references: [id])
+  orders   Order[]
+
+  @@index([tenantId, status])
+  @@map("subscriptions")
 }

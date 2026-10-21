@@ -35,6 +35,9 @@ CREATE TYPE "InvoiceType" AS ENUM ('tax_invoice', 'bill_of_supply', 'credit_note
 CREATE TYPE "LedgerType" AS ENUM ('charge', 'payment', 'adjustment', 'credit_note', 'refund');
 
 -- CreateEnum
+CREATE TYPE "SubscriptionStatus" AS ENUM ('active', 'paused', 'cancelled');
+
+-- CreateEnum
 CREATE TYPE "ReturnReason" AS ENUM ('damaged', 'short_delivered', 'returned', 'quality', 'other');
 
 -- CreateEnum
@@ -224,6 +227,7 @@ CREATE TABLE "orders" (
     "cancelReason" TEXT,
     "note" TEXT,
     "deliveredAt" TIMESTAMP(3),
+    "subscriptionId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -366,6 +370,28 @@ CREATE TABLE "message_templates" (
     CONSTRAINT "message_templates_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "subscriptions" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "customerId" TEXT NOT NULL,
+    "addressId" TEXT,
+    "slotId" TEXT NOT NULL,
+    "items" JSONB NOT NULL,
+    "daysOfWeek" INTEGER[],
+    "paymentMethod" "PaymentMethod" NOT NULL,
+    "discountPct" INTEGER NOT NULL DEFAULT 0,
+    "status" "SubscriptionStatus" NOT NULL DEFAULT 'active',
+    "startDate" TEXT NOT NULL,
+    "pausedUntil" TEXT,
+    "skipDates" TEXT[],
+    "note" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "subscriptions_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -406,6 +432,9 @@ CREATE INDEX "orders_tenantId_slotDate_slotId_idx" ON "orders"("tenantId", "slot
 CREATE UNIQUE INDEX "orders_tenantId_number_key" ON "orders"("tenantId", "number");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "orders_subscriptionId_slotDate_key" ON "orders"("subscriptionId", "slotDate");
+
+-- CreateIndex
 CREATE INDEX "order_items_tenantId_orderId_idx" ON "order_items"("tenantId", "orderId");
 
 -- CreateIndex
@@ -437,6 +466,9 @@ CREATE INDEX "order_returns_tenantId_orderId_idx" ON "order_returns"("tenantId",
 
 -- CreateIndex
 CREATE UNIQUE INDEX "message_templates_tenantId_key_key" ON "message_templates"("tenantId", "key");
+
+-- CreateIndex
+CREATE INDEX "subscriptions_tenantId_status_idx" ON "subscriptions"("tenantId", "status");
 
 -- AddForeignKey
 ALTER TABLE "tenant_settings" ADD CONSTRAINT "tenant_settings_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -475,6 +507,9 @@ ALTER TABLE "orders" ADD CONSTRAINT "orders_addressId_fkey" FOREIGN KEY ("addres
 ALTER TABLE "orders" ADD CONSTRAINT "orders_slotId_fkey" FOREIGN KEY ("slotId") REFERENCES "delivery_slots"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "orders" ADD CONSTRAINT "orders_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "subscriptions"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -509,4 +544,10 @@ ALTER TABLE "order_returns" ADD CONSTRAINT "order_returns_orderId_fkey" FOREIGN 
 
 -- AddForeignKey
 ALTER TABLE "order_returns" ADD CONSTRAINT "order_returns_creditNoteId_fkey" FOREIGN KEY ("creditNoteId") REFERENCES "invoices"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_slotId_fkey" FOREIGN KEY ("slotId") REFERENCES "delivery_slots"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 

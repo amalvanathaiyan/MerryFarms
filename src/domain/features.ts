@@ -47,7 +47,7 @@ export const FEATURES: Record<FeatureKey, FeatureDef> = {
   whatsappLite: { defaultOn: true, minPlan: "free", requires: [], available: true },
   upiPayments: { defaultOn: true, minPlan: "free", requires: [], available: true },
   // Off by default: many small farms can't promise eggs every week.
-  subscriptions: { defaultOn: false, minPlan: "growth", requires: [], available: false },
+  subscriptions: { defaultOn: false, minPlan: "growth", requires: [], available: true },
   broadcasts: { defaultOn: false, minPlan: "growth", requires: ["whatsappCloud"], available: false },
   whatsappCloud: { defaultOn: false, minPlan: "starter", requires: [], available: false },
   reports: { defaultOn: true, minPlan: "free", requires: [], available: false },

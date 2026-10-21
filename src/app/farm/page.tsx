@@ -7,6 +7,7 @@ import { istDate, istInstant } from "@/domain/ist"
 import { cn } from "@/lib/utils"
 import { allBalances } from "@/server/billing"
 import { featuresOf } from "@/lib/features"
+import { generatePlanOrders } from "@/server/plans"
 
 export default async function TodayPage() {
   const { db, tenant } = await requireStaff()
@@ -14,9 +15,13 @@ export default async function TodayPage() {
   const t = await getTranslations("farm.today")
   const tc = await getTranslations("common")
   const tu = await getTranslations("farm.units")
+  const te = await getTranslations("errors")
   const unitName = (u: string) => (tu.has(u) ? tu(u) : u)
   const today = istDate(new Date())
   const features = featuresOf(tenant)
+  // Create today's and tomorrow's plan orders (idempotent), before counting anything.
+  const planRun = features.subscriptions ? await generatePlanOrders(tenant) : null
+  const activePlans = features.subscriptions ? await db.subscription.count({ where: { status: "active" } }) : 0
 
   const [toConfirm, open, todays, balances, toPack, lowStock] = await Promise.all([
     db.order.count({ where: { status: "to_confirm" } }),
@@ -94,6 +99,23 @@ export default async function TodayPage() {
           {t("lowStock", { name: `${pick(locale, p.nameTa, p.nameEn)} (${pick(locale, p.packTa, p.packEn)})`, count: p.stockQty, unit: unitName(p.stockUnit) })}
         </p>
       ))}
+
+      {features.subscriptions && (
+        <section className="flex flex-col gap-2 rounded-2xl border bg-card p-4">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold">{t("plans")}</h2>
+            <Link href="/farm/plans" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+              {t("plansOpen", { count: activePlans })}
+            </Link>
+          </div>
+          {planRun && planRun.created.length > 0 && <p className="text-sm">{t("plansCreated", { count: planRun.created.length })}</p>}
+          {planRun?.held.map((h) => (
+            <p key={`${h.planId}${h.date}`} className="rounded-lg bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
+              {t("planHeld", { name: h.customerName, date: dayLabel(h.date, locale, { today: tc("today"), tomorrow: tc("tomorrow") }) })} — {te.has(h.reason) ? te(h.reason) : h.reason}
+            </p>
+          ))}
+        </section>
+      )}
 
       <section className="rounded-2xl border bg-card p-4">
         <h2 className="mb-2 text-lg font-semibold">{t("packing")}</h2>

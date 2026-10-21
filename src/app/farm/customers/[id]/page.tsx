@@ -30,10 +30,11 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const customer = await db.customer.findFirst({ where: { id }, include: { addresses: { orderBy: { createdAt: "desc" }, take: 3 } } })
   if (!customer) notFound()
 
-  const [entries, orders, invoices] = await Promise.all([
+  const [entries, orders, invoices, plans] = await Promise.all([
     db.ledgerEntry.findMany({ where: { customerId: id }, orderBy: { at: "asc" } }),
     db.order.findMany({ where: { customerId: id }, orderBy: { createdAt: "desc" }, take: 20 }),
     db.invoice.findMany({ where: { customerId: id }, select: { id: true, orderId: true, number: true } }),
+    db.subscription.findMany({ where: { customerId: id, status: { not: "cancelled" } }, select: { id: true, status: true } }),
   ])
   const statement = runningBalances(entries)
   const balance = statement.at(-1)?.balancePaise ?? 0
@@ -126,6 +127,15 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           </div>
         )}
       </section>
+      )}
+
+      {features.subscriptions && (
+        <section className="flex items-center justify-between gap-3 rounded-2xl border bg-card p-4">
+          <span className="font-semibold">{t("plans", { count: plans.length })}</span>
+          <Link href={plans.length ? "/farm/plans" : "/farm/plans/new"} className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+            {plans.length ? t("seePlans") : t("startPlan")}
+          </Link>
+        </section>
       )}
 
       <section className="rounded-2xl border bg-card p-4">

@@ -64,9 +64,16 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   return (
     <div className="flex flex-col gap-4">
       {isDesk && (
-        <Button asChild size="lg">
-          <Link href="/farm/orders/new">{t("newOrder")}</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild size="lg" className="flex-1">
+            <Link href="/farm/orders/new">{t("newOrder")}</Link>
+          </Button>
+          {features.subscriptions && (
+            <Button asChild size="lg" variant="outline">
+              <Link href="/farm/plans">{t("plans")}</Link>
+            </Button>
+          )}
+        </div>
       )}
       <nav className="flex gap-2" aria-label="Order status">
         {tabs.map((k) => (
@@ -122,6 +129,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               <div className="flex items-center gap-2">
                 <b className="tabular-nums">{code}</b>
                 <span className="rounded-md border px-1.5 text-xs text-muted-foreground">{t(`channel_${o.channel}`)}</span>
+                {o.subscriptionId && <span className="rounded-md bg-accent px-1.5 text-xs font-semibold">{t("planBadge")}</span>}
               </div>
               <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold">{t(`status_${o.status}`)}</span>
             </div>
