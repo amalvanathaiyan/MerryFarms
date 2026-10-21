@@ -256,3 +256,86 @@ describe("feature switches change what the server does", () => {
     expect(await tenantDb(small.id).payment.count()).toBe(1)
   })
 })
+
+describe("farm-side orders and edits", () => {
+  const db = () => tenantDb(merry.id)
+  const eggsStock = async () => (await db().product.findFirst({ where: { id: "p-eggs" } }))!.stockQty
+  const staffOrder = (over: Partial<import("./orders").PlaceOrderInput> = {}) =>
+    order({ channel: "phone", customer: { phone: "+919000010009", name: "Lakshmi", language: "ta" }, items: [{ productId: "p-eggs", qty: 1 }], byStaffId: "staff-1", ...over })
+
+  it("lets staff book a full slot, which customers can't", async () => {
+    const saturday = "2026-10-24|slot-am" // max 3 orders
+    for (let i = 0; i < 3; i++) await svc.placeOrder(merry, order({ items: [{ productId: "p-eggs", qty: 1 }], slotKey: saturday }), NOW)
+    await expect(svc.placeOrder(merry, order({ items: [{ productId: "p-eggs", qty: 1 }], slotKey: saturday }), NOW)).rejects.toThrow("slot_full")
+    const { order: o } = await svc.placeOrder(merry, staffOrder({ slotKey: saturday, staffOverride: true }), NOW)
+    expect(o).toMatchObject({ channel: "phone", status: "confirmed", slotDate: "2026-10-24" })
+  })
+
+  it("lets staff book after the online cut-off, but customers can't", async () => {
+    const lateEvening = new Date("2026-10-21T14:30:00Z") // 20:00 IST, after tomorrow-morning's 19:00 cut-off
+    await expect(svc.placeOrder(merry, order({ slotKey: "2026-10-22|slot-am" }), lateEvening)).rejects.toThrow("slot_closed")
+    const { order: o } = await svc.placeOrder(merry, staffOrder({ staffOverride: true }), lateEvening)
+    expect(o.slotDate).toBe("2026-10-22")
+  })
+
+  it("records a walk-in sale: no slot, no delivery fee, handed over and invoiced at once", async () => {
+    const before = await eggsStock()
+    const { order: o } = await svc.placeOrder(merry, staffOrder({ channel: "walk_in", slotKey: null, address: null }), NOW)
+    expect(o).toMatchObject({ status: "confirmed", slotId: null, deliveryFeePaise: 0, totalPaise: 39_000, addressId: null })
+    expect(await eggsStock()).toBe(before - 1)
+    const { invoice } = await billing.deliverOrder(merry.id, o.id, "upi", "staff-1", NOW)
+    expect(invoice?.type).toBe("bill_of_supply")
+    expect((await db().order.findFirst({ where: { id: o.id } }))!.status).toBe("delivered")
+  })
+
+  it("needs an address for anything that isn't a walk-in", async () => {
+    await expect(svc.placeOrder(merry, staffOrder({ address: null, staffOverride: true }), NOW)).rejects.toThrow("address_required")
+  })
+
+  it("edits items: keeps the agreed price, adjusts stock by the difference, recomputes totals", async () => {
+    await db().product.updateMany({ where: { id: "p-eggs" }, data: { stockQty: 20 } })
+    const { order: o } = await svc.placeOrder(
+      merry,
+      staffOrder({ channel: "whatsapp", items: [{ productId: "p-eggs", qty: 1 }], slotKey: "2026-10-23|slot-am", staffOverride: true }),
+      NOW
+    )
+    expect(o.status).toBe("to_confirm") // WhatsApp orders wait for a call
+    await db().product.updateMany({ where: { id: "p-eggs" }, data: { pricePaise: 45_000 } }) // price rises afterwards
+    const stockBefore = await eggsStock()
+
+    const totals = await svc.editOrder(merry, o.id, { items: [{ productId: "p-eggs", qty: 3 }], slotKey: "2026-10-23|slot-am", address: {}, paymentMethod: "cash_on_delivery", note: "3 trays" }, "staff-1", NOW)
+    expect(totals).toMatchObject({ subtotalPaise: 117_000, deliveryFeePaise: 0, totalPaise: 117_000 }) // 3 × the agreed ₹390
+    expect(await eggsStock()).toBe(stockBefore - 2)
+    const after = (await db().order.findFirst({ where: { id: o.id }, include: { items: true, events: true } }))!
+    expect(after).toMatchObject({ status: "to_confirm", paymentMethod: "cash_on_delivery", note: "3 trays" })
+    expect(after.items).toHaveLength(1)
+    expect(after.events.map((e) => e.note)).toContain("edited")
+
+    // Fewer items put stock back.
+    await svc.editOrder(merry, o.id, { items: [{ productId: "p-eggs", qty: 1 }], slotKey: "2026-10-23|slot-am", address: {}, paymentMethod: "cash_on_delivery" }, "staff-1", NOW)
+    expect(await eggsStock()).toBe(stockBefore)
+  })
+
+  it("confirms the order when the edit comes from a call ('Changed')", async () => {
+    const o = (await db().order.findFirst({ where: { status: "to_confirm", channel: "whatsapp" } }))!
+    await svc.editOrder(merry, o.id, { items: [{ productId: "p-eggs", qty: 2 }], slotKey: "2026-10-23|slot-am", address: {}, paymentMethod: "upi_on_delivery", fromCall: true }, "staff-1", NOW)
+    const after = (await db().order.findFirst({ where: { id: o.id }, include: { calls: true } }))!
+    expect(after.status).toBe("confirmed")
+    expect(after.calls.map((c) => c.outcome)).toEqual(["changed"])
+  })
+
+  it("refuses edits once the order is packed", async () => {
+    const o = (await db().order.findFirst({ where: { status: "confirmed", channel: "whatsapp" } }))!
+    await svc.setOrderStatus(merry.id, o.id, "packed", "staff-1")
+    await expect(
+      svc.editOrder(merry, o.id, { items: [{ productId: "p-eggs", qty: 1 }], slotKey: "2026-10-23|slot-am", address: {}, paymentMethod: "upi_on_delivery" }, "staff-1", NOW)
+    ).rejects.toThrow("not_editable")
+  })
+
+  it("never edits another farm's order", async () => {
+    const o = (await db().order.findFirst())!
+    await expect(
+      svc.editOrder(other, o.id, { items: [{ productId: "p-other", qty: 1 }], slotKey: "2026-10-22|slot-am-2", address: {}, paymentMethod: "upi_on_delivery" }, "staff-1", NOW)
+    ).rejects.toThrow("not_found")
+  })
+})

@@ -9,6 +9,7 @@ import { formatIndianMobile } from "@/domain/phone"
 import { liteOrderMessage, waMeLink, type LiteMessageKind } from "@/domain/whatsapp-lite"
 import { OrderActions } from "@/components/farm/order-actions"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 import { featuresOf } from "@/lib/features"
 
 const TABS: Record<string, OrderStatus[]> = {
@@ -27,7 +28,8 @@ const MESSAGE_FOR: Partial<Record<OrderStatus, LiteMessageKind>> = {
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { tab: rawTab } = await searchParams
-  const { tenant, db } = await requireStaff()
+  const { tenant, db, staff } = await requireStaff()
+  const isDesk = staff.roles.includes("owner") || staff.roles.includes("order_desk")
   const features = featuresOf(tenant)
   const locale = await getLocale()
   const t = await getTranslations("farm.orders")
@@ -58,6 +60,11 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="flex flex-col gap-4">
+      {isDesk && (
+        <Button asChild size="lg">
+          <Link href="/farm/orders/new">{t("newOrder")}</Link>
+        </Button>
+      )}
       <nav className="flex gap-2" aria-label="Order status">
         {tabs.map((k) => (
           <Link
@@ -81,7 +88,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           pack: pick(locale, i.product.packTa, i.product.packEn),
           qty: i.qty,
         }))
-        const slotText = `${dayLabel(o.slotDate, locale, labels)} · ${o.slotLabel}`
+        const slotText = o.channel === "walk_in" ? t("atFarm") : `${dayLabel(o.slotDate, locale, labels)} · ${o.slotLabel}`
         const kind = MESSAGE_FOR[o.status]
         // Message to the customer, in the customer's language.
         const waText = kind
@@ -153,6 +160,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               waLink={features.whatsappLite && waText ? waMeLink(o.customer.phone, waText) : null}
               invoiceId={o.invoices[0]?.id ?? null}
               allowCredit={features.creditAccounts}
+              canEdit={isDesk && o.channel !== "walk_in"}
             />
           </article>
         )

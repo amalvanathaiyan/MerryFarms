@@ -7,8 +7,9 @@ export type CallOutcome = "confirmed" | "changed" | "cancelled" | "no_answer" | 
 
 const NEXT: Record<OrderStatus, OrderStatus[]> = {
   to_confirm: ["confirmed", "cancelled"],
-  confirmed: ["packed", "out_for_delivery", "cancelled"],
-  packed: ["out_for_delivery", "cancelled"],
+  // confirmed/packed → delivered covers pickup at the farm and walk-in sales.
+  confirmed: ["packed", "out_for_delivery", "delivered", "cancelled"],
+  packed: ["out_for_delivery", "delivered", "cancelled"],
   out_for_delivery: ["delivered"],
   delivered: [],
   cancelled: [],
@@ -30,6 +31,21 @@ export function nextStep(status: OrderStatus): OrderStatus | null {
 }
 
 export const isOpen = (s: OrderStatus) => s !== "delivered" && s !== "cancelled"
+
+/** Items, slot and address can change until the order is packed. */
+export const isEditable = (s: OrderStatus) => s === "to_confirm" || s === "confirmed"
+
+/**
+ * Stock change per product when an order's items change from `before` to `after`.
+ * Positive = take more from stock; negative = put back.
+ */
+export function stockDeltas(before: { productId: string; qty: number }[], after: { productId: string; qty: number }[]): Map<string, number> {
+  const d = new Map<string, number>()
+  for (const i of after) d.set(i.productId, (d.get(i.productId) ?? 0) + i.qty)
+  for (const i of before) d.set(i.productId, (d.get(i.productId) ?? 0) - i.qty)
+  for (const [k, v] of d) if (v === 0) d.delete(k)
+  return d
+}
 
 /** "MF-1047" from a farm prefix and running number. */
 export function orderCode(prefix: string, number: number): string {
