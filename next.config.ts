@@ -17,6 +17,8 @@ const withPWA = withPWAInit({
 })
 
 const nextConfig: NextConfig = {
+  // Dev server only: let phones on the same Wi-Fi load the app (npm run demo / dev).
+  allowedDevOrigins: ["192.168.*.*", "10.*.*.*", "*.local"],
   images: {
     remotePatterns: [
       {

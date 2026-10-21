@@ -8,7 +8,9 @@ import { formatIndianMobile } from "@/domain/phone"
  */
 export function InvoiceView({ s }: { s: InvoiceSnapshot }) {
   const issued = new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }).format(new Date(s.issuedAt))
-  const isTax = s.type === "tax_invoice"
+  const isCredit = s.type === "credit_note"
+  // A credit note shows tax the same way as the invoice it corrects.
+  const isTax = s.type === "tax_invoice" || s.against?.type === "tax_invoice"
 
   return (
     <article className="mx-auto flex w-full max-w-2xl flex-col gap-5 rounded-2xl border bg-card p-5 text-card-foreground print:max-w-none print:rounded-none print:border-0 print:p-0">
@@ -21,11 +23,12 @@ export function InvoiceView({ s }: { s: InvoiceSnapshot }) {
           {s.farm.fssaiNo && <p className="text-sm tabular-nums">FSSAI: {s.farm.fssaiNo}</p>}
         </div>
         <div className="text-right">
-          <p className="text-lg font-bold">{isTax ? "வரி விலைப்பட்டியல் · Tax invoice" : "பில் · Bill of supply"}</p>
+          <p className="text-lg font-bold">{isCredit ? "கடன் குறிப்பு · Credit note" : isTax ? "வரி விலைப்பட்டியல் · Tax invoice" : "பில் · Bill of supply"}</p>
           <p className="tabular-nums">{s.number}</p>
           <p className="text-sm text-muted-foreground tabular-nums">
             {issued} · {s.orderCode}
           </p>
+          {s.against && <p className="text-sm tabular-nums">பில் எண் · Against {s.against.number}</p>}
         </div>
       </header>
 
@@ -71,7 +74,7 @@ export function InvoiceView({ s }: { s: InvoiceSnapshot }) {
       <dl className="ml-auto flex w-full max-w-xs flex-col gap-1 text-sm tabular-nums">
         <Line label="பொருட்கள் · Items" value={formatRupees(s.subtotalPaise)} />
         <Line label="டெலிவரி · Delivery" value={s.deliveryFeePaise ? formatRupees(s.deliveryFeePaise) : "—"} />
-        <Line label="மொத்தம் · Total" value={formatRupees(s.totalPaise)} strong />
+        <Line label={isCredit ? "திருப்பித் தொகை · Credit" : "மொத்தம் · Total"} value={formatRupees(s.totalPaise)} strong />
         {isTax &&
           s.taxByRate.map((r) => (
             <div key={r.rate} className="text-xs text-muted-foreground">

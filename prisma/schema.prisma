@@ -30,8 +30,8 @@ enum Plan {
 }
 
 enum WhatsAppMode {
-  lite   // farm's own WhatsApp Business app + one-tap prefilled messages
-  cloud  // Meta WhatsApp Cloud API
+  lite // farm's own WhatsApp Business app + one-tap prefilled messages
+  cloud // Meta WhatsApp Cloud API
 }
 
 enum Language {
@@ -84,9 +84,25 @@ enum InvoiceType {
 }
 
 enum LedgerType {
-  charge
-  payment
-  adjustment
+  charge // + order delivered
+  payment // − money received
+  adjustment // ± manual correction
+  credit_note // − goods returned or short delivered
+  refund // + money paid back to the customer
+}
+
+enum ReturnReason {
+  damaged
+  short_delivered
+  returned
+  quality
+  other
+}
+
+enum RefundMethod {
+  account // reduce dues, or keep as an advance
+  cash
+  upi
 }
 
 enum PaymentStatus {
@@ -146,17 +162,17 @@ model Tenant {
 
 /// Which orders need a confirmation call. Each farm sets its own rules.
 model TenantSettings {
-  id                       String  @id @default(uuid())
-  tenantId                 String  @unique
-  callWhatsAppOrders       Boolean @default(true)
-  callWebOrdersFromNew     Boolean @default(true)
-  newCustomerOrderCount    Int     @default(3) // fewer delivered orders than this = "new"
-  callAboveTotalPaise      Int     @default(150000)
-  callAboveUsualMultiple   Int     @default(3)
-  skipCallForTrusted       Boolean @default(true)
-  skipCallForPrepaid       Boolean @default(true)
-  callRetryMinutes         Int     @default(30)
-  maxCallAttempts          Int     @default(3)
+  id                     String  @id @default(uuid())
+  tenantId               String  @unique
+  callWhatsAppOrders     Boolean @default(true)
+  callWebOrdersFromNew   Boolean @default(true)
+  newCustomerOrderCount  Int     @default(3) // fewer delivered orders than this = "new"
+  callAboveTotalPaise    Int     @default(150000)
+  callAboveUsualMultiple Int     @default(3)
+  skipCallForTrusted     Boolean @default(true)
+  skipCallForPrepaid     Boolean @default(true)
+  callRetryMinutes       Int     @default(30)
+  maxCallAttempts        Int     @default(3)
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -344,6 +360,7 @@ model Order {
   calls    ConfirmationCall[]
   invoices Invoice[]
   payments Payment[]
+  returns  OrderReturn[]
 
   @@unique([tenantId, number])
   @@index([tenantId, status])
@@ -423,8 +440,14 @@ model Invoice {
   pdfUrl      String?
   issuedAt    DateTime    @default(now())
 
-  order    Order?   @relation(fields: [orderId], references: [id])
-  customer Customer @relation(fields: [customerId], references: [id])
+  /// For credit notes: the invoice they correct.
+  refInvoiceId String?
+
+  order       Order?        @relation(fields: [orderId], references: [id])
+  customer    Customer      @relation(fields: [customerId], references: [id])
+  refInvoice  Invoice?      @relation("CreditNotes", fields: [refInvoiceId], references: [id])
+  creditNotes Invoice[]     @relation("CreditNotes")
+  returns     OrderReturn[]
 
   @@unique([tenantId, number])
   @@index([tenantId, customerId])
@@ -435,10 +458,11 @@ model Invoice {
 /// Next invoice sequence per tenant per financial year.
 model InvoiceCounter {
   tenantId String
+  series   String @default("INV") // "INV" for invoices, "CN" for credit notes
   fy       String
   nextSeq  Int    @default(1)
 
-  @@id([tenantId, fy])
+  @@id([tenantId, series, fy])
   @@map("invoice_counters")
 }
 
@@ -478,4 +502,29 @@ model Payment {
 
   @@index([tenantId, customerId])
   @@map("payments")
+}
+
+/// Goods returned or short delivered after an order was delivered.
+/// Kept even when the farm doesn't issue invoices, so the history is always there.
+model OrderReturn {
+  id               String       @id @default(uuid())
+  tenantId         String
+  orderId          String
+  /// [{ productId, qty, unitPricePaise, gstRate }] at the agreed prices
+  items            Json
+  reason           ReturnReason
+  note             String?
+  amountPaise      Int // goods + any delivery charge refunded
+  deliveryFeePaise Int          @default(0)
+  refundMethod     RefundMethod
+  restocked        Boolean      @default(false)
+  creditNoteId     String?
+  byStaffId        String?
+  at               DateTime     @default(now())
+
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  creditNote Invoice? @relation(fields: [creditNoteId], references: [id])
+
+  @@index([tenantId, orderId])
+  @@map("order_returns")
 }

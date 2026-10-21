@@ -52,6 +52,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         items: { include: { product: true } },
         calls: { orderBy: { at: "desc" } },
         invoices: { where: { type: { not: "credit_note" } }, select: { id: true } },
+        returns: { select: { amountPaise: true } },
       },
       orderBy: tab === "done" ? { updatedAt: "desc" } : [{ slotDate: "asc" }, { createdAt: "asc" }],
       take: tab === "done" ? 50 : 200,
@@ -146,6 +147,11 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                 <b className="text-foreground tabular-nums">{formatRupees(o.totalPaise)}</b> · {ts(`pay_${o.paymentMethod === "cash_on_delivery" ? "cash_on_delivery" : "upi_on_delivery"}`)}
               </span>
             </div>
+            {o.returns.length > 0 && (
+              <p className="text-sm font-medium text-destructive tabular-nums">
+                {t("returnedAmount", { amount: formatRupees(o.returns.reduce((a, r) => a + r.amountPaise, 0)) })}
+              </p>
+            )}
             {o.note && (
               <p className="rounded-lg bg-muted px-3 py-2 text-sm">
                 {t("note")}: {o.note}
@@ -161,6 +167,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               invoiceId={o.invoices[0]?.id ?? null}
               allowCredit={features.creditAccounts}
               canEdit={isDesk && o.channel !== "walk_in"}
+              canReturn={isDesk && features.returns}
             />
           </article>
         )

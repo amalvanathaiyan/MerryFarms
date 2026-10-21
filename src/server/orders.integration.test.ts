@@ -339,3 +339,63 @@ describe("farm-side orders and edits", () => {
     ).rejects.toThrow("not_found")
   })
 })
+
+describe("returns and credit notes", () => {
+  let returns: typeof import("./returns")
+  beforeAll(async () => {
+    returns = await import("./returns")
+  })
+  const db = () => tenantDb(merry.id)
+  const priyaId = async () => (await db().customer.findFirst({ where: { phone: "+919000010001" } }))!.id
+  const balance = async () => billing.customerBalance(merry.id, await priyaId())
+  const base = { reason: "damaged" as const, restock: false, refundDeliveryFee: false }
+
+  it("refunds a cash-paid item: credit note in its own series, stock back, balance unchanged", async () => {
+    const o = (await db().order.findFirst({ where: { number: 1003 } }))! // 1 tray, paid cash on delivery
+    const stock = (await db().product.findFirst({ where: { id: "p-eggs" } }))!.stockQty
+    const before = await balance()
+    const { creditNote, plan } = await returns.processReturn(merry.id, o.id, { ...base, items: [{ productId: "p-eggs", qty: 1 }], refundMethod: "cash", restock: true }, "staff-1", NOW)
+    expect(plan.totalPaise).toBe(39_000)
+    expect(creditNote).toMatchObject({ number: "MF-CN/2026-27/0001", type: "credit_note", totalPaise: 39_000 })
+    const snap = billing.readSnapshot(creditNote!.snapshot)
+    expect(snap.against?.number).toMatch(/^MF\/2026-27\/\d{4}$/)
+    expect((await db().product.findFirst({ where: { id: "p-eggs" } }))!.stockQty).toBe(stock + 1)
+    expect(await balance()).toBe(before) // credit −390, refund +390
+    expect(await db().payment.count({ where: { orderId: o.id, status: "refunded" } })).toBe(1)
+  })
+
+  it("won't return more than was delivered", async () => {
+    const o = (await db().order.findFirst({ where: { number: 1003 } }))!
+    await expect(returns.processReturn(merry.id, o.id, { ...base, items: [{ productId: "p-eggs", qty: 1 }], refundMethod: "cash" }, "staff-1", NOW)).rejects.toThrow("too_many_returned")
+  })
+
+  it("credits the account for an on-account order and refunds the delivery charge when everything comes back", async () => {
+    const o = (await db().order.findFirst({ where: { number: 1002 } }))! // 1 tray + ₹30 delivery, on account
+    const before = await balance()
+    const { plan, creditNote } = await returns.processReturn(merry.id, o.id, { ...base, reason: "short_delivered", items: [{ productId: "p-eggs", qty: 1 }], refundMethod: "account", refundDeliveryFee: true }, "staff-1", NOW)
+    expect(plan).toMatchObject({ goodsPaise: 39_000, deliveryFeePaise: 3000, totalPaise: 42_000, fullyReturned: true })
+    expect(creditNote!.number).toBe("MF-CN/2026-27/0002")
+    expect(await balance()).toBe(before - 42_000)
+    // Invoice numbers are untouched by credit notes.
+    expect(await db().invoice.count({ where: { type: { not: "credit_note" } } })).toBe(await db().invoice.count({ where: { number: { startsWith: "MF/" } } }))
+  })
+
+  it("only returns delivered orders", async () => {
+    const o = (await db().order.findFirst({ where: { status: { not: "delivered" } } }))!
+    await expect(returns.processReturn(merry.id, o.id, { ...base, items: [{ productId: "p-eggs", qty: 1 }], refundMethod: "cash" }, "staff-1", NOW)).rejects.toThrow("not_delivered")
+  })
+
+  it("on a farm without invoices or credit: no credit note, and no 'on account'", async () => {
+    const o = (await tenantDb(small.id).order.findFirst({ where: { status: "delivered" } }))!
+    await expect(returns.processReturn(small.id, o.id, { ...base, items: [{ productId: "p-small", qty: 1 }], refundMethod: "account" }, "staff-1", NOW)).rejects.toThrow("credit_off")
+    const { creditNote, ret } = await returns.processReturn(small.id, o.id, { ...base, items: [{ productId: "p-small", qty: 1 }], refundMethod: "upi" }, "staff-1", NOW)
+    expect(creditNote).toBeNull()
+    expect(ret).toMatchObject({ amountPaise: 9_000, refundMethod: "upi", restocked: false })
+  })
+
+  it("refuses returns when the farm has switched them off", async () => {
+    await prisma.tenant.update({ where: { id: small.id }, data: { features: { ...small.features, returns: false } } })
+    const o = (await tenantDb(small.id).order.findFirst({ where: { status: "delivered" } }))!
+    await expect(returns.processReturn(small.id, o.id, { ...base, items: [{ productId: "p-small", qty: 1 }], refundMethod: "cash" }, "staff-1", NOW)).rejects.toThrow("returns_off")
+  })
+})
