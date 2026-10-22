@@ -50,10 +50,8 @@
     "placedTitle": "Order {code} received",
     "placedCall": "{farm} will call you shortly to confirm it.",
     "placedConfirmed": "Your order is confirmed.",
-    "placedWhatsApp": "Send to the farm on WhatsApp",
     "orderMore": "Order more",
     "callFarm": "Call the farm",
-    "waOrderText": "Hello! My order {code}:\n{items}\nTotal {total}\n{name}",
     "orderingOff": "To order, call the farm or send them a WhatsApp message.",
     "whatsappFarm": "Order on WhatsApp",
     "area": {
@@ -71,7 +69,9 @@
     },
     "myOrders": "My orders",
     "rememberedHere": "This phone will remember you; next time your details are filled in.",
-    "farmWillSendLink": "This number is already with us. The farm will send you your personal link."
+    "farmWillSendLink": "This number is already with us. The farm will send you your personal link.",
+    "trackOrder": "Track this order",
+    "messageFarm": "Message the farm"
   },
   "farm": {
     "nav": {
