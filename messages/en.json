@@ -74,7 +74,8 @@
     "messageFarm": "Message the farm",
     "percentOff": "{pct}% off",
     "offerUntil": "Offer till {day}",
-    "noDeliveryOn": "No deliveries on {days}."
+    "noDeliveryOn": "No deliveries on {days}.",
+    "changingOrder": "Changing order {code}: placing this replaces it."
   },
   "farm": {
     "nav": {
@@ -677,7 +678,8 @@
     "offer_not_lower": "The offer price must be lower than the usual price.",
     "category_not_empty": "Move or delete the products in this category first.",
     "price_invalid": "That price isn't allowed: it must be at least ₹1 and not above the usual price.",
-    "date_past": "Choose today or a later date."
+    "date_past": "Choose today or a later date.",
+    "too_late_to_change": "It's too late to change this order online. Please call the farm."
   },
   "my": {
     "connectTitle": "Connect with the farm",
@@ -699,7 +701,15 @@
     "notYou": "Not you? Forget me on this phone",
     "forgetConfirm": "Tap again to confirm",
     "messageFarm": "Message the farm",
-    "newReplies": "{count} new"
+    "newReplies": "{count} new",
+    "changeOrder": "Change order",
+    "cancelOrder": "Cancel order",
+    "cancelWhy": "Why cancel?",
+    "cancel_mistake": "Ordered by mistake",
+    "cancel_not_needed": "Don't need it now",
+    "cancel_other": "Other reason",
+    "keepOrder": "Keep my order",
+    "callToChange": "Call the farm to change this order"
   },
   "chat": {
     "title": "Messages",

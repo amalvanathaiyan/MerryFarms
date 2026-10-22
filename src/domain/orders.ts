@@ -1,3 +1,4 @@
+import { istInstant } from "./ist"
 /** Order lifecycle. Every WhatsApp order starts at to_confirm until a call (or a rule) confirms it. */
 
 export type OrderStatus = "to_confirm" | "confirmed" | "packed" | "out_for_delivery" | "delivered" | "cancelled"
@@ -124,3 +125,22 @@ export function afterCall(
         : { status: null, retry: true, needsOwner: false }
   }
 }
+
+/**
+ * A customer may cancel or change their own order while the farm hasn't started on it
+ * (waiting for the call, or confirmed) and the slot's ordering cut-off hasn't passed.
+ * After that, packing may have begun: they call the farm instead.
+ */
+export function customerMayChange(
+  order: { status: OrderStatus; channel: OrderChannel; slotDate: string },
+  slot: { startTime: string; cutoffHours: number } | null,
+  now: Date
+): boolean {
+  if (order.status !== "to_confirm" && order.status !== "confirmed") return false
+  if (order.channel === "walk_in" || !slot) return false
+  const cutoff = istInstant(order.slotDate, slot.startTime).getTime() - slot.cutoffHours * 3_600_000
+  return now.getTime() < cutoff
+}
+
+export const CUSTOMER_CANCEL_REASONS = ["mistake", "not_needed", "other"] as const
+export type CustomerCancelReason = (typeof CUSTOMER_CANCEL_REASONS)[number]

@@ -868,3 +868,48 @@ describe("closed days", () => {
     expect((await svc.openSlotOptions(other.id, NOW, { forStaff: true })).some((o) => o.date === "2026-10-26")).toBe(true)
   })
 })
+
+describe("customers cancelling and changing their own orders", () => {
+  const db = () => tenantDb(merry.id)
+  const stock = async () => (await db().product.findFirst({ where: { id: "p-eggs" } }))!.stockQty
+  const mine = (slotKey: string, qty = 2) =>
+    svc.placeOrder(merry, order({ customer: { phone: "+919000080001", name: "Self service", language: "ta" }, items: [{ productId: "p-eggs", qty }], slotKey }), NOW)
+  beforeAll(async () => {
+    await db().product.updateMany({ where: { id: "p-eggs" }, data: { stockQty: 10, offerPricePaise: null, offerEndsOn: null } })
+  })
+
+  it("lets them cancel before the cut-off, returning the stock", async () => {
+    const before = await stock()
+    const { order: o, customer } = await mine("2026-10-26|slot-am")
+    expect(await stock()).toBe(before - 2)
+    const cancelled = await svc.cancelByCustomer(merry.id, customer.id, o.id, "mistake", NOW)
+    expect(cancelled.status).toBe("cancelled")
+    expect(await stock()).toBe(before)
+    const ev = await db().orderEvent.findFirst({ where: { orderId: o.id, toStatus: "cancelled" } })
+    expect(ev).toMatchObject({ byStaffId: null, note: "customer:mistake" })
+  })
+
+  it("refuses after the cut-off, and refuses someone else's order", async () => {
+    const { order: o, customer } = await mine("2026-10-26|slot-am", 1)
+    const afterCutoff = new Date("2026-10-25T14:00:00Z") // 19:30 IST, past the 19:00 cut-off for 7 AM next day
+    await expect(svc.cancelByCustomer(merry.id, customer.id, o.id, "mistake", afterCutoff)).rejects.toThrow("too_late_to_change")
+    const someoneElse = await db().customer.findFirst({ where: { phone: "+919000010001" } })
+    await expect(svc.cancelByCustomer(merry.id, someoneElse!.id, o.id, "mistake", NOW)).rejects.toThrow("not_found")
+  })
+
+  it("replaces an order in one step, reusing its stock; a failed change leaves it untouched", async () => {
+    await db().product.updateMany({ where: { id: "p-eggs" }, data: { stockQty: 3 } })
+    const { order: old, customer } = await mine("2026-10-26|slot-am", 3) // takes all 3
+    expect(await stock()).toBe(0)
+    const changed = { customer: { phone: "+919000080001", name: "Self service", language: "ta" as const }, slotKey: "2026-10-26|slot-am" }
+    // Asking for more than exists fails, and the old order is still there.
+    await expect(svc.placeOrder(merry, order({ ...changed, items: [{ productId: "p-eggs", qty: 4 }], replaces: old.id }), NOW)).rejects.toThrow("out_of_stock")
+    expect((await db().order.findFirst({ where: { id: old.id } }))!.status).toBe("to_confirm")
+    // Two of the same eggs: possible only because the old order's three come back.
+    const { order: next } = await svc.placeOrder(merry, order({ ...changed, items: [{ productId: "p-eggs", qty: 2 }], replaces: old.id }), NOW)
+    const oldNow = await db().order.findFirst({ where: { id: old.id } })
+    expect(oldNow).toMatchObject({ status: "cancelled", cancelReason: `customer:changed:MF-${next.number}` })
+    expect(await stock()).toBe(1)
+    expect(next.customerId).toBe(customer.id)
+  })
+})

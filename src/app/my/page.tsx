@@ -10,7 +10,7 @@ import { tenantDb } from "@/lib/tenant-db"
 import { dayLabel, pick } from "@/lib/i18n-helpers"
 import { customerBalance } from "@/server/billing"
 import { formatRupees } from "@/domain/money"
-import { orderCode, isOpen } from "@/domain/orders"
+import { customerMayChange, orderCode, isOpen } from "@/domain/orders"
 import { formatIndianMobile } from "@/domain/phone"
 import { FarmBanner } from "@/components/farm-banner"
 import { Button } from "@/components/ui/button"
@@ -18,6 +18,7 @@ import { ConnectForm } from "@/components/shop/connect-form"
 import { SignInFlow } from "@/components/shop/sign-in-flow"
 import { otpOn } from "@/server/otp"
 import { ForgetMe } from "@/components/shop/forget-me"
+import { OrderSelfService } from "@/components/shop/order-self-service"
 import { EnablePush } from "@/components/push/enable-push"
 import { unreadForCustomer } from "@/server/chat"
 
@@ -60,11 +61,12 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
 
   const db = tenantDb(tenant.id)
   const [orders, invoices, balance, unread] = await Promise.all([
-    db.order.findMany({ where: { customerId: me.id }, include: { items: { include: { product: true } } }, orderBy: { createdAt: "desc" }, take: 15 }),
+    db.order.findMany({ where: { customerId: me.id }, include: { items: { include: { product: true } }, slot: true }, orderBy: { createdAt: "desc" }, take: 15 }),
     db.invoice.findMany({ where: { customerId: me.id }, select: { orderId: true, publicToken: true, number: true, type: true } }),
     features.creditAccounts ? customerBalance(tenant.id, me.id) : Promise.resolve(0),
     features.messages ? unreadForCustomer(tenant.id, me.id) : Promise.resolve(0),
   ])
+  const now = new Date()
   const open = orders.filter((o) => isOpen(o.status))
   const past = orders.filter((o) => !isOpen(o.status))
   const invoiceFor = (orderId: string) => invoices.find((i) => i.orderId === orderId && i.type !== "credit_note")
@@ -131,6 +133,7 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
                   <span>{slotText(o)}</span>
                   <span>{formatRupees(o.totalPaise)}</span>
                 </div>
+                <OrderSelfService orderId={o.id} canChange={customerMayChange(o, o.slot, now)} farmPhone={tenant.phone} webShop={features.webShop} />
               </article>
             )
           })}
