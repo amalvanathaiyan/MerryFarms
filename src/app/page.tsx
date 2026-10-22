@@ -7,11 +7,13 @@ import { istDate } from "@/domain/ist"
 import { openSlotOptions } from "@/server/orders"
 import { Shop, type ShopData } from "@/components/shop/shop"
 import { featuresOf } from "@/lib/features"
+import { getSessionCustomer } from "@/lib/customer-session"
 
 export const dynamic = "force-dynamic"
 
 /** The farm's customer shop: Tamil first, works without login. */
-export default async function ShopPage() {
+export default async function ShopPage({ searchParams }: { searchParams: Promise<{ reorder?: string }> }) {
+  const { reorder } = await searchParams
   const tenant = await getTenant()
   if (!tenant) {
     return (
@@ -36,6 +38,10 @@ export default async function ShopPage() {
 
   const labels = { today: t("today"), tomorrow: t("tomorrow") }
   const features = featuresOf(tenant)
+  // A returning customer on this phone: pre-fill checkout, and "Order again" from My orders.
+  const me = await getSessionCustomer()
+  const again = me && reorder ? await db.order.findFirst({ where: { id: reorder, customerId: me.id }, include: { items: true } }) : null
+  const latest = me?.addresses[0]
   const firstOpen = options.find((o) => !o.full)
 
   const data: ShopData = {
@@ -51,7 +57,23 @@ export default async function ShopPage() {
       tracksStock: features.stockTracking,
       // Only the radius is shown; the farm's exact location stays on the server.
       radiusKm: features.deliveryArea ? tenant.deliveryRadiusKm : null,
+      accounts: features.customerAccounts,
     },
+    me: me
+      ? {
+          name: me.name,
+          phone: me.phone,
+          address: latest ? { line: latest.line, landmark: latest.landmark ?? "", pincode: latest.pincode ?? "", lat: latest.lat, lng: latest.lng } : null,
+        }
+      : null,
+    // Only items still on sale, never more than in stock.
+    initialCart: again
+      ? Object.fromEntries(
+          again.items
+            .map((i) => [i.productId, Math.min(i.qty, features.stockTracking ? (products.find((p) => p.id === i.productId)?.stockQty ?? 0) : i.qty)] as const)
+            .filter(([id, q]) => q > 0 && products.some((p) => p.id === id))
+        )
+      : null,
     categories: categories
       .filter((c) => products.some((p) => p.categoryId === c.id))
       .map((c) => ({ id: c.id, name: pick(locale, c.nameTa, c.nameEn) })),

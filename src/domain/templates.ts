@@ -19,6 +19,7 @@ export type TemplateKey =
   | "invoice"
   | "share_shop"
   | "price_list"
+  | "personal_link"
 
 export interface TemplateDef {
   vars: string[]
@@ -89,6 +90,13 @@ export const TEMPLATES: Record<TemplateKey, TemplateDef> = {
     defaults: {
       ta: "வணக்கம்! {farm} — பண்ணையிலிருந்து நேரடியாக உங்கள் வீட்டுக்கு.\nஆர்டர் செய்ய: {link}\nஅழைக்க: {phone}",
       en: "Hello! {farm} — straight from our farm to your door.\nOrder here: {link}\nCall us: {phone}",
+    },
+  },
+  personal_link: {
+    vars: ["name", "farm", "link"],
+    defaults: {
+      ta: "வணக்கம் {name}! இது {farm}-ல் உங்கள் சொந்த இணைப்பு. இதில் உங்கள் ஆர்டர்கள், பில்கள், மீண்டும் ஆர்டர் செய்தல், பண்ணையுடன் செய்தி எல்லாம் உள்ளன:\n{link}\nஇதை வேறு யாருடனும் பகிர வேண்டாம்.",
+      en: "Hello {name}! This is your own link for {farm}: your orders, bills, ordering again and messages to the farm.\n{link}\nPlease don't share it with anyone.",
     },
   },
   price_list: {

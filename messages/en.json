@@ -68,7 +68,10 @@
       "locationUnavailable": "This phone couldn't share its location. Your PIN code is enough.",
       "inside": "We deliver to your area.",
       "outside": "Sorry, we don't deliver to your area yet. Please call the farm."
-    }
+    },
+    "myOrders": "My orders",
+    "rememberedHere": "This phone will remember you; next time your details are filled in.",
+    "farmWillSendLink": "This number is already with us. The farm will send you your personal link."
   },
   "farm": {
     "nav": {
@@ -244,7 +247,15 @@
       "type_refund": "Money refunded",
       "plans": "{count, plural, =0 {No plans} one {# plan} other {# plans}}",
       "seePlans": "See plans →",
-      "startPlan": "Start a plan →"
+      "startPlan": "Start a plan →",
+      "personalLink": "Personal link",
+      "personalLinkHint": "Opening it makes the customer's phone remember them: orders, bills, order again, messages. Send it to them only.",
+      "sendLink": "Send link on WhatsApp",
+      "copyLink": "Copy",
+      "copied": "Copied",
+      "resetLink": "Reset link (the old one stops working)",
+      "resetConfirm": "Tap again to reset",
+      "linkReset": "New link ready — refresh the page"
     },
     "settings": {
       "title": "Farm settings",
@@ -335,6 +346,14 @@
       "deliveryArea": {
         "title": "Delivery area check",
         "hint": "Take online orders only within a distance of the farm or from listed PIN codes."
+      },
+      "customerAccounts": {
+        "title": "Customer connect & My orders",
+        "hint": "The customer's phone remembers them without a password: My orders, order again, personal link."
+      },
+      "messages": {
+        "title": "Messages in the app",
+        "hint": "Customers message the farm inside the app; no WhatsApp needed."
       }
     },
     "orderForm": {
@@ -424,7 +443,8 @@
       "tpl_dues": "Dues reminder",
       "tpl_invoice": "Sending an invoice",
       "tpl_share_shop": "Sharing the shop link",
-      "tpl_price_list": "Price list"
+      "tpl_price_list": "Price list",
+      "tpl_personal_link": "Personal link"
     },
     "plans": {
       "title": "Weekly / daily plans",
@@ -582,6 +602,27 @@
     "plan_bad_discount": "The discount must be between 0 and 50%.",
     "out_of_area": "Sorry, we don't deliver to your area yet. Please call the farm.",
     "location_invalid": "That location isn't valid.",
-    "pincode_invalid": "Enter valid 6-digit PIN codes."
+    "pincode_invalid": "Enter valid 6-digit PIN codes.",
+    "accounts_off": "Customer connect is switched off for this farm."
+  },
+  "my": {
+    "connectTitle": "Connect with the farm",
+    "connectHint": "Give your name and mobile number to connect with {farm}. Next time you order, there's nothing to type again.",
+    "connect": "Connect",
+    "connectPrivacy": "No password. This phone will remember you.",
+    "knownNumber": "This number is already with the farm. Ask them to send your personal link — opening it connects you.",
+    "linkExpired": "This link no longer works. Ask the farm for a new one.",
+    "hello": "Hello, {name}!",
+    "shop": "Order now",
+    "callFarm": "Call the farm",
+    "dues": "Balance due",
+    "advance": "Advance",
+    "onTheWay": "Current orders",
+    "noOpen": "No orders right now.",
+    "past": "Earlier orders",
+    "bill": "Bill",
+    "orderAgain": "Order again",
+    "notYou": "Not you? Forget me on this phone",
+    "forgetConfirm": "Tap again to confirm"
   }
 }

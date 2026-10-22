@@ -552,3 +552,57 @@ describe("delivery area", () => {
     expect(o.areaCheck).toBeNull()
   })
 })
+
+describe("customer identity without login", () => {
+  let customers: typeof import("./customers")
+  beforeAll(async () => {
+    customers = await import("./customers")
+  })
+
+  it("connects a new number with a private key", async () => {
+    const r = await customers.connectCustomer(merry, { name: "QR visitor", phone: "+919000060001", language: "ta" })
+    expect(r.status).toBe("connected")
+    if (r.status !== "connected") return
+    expect(r.token.length).toBeGreaterThanOrEqual(30)
+    expect((await customers.customerByToken(merry.id, r.token))?.name).toBe("QR visitor")
+  })
+
+  it("never connects someone to an existing customer just by typing their number", async () => {
+    expect(await customers.connectCustomer(merry, { name: "Not Priya", phone: "+919000010001", language: "ta" })).toEqual({ status: "known" })
+  })
+
+  it("a key only works for its own farm", async () => {
+    const c = (await tenantDb(merry.id).customer.findFirst({ where: { phone: "+919000060001" } }))!
+    expect(await customers.customerByToken(other.id, c.accessToken!)).toBeNull()
+    expect(await customers.customerByToken(merry.id, "short")).toBeNull()
+  })
+
+  it("resetting a key cuts off the old link", async () => {
+    const c = (await tenantDb(merry.id).customer.findFirst({ where: { phone: "+919000060001" } }))!
+    const old = c.accessToken!
+    const fresh = await customers.issueToken(merry.id, c.id)
+    expect(fresh).not.toBe(old)
+    expect(await customers.customerByToken(merry.id, old)).toBeNull()
+    expect((await customers.customerByToken(merry.id, fresh))?.id).toBe(c.id)
+    expect(await customers.ensureToken(merry.id, c.id)).toBe(fresh)
+  })
+
+  it("reuses a returning customer's saved address instead of duplicating it", async () => {
+    const phone = "+919000060002"
+    const addr = { line: "5, Temple Street", pincode: "600126" }
+    await svc.placeOrder(merry, { ...staffOrderFor(phone), address: addr }, NOW)
+    await svc.placeOrder(merry, { ...staffOrderFor(phone), address: { ...addr, line: "5, temple street " } }, NOW)
+    const c = (await tenantDb(merry.id).customer.findFirst({ where: { phone }, include: { addresses: true } }))!
+    expect(c.addresses).toHaveLength(1)
+  })
+
+  const staffOrderFor = (phone: string): import("./orders").PlaceOrderInput => ({
+    channel: "phone",
+    customer: { phone, name: "Returning", language: "ta" },
+    address: null,
+    items: [{ productId: "p-eggs", qty: 1 }],
+    slotKey: "2026-10-23|slot-am",
+    paymentMethod: "cash_on_delivery",
+    staffOverride: true,
+  })
+})

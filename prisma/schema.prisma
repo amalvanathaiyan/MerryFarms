@@ -97,6 +97,11 @@ enum SubscriptionStatus {
   cancelled
 }
 
+enum MessageSender {
+  customer
+  farm
+}
+
 enum ReturnReason {
   damaged
   short_delivered
@@ -306,10 +311,15 @@ model Customer {
   marketingOptIn   Boolean   @default(false)
   optInAt          DateTime?
   notes            String?
+  /// The customer's private key for "My orders" and messages (no login). Kept in a cookie on
+  /// their phone and in their personal link; the farm can reset it.
+  accessToken      String?   @unique
+  tokenIssuedAt    DateTime?
   createdAt        DateTime  @default(now())
 
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   addresses     Address[]
+  messages      Message[]
   orders        Order[]
   ledger        LedgerEntry[]
   payments      Payment[]
@@ -589,4 +599,25 @@ model Subscription {
 
   @@index([tenantId, status])
   @@map("subscriptions")
+}
+
+/// A message between a customer and the farm, inside the app (no WhatsApp needed).
+/// One conversation per customer; a message can mention an order.
+model Message {
+  id         String        @id @default(uuid())
+  tenantId   String
+  customerId String
+  sender     MessageSender
+  body       String
+  orderId    String?
+  byStaffId  String? // who replied, for farm messages
+  /// When the other side opened the conversation after this message (the "Seen" tick).
+  seenAt     DateTime?
+  createdAt  DateTime      @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, customerId, createdAt])
+  @@index([tenantId, sender, seenAt])
+  @@map("messages")
 }
