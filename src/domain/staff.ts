@@ -2,7 +2,6 @@
  * Who may change whom on the farm's staff list. A farm must always keep at least one
  * active owner, and an owner can't lock themselves out.
  */
-import { randomInt } from "node:crypto"
 
 export type Role = "owner" | "order_desk" | "packing" | "delivery"
 export const ROLES: Role[] = ["owner", "order_desk", "packing", "delivery"]
@@ -26,11 +25,4 @@ export function checkStaffChange(staff: Member[], actorId: string, targetId: str
     if (target.roles.includes("owner") && otherActiveOwners === 0) return "last_owner"
   }
   return null
-}
-
-/** A temporary password that is easy to read out on a call: "Farm-4827-kmtq". */
-export function tempPassword(): string {
-  const letters = "abcdefghjkmnpqrstuvwxyz"
-  const word = Array.from({ length: 4 }, () => letters[randomInt(letters.length)]).join("")
-  return `Farm-${String(randomInt(1000, 10000))}-${word}`
 }

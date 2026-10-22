@@ -3,7 +3,8 @@ import { randomUUID } from "node:crypto"
 import { tenantDb } from "@/lib/tenant-db"
 import { isDemoLoginEnabled, DEMO_AUTH_PREFIX } from "@/lib/demo-auth"
 import { createServiceClient } from "@/lib/supabase/server"
-import { checkStaffChange, tempPassword, type Role, type StaffChange } from "@/domain/staff"
+import { checkStaffChange, type Role, type StaffChange } from "@/domain/staff"
+import { tempPassword } from "@/domain/staff-password"
 import { OrderError } from "./orders"
 
 /**
