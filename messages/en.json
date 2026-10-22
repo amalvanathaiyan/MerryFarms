@@ -315,7 +315,8 @@
       "freeAboveHint": "0 means always charged.",
       "save": "Save",
       "saved": "Saved",
-      "slotsLink": "Delivery slots"
+      "slotsLink": "Delivery slots",
+      "staffLink": "Staff and logins"
     },
     "units": {
       "packs": "packs",
@@ -591,6 +592,37 @@
       "badPins": "Invalid PIN: {pins}",
       "save": "Save",
       "saved": "Saved"
+    },
+    "staff": {
+      "title": "Staff",
+      "hint": "Who can use the farm app, and what each person can do.",
+      "addStaff": "Add staff",
+      "addTitle": "Add a staff member",
+      "editTitle": "Edit staff member",
+      "add": "Add and create login",
+      "name": "Name",
+      "email": "Email (their sign-in)",
+      "emailHint": "They sign in with this email and the password shown next.",
+      "emailHintDemo": "Demo: no email is sent; they appear as a demo sign-in button.",
+      "phone": "Mobile (optional)",
+      "canDo": "What they can do",
+      "role_owner": "Owner",
+      "role_order_desk": "Order desk",
+      "role_packing": "Packing",
+      "role_delivery": "Delivery",
+      "roleHint_owner": "Everything, including prices, settings, reports and staff.",
+      "roleHint_order_desk": "Take and confirm orders, call customers, reply to messages, take payments.",
+      "roleHint_packing": "See what to pack and update stock.",
+      "roleHint_delivery": "See deliveries, mark them delivered and collect payment.",
+      "you": "you",
+      "noAccess": "No access",
+      "resetPassword": "New password",
+      "removeAccess": "Remove access",
+      "giveAccess": "Give access again",
+      "passwordFor": "Temporary password for {name}",
+      "copy": "Copy",
+      "passwordHint": "Send it to them privately (e.g. on WhatsApp). It is shown only now; you can make a new one any time.",
+      "done": "Done"
     }
   },
   "login": {
@@ -679,7 +711,13 @@
     "category_not_empty": "Move or delete the products in this category first.",
     "price_invalid": "That price isn't allowed: it must be at least ₹1 and not above the usual price.",
     "date_past": "Choose today or a later date.",
-    "too_late_to_change": "It's too late to change this order online. Please call the farm."
+    "too_late_to_change": "It's too late to change this order online. Please call the farm.",
+    "staff_exists": "Someone with that email is already on your staff.",
+    "roles_required": "Choose at least one thing they can do.",
+    "last_owner": "The farm needs at least one owner.",
+    "cannot_change_self": "You can't remove your own owner access.",
+    "staff_not_found": "That staff member wasn't found.",
+    "staff_login_failed": "Couldn't create or change the login. Check the email and try again."
   },
   "my": {
     "connectTitle": "Connect with the farm",

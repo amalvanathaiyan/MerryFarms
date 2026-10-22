@@ -30,6 +30,9 @@ export default async function SettingsPage() {
       <Link href="/farm/slots" className="flex items-center justify-between rounded-2xl border bg-card p-4 font-semibold">
         {t("slotsLink")} <span aria-hidden>→</span>
       </Link>
+      <Link href="/farm/staff" className="flex items-center justify-between rounded-2xl border bg-card p-4 font-semibold">
+        {t("staffLink")} <span aria-hidden>→</span>
+      </Link>
       <FeatureSwitches rows={rows} />
       {resolved.deliveryArea && (
         <DeliveryAreaForm
