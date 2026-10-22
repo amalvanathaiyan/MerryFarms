@@ -2,7 +2,7 @@ import "server-only"
 import { Prisma, type OrderStatus } from "@prisma/client"
 import { tenantDb, type TenantTx } from "@/lib/tenant-db"
 import type { Tenant } from "@/lib/tenant"
-import { afterCall, canTransition, decideCall, isEditable, stockDeltas, type CallOutcome, type CallRules } from "@/domain/orders"
+import { afterCall, canTransition, customerMayChange, decideCall, orderCode, isEditable, stockDeltas, type CallOutcome, type CallRules } from "@/domain/orders"
 import { orderTotals } from "@/domain/pricing"
 import { slotKey, slotRangeLabel, upcomingSlots } from "@/domain/slots"
 import { addDays, istDate } from "@/domain/ist"
@@ -80,6 +80,9 @@ export interface PlaceOrderInput {
   discountPct?: number
   /** Staff only: a price agreed with the customer for a product (a discount, ≤ list price). */
   prices?: Record<string, number>
+  /** The customer's earlier order this one replaces (checked by the caller with changeableOrder).
+   *  It is cancelled in the same transaction, so its stock counts for the new order. */
+  replaces?: string
 }
 
 /** Merges duplicate lines so stock checks see the real quantity. */
@@ -90,11 +93,13 @@ function mergeItems(items: { productId: string; qty: number }[]) {
 }
 
 /** Validates a slot choice and returns what the order stores about it. */
-async function resolveSlot(tenantId: string, key: string, now: Date, staffOverride: boolean) {
+/** `freeingKey`: the slot of an order being replaced, whose place this order takes. */
+async function resolveSlot(tenantId: string, key: string, now: Date, staffOverride: boolean, freeingKey?: string) {
   const [slotDate, slotId] = key.split("|")
   const option = (await openSlotOptions(tenantId, now, { forStaff: staffOverride })).find((o) => o.key === key)
   if (!option || !slotDate || !slotId) throw new OrderError("slot_closed")
-  if (option.full && !staffOverride) throw new OrderError("slot_full")
+  const fullWithoutOld = option.full && !(freeingKey === key && option.booked - 1 < option.slot.maxOrders)
+  if (fullWithoutOld && !staffOverride) throw new OrderError("slot_full")
   return { slotId, slotDate, slotLabel: slotRangeLabel(option.slot.startTime, option.slot.endTime) }
 }
 
@@ -112,7 +117,7 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
   const slot = isWalkIn
     ? { slotId: null, slotDate: istDate(now), slotLabel: "" }
     : input.slotKey
-      ? await resolveSlot(tenant.id, input.slotKey, now, !!input.staffOverride)
+      ? await resolveSlot(tenant.id, input.slotKey, now, !!input.staffOverride, await replacedSlotKey(tenant.id, input.replaces))
       : (() => {
           throw new OrderError("slot_closed")
         })()
@@ -126,6 +131,7 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       return await db.$transaction(async (tx) => {
+        if (input.replaces) await transition(tx, tenant.id, input.replaces, "cancelled", null, "customer:changed")
         const products = await tx.product.findMany({
           where: { id: { in: [...qtyById.keys()] }, isActive: true, deletedAt: null },
         })
@@ -246,6 +252,9 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
             data: { stockQty: { decrement: l.qty } },
           })
           if (r.count !== 1) throw new OrderError("out_of_stock")
+        }
+        if (input.replaces) {
+          await tx.order.updateMany({ where: { id: input.replaces }, data: { cancelReason: `customer:changed:${orderCode(tenant.invoicePrefix, number)}` } })
         }
         return { order, customer, decision }
       })
@@ -385,7 +394,8 @@ export async function transition(
   tenantId: string,
   orderId: string,
   to: OrderStatus,
-  byStaffId: string,
+  /** null when the customer did it (cancelling their own order). */
+  byStaffId: string | null,
   note?: string
 ) {
   const order = await tx.order.findFirst({ where: { id: orderId }, include: { items: true } })
@@ -462,4 +472,27 @@ function agreedOr(p: { id: string; pricePaise: number }, prices: Record<string, 
   if (agreed === undefined) return fallback()
   if (!validAgreedPrice(agreed, p.pricePaise)) throw new OrderError("price_invalid")
   return agreed
+}
+
+// ── Customers changing their own orders ─────────────────────────────────────────
+
+/** The customer's own order, if they may still cancel or change it now. */
+export async function changeableOrder(tenantId: string, customerId: string, orderId: string, now = new Date()) {
+  const db = tenantDb(tenantId)
+  const order = await db.order.findFirst({ where: { id: orderId, customerId }, include: { slot: true, items: true } })
+  if (!order) throw new OrderError("not_found")
+  if (!customerMayChange(order, order.slot, now)) throw new OrderError("too_late_to_change")
+  return order
+}
+
+/** The customer cancels their own order (stock goes back, the reason is logged). */
+export async function cancelByCustomer(tenantId: string, customerId: string, orderId: string, reason: string, now = new Date()) {
+  const order = await changeableOrder(tenantId, customerId, orderId, now)
+  return tenantDb(tenantId).$transaction((tx) => transition(tx, tenantId, order.id, "cancelled", null, `customer:${reason}`))
+}
+
+async function replacedSlotKey(tenantId: string, orderId: string | undefined) {
+  if (!orderId) return undefined
+  const o = await tenantDb(tenantId).order.findFirst({ where: { id: orderId }, select: { slotDate: true, slotId: true } })
+  return o?.slotId ? slotKey(o.slotDate, o.slotId) : undefined
 }

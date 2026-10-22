@@ -1,9 +1,10 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { requireTenant } from "@/lib/tenant"
 import { normaliseIndianMobile } from "@/domain/phone"
-import { OrderError, placeOrder } from "@/server/orders"
+import { cancelByCustomer, changeableOrder, OrderError, placeOrder } from "@/server/orders"
 import { featuresOf } from "@/lib/features"
 import { areaConfigured, checkArea } from "@/domain/delivery-area"
 import { areaOf } from "@/server/orders"
@@ -13,7 +14,7 @@ import { connectCustomer, issueToken } from "@/server/customers"
 import { alertFarmOnWhatsApp, notifyStaff } from "@/server/notify"
 import { otpOn } from "@/server/otp"
 import { staffNewOrderNote } from "@/domain/notifications"
-import { orderCode } from "@/domain/orders"
+import { CUSTOMER_CANCEL_REASONS, orderCode } from "@/domain/orders"
 
 const schema = z.object({
   name: z.string().trim().min(1).max(80),
@@ -28,6 +29,8 @@ const schema = z.object({
   language: z.enum(["ta", "en"]),
   items: z.array(z.object({ productId: z.string().min(1), qty: z.number().int().min(1).max(50) })).min(1).max(30),
   note: z.string().trim().max(300).optional(),
+  /** "Change my order": this new order replaces the customer's earlier one. */
+  replaces: z.string().min(1).optional(),
 })
 
 export type PlaceWebOrderResult =
@@ -64,6 +67,18 @@ export async function placeWebOrder(raw: unknown): Promise<PlaceWebOrderResult> 
   const verifiedOnly = otpOn(tenant)
   if (verifiedOnly && !session) return { ok: false, error: "sign_in_needed" }
   const phone = verifiedOnly && session ? session.phone : typed
+
+  // Changing an order: it must be theirs and still changeable, checked before placing the new one.
+  let replacing: Awaited<ReturnType<typeof changeableOrder>> | null = null
+  if (input.replaces) {
+    if (!session) return { ok: false, error: "sign_in_needed" }
+    try {
+      replacing = await changeableOrder(tenant.id, session.id, input.replaces)
+    } catch (e) {
+      if (e instanceof OrderError) return { ok: false, error: e.code }
+      throw e
+    }
+  }
   const known = accounts && !session ? await tenantDb(tenant.id).customer.findFirst({ where: { phone }, select: { id: true } }) : null
 
   try {
@@ -75,6 +90,7 @@ export async function placeWebOrder(raw: unknown): Promise<PlaceWebOrderResult> 
       slotKey: input.slotKey,
       paymentMethod: input.paymentMethod,
       note: input.note,
+      replaces: replacing?.id,
     })
     let account: "connected" | "known" | "off" = "off"
     if (accounts) {
@@ -144,4 +160,24 @@ export async function forgetMeAction() {
 async function itemsText(tenantId: string, orderId: string) {
   const items = await tenantDb(tenantId).orderItem.findMany({ where: { orderId }, include: { product: true } })
   return items.map((i) => `${i.qty} × ${i.product.nameTa} (${i.product.packTa})`).join(", ")
+}
+
+/** The customer cancels their own order from My orders, before the cut-off. */
+export async function cancelMyOrder(raw: unknown): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = z.object({ orderId: z.string().min(1), reason: z.enum(CUSTOMER_CANCEL_REASONS) }).safeParse(raw)
+  if (!parsed.success) return { ok: false, error: "invalid" }
+  const tenant = await requireTenant()
+  const me = await getSessionCustomer()
+  if (!me) return { ok: false, error: "sign_in_needed" }
+  try {
+    const order = await cancelByCustomer(tenant.id, me.id, parsed.data.orderId, parsed.data.reason)
+    const code = orderCode(tenant.invoicePrefix, order.number)
+    await notifyStaff(tenant.id, { title: `ரத்து · Cancelled ${code}`, body: `${me.name} · ${parsed.data.reason === "mistake" ? "தவறுதலாக / by mistake" : parsed.data.reason === "not_needed" ? "தேவையில்லை / not needed" : "வேறு காரணம் / other"}`, url: "/farm/orders?tab=done", tag: `new-${code}` })
+  } catch (e) {
+    if (e instanceof OrderError) return { ok: false, error: e.code }
+    throw e
+  }
+  revalidatePath("/my")
+  revalidatePath("/farm", "layout")
+  return { ok: true }
 }

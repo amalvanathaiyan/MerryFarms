@@ -43,6 +43,8 @@ export interface ShopData {
   }
   me: { name: string; phone: string; address: { line: string; landmark: string; pincode: string; lat: number | null; lng: number | null } | null } | null
   initialCart: Record<string, number> | null
+  /** Set when the customer is changing an earlier order: placing this one replaces it. */
+  changing: { id: string; code: string; slotKey: string | null } | null
   categories: { id: string; name: string }[]
   products: {
     id: string
@@ -85,7 +87,7 @@ export function Shop({ data }: { data: ShopData }) {
     landmark: data.me?.address?.landmark ?? "",
     pincode: data.me?.address?.pincode ?? "",
     note: "",
-    slotKey: data.slots.find((s) => !s.full)?.key ?? "",
+    slotKey: (data.changing?.slotKey && data.slots.some((s) => s.key === data.changing!.slotKey && !s.full) ? data.changing.slotKey : null) ?? data.slots.find((s) => !s.full)?.key ?? "",
     paymentMethod: "upi_on_delivery" as "upi_on_delivery" | "cash_on_delivery",
   })
   // Signing in on the cart page refreshes `data.me`: fill the form from it once.
@@ -139,6 +141,7 @@ export function Shop({ data }: { data: ShopData }) {
         lng: location?.lng,
         language: locale === "en" ? "en" : "ta",
         items: lines.map((l) => ({ productId: l.product.id, qty: l.qty })),
+        replaces: data.changing?.id,
       })
       if (!r.ok) {
         setError(te.has(r.error) ? te(r.error) : te("generic"))
@@ -247,6 +250,7 @@ export function Shop({ data }: { data: ShopData }) {
       <div className="mx-auto min-h-dvh max-w-md pb-10">
         {cartHeader}
         <form onSubmit={submit} className="flex flex-col gap-5 px-4 pt-4">
+          {data.changing && <p className="rounded-xl bg-yolk p-3 text-sm font-medium text-yolk-foreground">{t("changingOrder", { code: data.changing.code })}</p>}
           {cartLines}
 
           <Field label={t("name")} id="name">

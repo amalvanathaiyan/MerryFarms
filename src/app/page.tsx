@@ -12,12 +12,13 @@ import { artKind } from "@/domain/product-art"
 import { otpOn } from "@/server/otp"
 import { SignInGate } from "@/components/shop/sign-in-gate"
 import { currentPrice, offerActive, percentOff } from "@/domain/offers"
+import { customerMayChange, orderCode } from "@/domain/orders"
 
 export const dynamic = "force-dynamic"
 
 /** The farm's customer shop: Tamil first, works without login. */
-export default async function ShopPage({ searchParams }: { searchParams: Promise<{ reorder?: string; browse?: string }> }) {
-  const { reorder, browse } = await searchParams
+export default async function ShopPage({ searchParams }: { searchParams: Promise<{ reorder?: string; browse?: string; change?: string }> }) {
+  const { reorder, browse, change } = await searchParams
   const tenant = await getTenant()
   if (!tenant) {
     return (
@@ -49,7 +50,10 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   const features = featuresOf(tenant)
   // A returning customer on this phone: pre-fill checkout, and "Order again" from My orders.
   const me = await getSessionCustomer()
-  const again = me && reorder ? await db.order.findFirst({ where: { id: reorder, customerId: me.id }, include: { items: true } }) : null
+  // "Change my order" starts from that order's items; it's only offered while still changeable.
+  const changing = me && change ? await db.order.findFirst({ where: { id: change, customerId: me.id }, include: { items: true, slot: true } }) : null
+  const changeable = changing && customerMayChange(changing, changing.slot, new Date()) ? changing : null
+  const again = changeable ?? (me && reorder ? await db.order.findFirst({ where: { id: reorder, customerId: me.id }, include: { items: true } }) : null)
   const latest = me?.addresses[0]
   const firstOpen = options.find((o) => !o.full)
 
@@ -82,9 +86,13 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     initialCart: again
       ? Object.fromEntries(
           again.items
-            .map((i) => [i.productId, Math.min(i.qty, features.stockTracking ? (products.find((p) => p.id === i.productId)?.stockQty ?? 0) : i.qty)] as const)
+            // When changing, the order's own quantities come back to stock when it's replaced.
+            .map((i) => [i.productId, Math.min(i.qty, features.stockTracking ? (products.find((p) => p.id === i.productId)?.stockQty ?? 0) + (changeable ? i.qty : 0) : i.qty)] as const)
             .filter(([id, q]) => q > 0 && products.some((p) => p.id === id))
         )
+      : null,
+    changing: changeable
+      ? { id: changeable.id, code: orderCode(tenant.invoicePrefix, changeable.number), slotKey: changeable.slotId ? `${changeable.slotDate}|${changeable.slotId}` : null }
       : null,
     categories: categories
       .filter((c) => products.some((p) => p.categoryId === c.id))
@@ -106,7 +114,8 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     slots: options.map((o) => ({
       key: o.key,
       label: `${dayLabel(o.date, locale, labels)} · ${slotRangeLabel(o.slot.startTime, o.slot.endTime)}`,
-      full: o.full,
+      // Their own order's place counts as free when they're changing it.
+      full: o.full && !(changeable && `${changeable.slotDate}|${changeable.slotId}` === o.key && o.booked - 1 < o.slot.maxOrders),
       left: o.left,
     })),
     closures: (await db.closedDay.findMany({ where: { date: { gte: istDate(new Date()), lte: addDays(istDate(new Date()), 7) }, slotId: null }, orderBy: { date: "asc" } })).map(
