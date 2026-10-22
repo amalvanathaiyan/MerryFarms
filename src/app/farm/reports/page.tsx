@@ -227,6 +227,16 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           ))}
         </div>
       </section>
+
+      <section className="flex flex-col gap-2 rounded-2xl border bg-card p-4">
+        <h2 className="font-semibold">{t("allData")}</h2>
+        <p className="text-sm text-muted-foreground">{t("allDataHint")}</p>
+        <Button asChild variant="outline" className="self-start">
+          <a href="/farm/export/all">
+            <Download /> {t("allDataButton")}
+          </a>
+        </Button>
+      </section>
     </div>
   )
 }

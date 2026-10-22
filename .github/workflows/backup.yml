@@ -1,0 +1,59 @@
+# Nightly database backup (free): the Supabase free plan keeps no backups of its own.
+#
+# Setup (once): GitHub → repository → Settings → Secrets and variables → Actions → New secret
+#   BACKUP_DATABASE_URL  Supabase "Session pooler" connection string (Project Settings → Database)
+#   BACKUP_PASSPHRASE    a long passphrase; keep a copy somewhere safe (you need it to restore)
+#
+# Each run saves an encrypted dump as a workflow artifact for 30 days. Restoring: see docs/backups.md.
+name: Nightly backup
+
+on:
+  schedule:
+    - cron: "30 21 * * *" # 03:00 IST
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Skip until the secrets are set
+        id: check
+        env:
+          URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          PASS: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$PASS" ]; then echo "ready=no" >> "$GITHUB_OUTPUT"; echo "Backup secrets not set yet; skipping."; else echo "ready=yes" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Install PostgreSQL 17 client
+        if: steps.check.outputs.ready == 'yes'
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Dump and encrypt
+        if: steps.check.outputs.ready == 'yes'
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          STAMP=$(TZ=Asia/Kolkata date +%Y-%m-%d)
+          /usr/lib/postgresql/17/bin/pg_dump "$BACKUP_DATABASE_URL" --schema=public --no-owner --no-privileges --format=custom --file=db.dump
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" --symmetric --cipher-algo AES256 --output "farmforyou-$STAMP.dump.gpg" db.dump
+          rm db.dump
+          ls -lh farmforyou-*.dump.gpg
+
+      - name: Keep for 30 days
+        if: steps.check.outputs.ready == 'yes'
+        uses: actions/upload-artifact@v4
+        with:
+          name: farmforyou-backup-${{ github.run_number }}
+          path: farmforyou-*.dump.gpg
+          retention-days: 30
+          if-no-files-found: error
