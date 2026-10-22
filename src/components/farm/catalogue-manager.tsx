@@ -2,10 +2,13 @@
 
 import { useState, useTransition } from "react"
 import { useLocale, useTranslations } from "next-intl"
-import { Minus, Plus } from "lucide-react"
+import { Camera, Minus, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { addCategory, deleteProduct, quickUpdateProduct, saveProduct, type ActionResult } from "@/app/actions/catalogue"
+import { addCategory, deleteProduct, quickUpdateProduct, removeProductPhoto, saveProduct, setProductPhoto, type ActionResult } from "@/app/actions/catalogue"
+import { ProductPicture } from "@/components/product-picture"
+import { artKind } from "@/domain/product-art"
+import { shrinkPhoto } from "@/lib/shrink-photo"
 import { pick } from "@/lib/i18n-helpers"
 import { cn } from "@/lib/utils"
 
@@ -25,8 +28,9 @@ type Product = {
   gstRate: 0 | 5 | 12 | 18
   hsn: string
   isActive: boolean
+  imageUrl: string | null
 }
-type Draft = Omit<Product, "id"> & { id?: string }
+type Draft = Omit<Product, "id" | "imageUrl"> & { id?: string }
 
 const UNITS = ["packs", "trays", "kg", "birds", "litres", "pieces", "boxes", "jars"]
 
@@ -232,7 +236,37 @@ export function CatalogueManager({ categories, products, canEdit, tracksStock }:
               {list.map((p) => (
                 <li key={p.id} className="flex flex-col gap-2 py-3">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
+                    <div className="flex flex-col items-center gap-1">
+                      <ProductPicture src={p.imageUrl} kind={artKind(p.nameEn, p.nameTa, c.nameEn, c.nameTa)} alt={pick(locale, p.nameTa, p.nameEn)} className="size-16" />
+                      {canEdit && (
+                        <label className={cn("flex cursor-pointer items-center gap-1 text-xs font-medium text-primary", pending && "pointer-events-none opacity-50")}>
+                          <Camera className="size-3.5" /> {p.imageUrl ? t("changePhoto") : t("addPhoto")}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="sr-only"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              e.target.value = ""
+                              if (!file) return
+                              run(async () => {
+                                try {
+                                  return await setProductPhoto({ id: p.id, dataUrl: await shrinkPhoto(file) })
+                                } catch {
+                                  return { ok: false, error: "photo_type" }
+                                }
+                              })
+                            }}
+                          />
+                        </label>
+                      )}
+                      {canEdit && p.imageUrl && (
+                        <button type="button" className="text-xs text-muted-foreground underline-offset-2 hover:underline" disabled={pending} onClick={() => run(() => removeProductPhoto(p.id))}>
+                          {t("removePhoto")}
+                        </button>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
                       <div className="font-semibold">{pick(locale, p.nameTa, p.nameEn)}</div>
                       <div className={cn("text-sm text-muted-foreground", tracksStock && p.stockQty <= 5 && "font-semibold text-destructive")}>
                         {pick(locale, p.packTa, p.packEn)}

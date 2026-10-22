@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { OWNER_ONLY, requireStaff } from "@/lib/auth"
 import { rupeesToPaise } from "@/domain/money"
+import { MAX_PHOTO_BYTES, sniffImage } from "@/domain/product-art"
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
 
@@ -101,5 +102,36 @@ export async function deleteProduct(id: string): Promise<ActionResult> {
   const { db } = await requireStaff(OWNER_ONLY)
   // Soft delete: past orders and invoices still show the product.
   await db.product.updateMany({ where: { id }, data: { deletedAt: new Date(), isActive: false } })
+  return done()
+}
+
+/** Saves a product photo (already shrunk on the phone) sent as a data URL. */
+export async function setProductPhoto(raw: unknown): Promise<ActionResult> {
+  const parsed = z.object({ id: z.string().min(1), dataUrl: z.string().max(Math.ceil((MAX_PHOTO_BYTES * 4) / 3) + 100) }).safeParse(raw)
+  if (!parsed.success) return { ok: false, error: "photo_too_big" }
+  const m = /^data:image\/[a-z+]+;base64,([A-Za-z0-9+/=]+)$/.exec(parsed.data.dataUrl)
+  if (!m) return { ok: false, error: "photo_type" }
+  const bytes = new Uint8Array(Buffer.from(m[1], "base64"))
+  const mime = sniffImage(bytes)
+  if (!mime) return { ok: false, error: "photo_type" }
+  if (bytes.length > MAX_PHOTO_BYTES) return { ok: false, error: "photo_too_big" }
+  const { db, tenant } = await requireStaff(OWNER_ONLY)
+  const product = await db.product.findFirst({ where: { id: parsed.data.id, deletedAt: null } })
+  if (!product) return { ok: false, error: "not_found" }
+  await db.productImage.upsert({
+    where: { productId: product.id },
+    update: { mime, data: bytes },
+    create: { productId: product.id, tenantId: tenant.id, mime, data: bytes },
+  })
+  await db.product.update({ where: { id: product.id }, data: { imageUrl: `/img/p/${product.id}?v=${Date.now()}` } })
+  return done()
+}
+
+export async function removeProductPhoto(id: string): Promise<ActionResult> {
+  const { db } = await requireStaff(OWNER_ONLY)
+  const product = await db.product.findFirst({ where: { id } })
+  if (!product) return { ok: false, error: "not_found" }
+  await db.productImage.deleteMany({ where: { productId: id } })
+  await db.product.update({ where: { id }, data: { imageUrl: null } })
   return done()
 }

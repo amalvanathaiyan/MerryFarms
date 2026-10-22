@@ -639,3 +639,16 @@ model PushSubscription {
   @@index([tenantId, staffId])
   @@map("push_subscriptions")
 }
+
+/// A product's photo, shrunk on the phone before upload (~50 KB). Kept in the database so
+/// the free tier needs no separate file storage; served by /img/p/<productId>.
+model ProductImage {
+  productId String   @id
+  tenantId  String
+  mime      String
+  data      Bytes
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("product_images")
+}

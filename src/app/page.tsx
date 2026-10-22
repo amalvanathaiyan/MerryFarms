@@ -8,6 +8,7 @@ import { openSlotOptions } from "@/server/orders"
 import { Shop, type ShopData } from "@/components/shop/shop"
 import { featuresOf } from "@/lib/features"
 import { getSessionCustomer } from "@/lib/customer-session"
+import { artKind } from "@/domain/product-art"
 
 export const dynamic = "force-dynamic"
 
@@ -86,6 +87,8 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       note: pick(locale, p.noteTa, p.noteEn),
       pricePaise: p.pricePaise,
       stockQty: p.stockQty,
+      imageUrl: p.imageUrl,
+      art: artKind(p.nameEn, p.nameTa, ...categories.filter((c) => c.id === p.categoryId).flatMap((c) => [c.nameEn, c.nameTa])),
     })),
     slots: options.map((o) => ({
       key: o.key,
