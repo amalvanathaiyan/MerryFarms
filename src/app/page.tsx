@@ -3,7 +3,7 @@ import { getTenant } from "@/lib/tenant"
 import { tenantDb } from "@/lib/tenant-db"
 import { dayLabel, istTime, pick } from "@/lib/i18n-helpers"
 import { slotRangeLabel } from "@/domain/slots"
-import { istDate } from "@/domain/ist"
+import { addDays, istDate } from "@/domain/ist"
 import { openSlotOptions } from "@/server/orders"
 import { Shop, type ShopData } from "@/components/shop/shop"
 import { featuresOf } from "@/lib/features"
@@ -109,6 +109,9 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       full: o.full,
       left: o.left,
     })),
+    closures: (await db.closedDay.findMany({ where: { date: { gte: istDate(new Date()), lte: addDays(istDate(new Date()), 7) }, slotId: null }, orderBy: { date: "asc" } })).map(
+      (c) => `${dayLabel(c.date, locale, labels)}${c.note ? ` (${c.note})` : ""}`
+    ),
     nextDelivery: firstOpen
       ? {
           label: `${dayLabel(firstOpen.date, locale, labels)} · ${slotRangeLabel(firstOpen.slot.startTime, firstOpen.slot.endTime)}`,

@@ -24,6 +24,7 @@ const TENANT_MODELS = new Set([
   "PushSubscription",
   "ProductImage",
   "OtpCode",
+  "ClosedDay",
 ])
 
 const WHERE_OPS = new Set([

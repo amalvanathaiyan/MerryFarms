@@ -57,7 +57,7 @@ export function upcomingSlots(
   slots: SlotRule[],
   bookedCounts: Record<string, number>,
   now: Date,
-  opts: { daysAhead?: number; wantOpen?: number; ignoreCutoff?: boolean } = {}
+  opts: { daysAhead?: number; wantOpen?: number; ignoreCutoff?: boolean; closed?: { date: string; slotId: string | null }[] } = {}
 ): SlotOption[] {
   const daysAhead = opts.daysAhead ?? 10
   const wantOpen = opts.wantOpen ?? 4
@@ -71,6 +71,7 @@ export function upcomingSlots(
     const dow = weekday(date)
     for (const s of active) {
       if (!s.daysOfWeek.includes(dow)) continue
+      if (isClosed(opts.closed ?? [], date, s.id)) continue
       const startAt = istInstant(date, s.startTime)
       const cutoffAt = new Date(startAt.getTime() - s.cutoffHours * 3_600_000)
       // Staff taking a phone order may book after the online cut-off, but never into the past.
@@ -85,4 +86,9 @@ export function upcomingSlots(
     }
   }
   return out
+}
+
+/** No deliveries in this slot on this day (the whole day, or just this slot, is closed). */
+export function isClosed(closed: { date: string; slotId: string | null }[], date: string, slotId: string): boolean {
+  return closed.some((c) => c.date === date && (c.slotId == null || c.slotId === slotId))
 }
