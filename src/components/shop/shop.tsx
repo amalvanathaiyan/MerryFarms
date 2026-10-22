@@ -117,9 +117,10 @@ export function Shop({ data }: { data: ShopData }) {
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
           {data.farm.orderPrefix}
         </span>
-        <span className="truncate text-lg font-semibold">{data.farm.name}</span>
+        {/* Tamil names run long: allow two lines rather than cutting the name off. */}
+        <span className="line-clamp-2 text-base font-semibold leading-snug break-words sm:text-lg">{data.farm.name}</span>
       </div>
-      <LanguageToggle />
+      <LanguageToggle compact />
     </header>
   )
 

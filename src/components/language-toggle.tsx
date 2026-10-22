@@ -2,14 +2,37 @@
 
 import { useTransition } from "react"
 import { useLocale } from "next-intl"
+import { Languages } from "lucide-react"
 import { setLocale } from "@/app/actions/locale"
-import { LOCALE_LABELS, locales } from "@/i18n/routing"
+import { LOCALE_LABELS, locales, type Locale } from "@/i18n/routing"
 import { cn } from "@/lib/utils"
 
-/** Tamil / English switch. Shows each language in its own script. */
-export function LanguageToggle({ className }: { className?: string }) {
-  const current = useLocale()
+/**
+ * Tamil / English switch, each language in its own script.
+ * `compact` (for headers on phones) is one small button naming the language you'd switch TO,
+ * so the farm name keeps the room it needs.
+ */
+export function LanguageToggle({ className, compact = false }: { className?: string; compact?: boolean }) {
+  const current = useLocale() as Locale
   const [pending, start] = useTransition()
+
+  if (compact) {
+    const other = locales.find((l) => l !== current) ?? "ta"
+    return (
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => start(() => setLocale(other))}
+        lang={other}
+        aria-label={`${LOCALE_LABELS[other]} — மொழி / Language`}
+        className={cn("inline-flex shrink-0 items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-sm font-medium text-card-foreground", className)}
+      >
+        <Languages className="size-4" aria-hidden />
+        {LOCALE_LABELS[other]}
+      </button>
+    )
+  }
+
   return (
     <div className={cn("inline-flex rounded-full border bg-card p-0.5 text-sm text-card-foreground", className)} role="group" aria-label="மொழி / Language">
       {locales.map((l) => (
