@@ -683,3 +683,36 @@ model ClosedDay {
   @@index([tenantId, date])
   @@map("closed_days")
 }
+
+/// One day's flock figures, entered by the farm (one row per farm per day).
+model DailyRecord {
+  id            String   @id @default(uuid())
+  tenantId      String
+  date          String // IST "2026-10-22"
+  eggsCollected Int?
+  eggsBroken    Int?
+  birds         Int? // birds in the flock that day
+  birdsLost     Int? // died or culled
+  feedKg        Float?
+  note          String?
+  byStaffId     String?
+  updatedAt     DateTime @updatedAt
+
+  @@unique([tenantId, date])
+  @@map("daily_records")
+}
+
+/// Money spent running the farm (feed, medicine, chicks, labour…), for profit.
+model Expense {
+  id          String   @id @default(uuid())
+  tenantId    String
+  date        String // IST
+  kind        String // feed | medicine | chicks | labour | transport | electricity | packing | other
+  amountPaise Int
+  note        String?
+  byStaffId   String?
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, date])
+  @@map("expenses")
+}

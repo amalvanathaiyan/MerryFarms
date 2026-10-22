@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { DailySalesChart } from "@/components/farm/daily-sales-chart"
 import { cn } from "@/lib/utils"
+import { tenantDb } from "@/lib/tenant-db"
+import { costs, production, profit } from "@/domain/records"
 
 const PRESETS = ["today", "week", "month"] as const
 
@@ -25,6 +27,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const t = await getTranslations("farm.reports")
   const to = await getTranslations("farm.orders")
   const tc = await getTranslations("common")
+  const tr = await getTranslations("farm.records")
   const labels = { today: tc("today"), tomorrow: tc("tomorrow") }
 
   const now = new Date()
@@ -32,7 +35,16 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const key: RangeKey = custom ? "custom" : PRESETS.includes(sp.range as (typeof PRESETS)[number]) ? (sp.range as RangeKey) : "week"
   const range = custom ?? rangeFor(key as Exclude<RangeKey, "custom">, now)
 
-  const [report, dues] = await Promise.all([loadReport(tenant.id, range.from, range.to), features.creditAccounts ? duesList(tenant.id) : Promise.resolve([])])
+  const db = tenantDb(tenant.id)
+  const inRange = { date: { gte: range.from, lte: range.to } }
+  const [report, dues, dayRows, spendRows] = await Promise.all([
+    loadReport(tenant.id, range.from, range.to),
+    features.creditAccounts ? duesList(tenant.id) : Promise.resolve([]),
+    features.farmRecords ? db.dailyRecord.findMany({ where: inRange }) : Promise.resolve([]),
+    features.farmRecords ? db.expense.findMany({ where: inRange }) : Promise.resolve([]),
+  ])
+  const prod = production(dayRows)
+  const spent = costs(spendRows, prod)
   const { summary: s, calls } = report
   const shortDay = (d: string) =>
     new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${d}T00:00:00Z`))
@@ -211,6 +223,51 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
               ))}
             </ul>
           )}
+        </section>
+      )}
+
+      {features.farmRecords && (
+        <section className="flex flex-col gap-3 rounded-2xl border bg-card p-4">
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="font-semibold">{t("farmProfit")}</h2>
+            <Link href="/farm/records" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+              {t("records")} →
+            </Link>
+          </div>
+          {(() => {
+            const p = profit(s.netPaise, spent.totalPaise)
+            const cell = (label: string, value: string, strong = false) => (
+              <div className="rounded-xl bg-muted/50 p-3">
+                <div className="text-xs text-muted-foreground">{label}</div>
+                <div className={cn("text-lg font-bold tabular-nums", strong && p.profitPaise < 0 && "text-destructive")}>{value}</div>
+              </div>
+            )
+            return (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  {cell(t("netSales"), formatRupees(s.netPaise))}
+                  {cell(t("spent"), formatRupees(spent.totalPaise))}
+                  {cell(t("profit"), `${p.profitPaise < 0 ? "−" : ""}${formatRupees(Math.abs(p.profitPaise))}${p.marginPct != null ? ` · ${p.marginPct}%` : ""}`, true)}
+                  {cell(t("eggsCollected"), prod.daysRecorded ? `${prod.eggsCollected - prod.eggsBroken} · ${t("perDay", { count: prod.eggsPerDay })}` : "—")}
+                  {cell(t("layingRate"), prod.layingRatePct != null ? `${prod.layingRatePct}%` : "—")}
+                  {cell(t("feedPerEgg"), spent.feedPerEggPaise != null ? formatRupees(spent.feedPerEggPaise) : "—")}
+                  {cell(t("costPerEgg"), spent.costPerEggPaise != null ? formatRupees(spent.costPerEggPaise) : "—")}
+                  {cell(t("birdsLost"), prod.daysRecorded ? `${prod.birdsLost}${prod.birdsNow != null ? ` · ${t("birdsNow", { count: prod.birdsNow })}` : ""}` : "—")}
+                </div>
+                {spent.byKind.length > 0 && (
+                  <ul className="divide-y text-sm">
+                    {spent.byKind.map((k) => (
+                      <li key={k.kind} className="flex justify-between py-1.5 tabular-nums">
+                        <span>{tr(`kind_${k.kind}`)}</span>
+                        <b>{formatRupees(k.paise)}</b>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {prod.daysRecorded === 0 && spendRows.length === 0 && <p className="text-sm text-muted-foreground">{t("noRecords")}</p>}
+              </>
+            )
+          })()}
         </section>
       )}
 
