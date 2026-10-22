@@ -2,10 +2,27 @@
 
 import { useState, useTransition } from "react"
 import { useLocale, useTranslations } from "next-intl"
-import { Camera, Minus, Plus } from "lucide-react"
+import { ArrowDown, ArrowUp, Camera, Minus, Pencil, Plus, Tag, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { addCategory, deleteProduct, quickUpdateProduct, removeProductPhoto, saveProduct, setProductPhoto, type ActionResult } from "@/app/actions/catalogue"
+import {
+  addCategory,
+  bulkAdjustPrices,
+  deleteCategory,
+  deleteProduct,
+  endOffer,
+  moveCategory,
+  moveProduct,
+  quickUpdateProduct,
+  removeProductPhoto,
+  renameCategory,
+  saveProduct,
+  setProductPhoto,
+  type ActionResult,
+} from "@/app/actions/catalogue"
+import { adjustPrice, type Adjust } from "@/domain/offers"
+import { formatRupees } from "@/domain/money"
+import { dayLabel } from "@/lib/i18n-helpers"
 import { ProductPicture } from "@/components/product-picture"
 import { artKind } from "@/domain/product-art"
 import { shrinkPhoto } from "@/lib/shrink-photo"
@@ -29,12 +46,30 @@ type Product = {
   hsn: string
   isActive: boolean
   imageUrl: string | null
+  /** Offer price in rupees, or null. */
+  offerRupees: number | null
+  offerEndsOn: string
+  /** The offer applies today. */
+  offerLive: boolean
 }
-type Draft = Omit<Product, "id" | "imageUrl"> & { id?: string }
+type Draft = Omit<Product, "id" | "imageUrl" | "offerLive"> & { id?: string }
 
 const UNITS = ["packs", "trays", "kg", "birds", "litres", "pieces", "boxes", "jars"]
 
-export function CatalogueManager({ categories, products, canEdit, tracksStock }: { categories: Category[]; products: Product[]; canEdit: boolean; tracksStock: boolean }) {
+export function CatalogueManager({
+  categories,
+  products,
+  canEdit,
+  tracksStock,
+  today,
+}: {
+  categories: Category[]
+  products: Product[]
+  canEdit: boolean
+  tracksStock: boolean
+  /** IST "YYYY-MM-DD", for offer end dates. */
+  today: string
+}) {
   const t = useTranslations("farm.catalogue")
   const tc = useTranslations("common")
   const te = useTranslations("errors")
@@ -44,7 +79,9 @@ export function CatalogueManager({ categories, products, canEdit, tracksStock }:
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [draft, setDraft] = useState<Draft | null>(null)
-  const [cat, setCat] = useState<{ nameTa: string; nameEn: string } | null>(null)
+  const [cat, setCat] = useState<{ id?: string; nameTa: string; nameEn: string } | null>(null)
+  const [bulk, setBulk] = useState<(Adjust & { categoryId: string }) | null>(null)
+  const dayText = (d: string) => dayLabel(d, locale, { today: tc("today"), tomorrow: tc("tomorrow") })
   const [armedDelete, setArmedDelete] = useState(false)
 
   const run = (fn: () => Promise<ActionResult>, after?: () => void) =>
@@ -69,6 +106,8 @@ export function CatalogueManager({ categories, products, canEdit, tracksStock }:
     gstRate: 0,
     hsn: "",
     isActive: true,
+    offerRupees: null,
+    offerEndsOn: "",
   })
 
   const errorBox = error && (
@@ -84,7 +123,7 @@ export function CatalogueManager({ categories, products, canEdit, tracksStock }:
         className="flex flex-col gap-4 rounded-2xl border bg-card p-4"
         onSubmit={(e) => {
           e.preventDefault()
-          run(() => saveProduct({ ...draft, noteTa: draft.noteTa || undefined, noteEn: draft.noteEn || undefined, hsn: draft.hsn || undefined }), () => setDraft(null))
+          run(() => saveProduct({ ...draft, noteTa: draft.noteTa || undefined, noteEn: draft.noteEn || undefined, hsn: draft.hsn || undefined, offerRupees: draft.offerRupees || null }), () => setDraft(null))
         }}
       >
         <h2 className="text-lg font-semibold">{draft.id ? t("editTitle") : t("addTitle")}</h2>
@@ -139,6 +178,24 @@ export function CatalogueManager({ categories, products, canEdit, tracksStock }:
           </Labelled>
           )}
         </div>
+        <fieldset className="flex flex-col gap-3 rounded-xl border border-dashed p-3">
+          <legend className="flex items-center gap-1.5 px-1 text-sm font-semibold">
+            <Tag className="size-4" /> {t("offer")}
+          </legend>
+          <div className="grid grid-cols-2 gap-3">
+            <Labelled label={t("offerPrice")}>
+              <Input type="number" min={1} step="0.5" inputMode="decimal" value={draft.offerRupees ?? ""} onChange={(e) => set("offerRupees", e.target.value ? Number(e.target.value) : null)} />
+            </Labelled>
+            <Labelled label={t("offerEnds")}>
+              <Input type="date" min={today} value={draft.offerEndsOn} disabled={!draft.offerRupees} onChange={(e) => set("offerEndsOn", e.target.value)} />
+            </Labelled>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {draft.offerRupees && draft.priceRupees > draft.offerRupees
+              ? t("offerPreview", { was: formatRupees(Math.round(draft.priceRupees * 100)), now: formatRupees(Math.round(draft.offerRupees * 100)), pct: Math.round((1 - draft.offerRupees / draft.priceRupees) * 100) })
+              : t("offerHint")}
+          </p>
+        </fieldset>
         <div className="grid grid-cols-2 gap-3">
           <Labelled label={t("gst")}>
             <select className="h-9 rounded-md border border-input bg-transparent px-2" value={draft.gstRate} onChange={(e) => set("gstRate", Number(e.target.value) as Draft["gstRate"])}>
@@ -204,7 +261,7 @@ export function CatalogueManager({ categories, products, canEdit, tracksStock }:
           className="flex flex-col gap-3 rounded-2xl border bg-card p-4"
           onSubmit={(e) => {
             e.preventDefault()
-            run(() => addCategory(cat), () => setCat(null))
+            run(() => (cat.id ? renameCategory(cat) : addCategory(cat)), () => setCat(null))
           }}
         >
           <Labelled label={t("categoryNameTa")}>
@@ -226,14 +283,75 @@ export function CatalogueManager({ categories, products, canEdit, tracksStock }:
 
       {categories.length === 0 && <p className="py-6 text-center text-muted-foreground">{t("noCategories")}</p>}
 
-      {categories.map((c) => {
+      {categories.map((c, ci) => {
         const list = products.filter((p) => p.categoryId === c.id)
+        const icon = "grid size-9 place-items-center rounded-lg border text-muted-foreground disabled:opacity-30"
         return (
           <section key={c.id} className="rounded-2xl border bg-card p-4">
-            <h2 className="text-lg font-semibold">{pick(locale, c.nameTa, c.nameEn)}</h2>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold">{pick(locale, c.nameTa, c.nameEn)}</h2>
+              {canEdit && (
+                <div className="flex items-center gap-1">
+                  <button type="button" className={icon} disabled={pending || ci === 0} aria-label={t("moveUp")} onClick={() => run(() => moveCategory(c.id, "up"))}>
+                    <ArrowUp className="size-4" />
+                  </button>
+                  <button type="button" className={icon} disabled={pending || ci === categories.length - 1} aria-label={t("moveDown")} onClick={() => run(() => moveCategory(c.id, "down"))}>
+                    <ArrowDown className="size-4" />
+                  </button>
+                  <button type="button" className={icon} aria-label={t("renameCategory")} onClick={() => setCat({ id: c.id, nameTa: c.nameTa, nameEn: c.nameEn })}>
+                    <Pencil className="size-4" />
+                  </button>
+                  {list.length > 0 ? (
+                    <button type="button" className={icon} aria-label={t("changePrices")} onClick={() => setBulk({ categoryId: c.id, mode: "pct", direction: "up", amount: 5 })}>
+                      <Tag className="size-4" />
+                    </button>
+                  ) : (
+                    <button type="button" className={cn(icon, "text-destructive")} disabled={pending} aria-label={t("deleteCategory")} onClick={() => run(() => deleteCategory(c.id))}>
+                      <Trash2 className="size-4" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            {bulk?.categoryId === c.id && (
+              <div className="mt-3 flex flex-col gap-3 rounded-xl border border-dashed p-3">
+                <p className="font-semibold">{t("changePrices")}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select className="h-10 rounded-md border border-input bg-transparent px-2" value={bulk.direction} onChange={(e) => setBulk({ ...bulk, direction: e.target.value as Adjust["direction"] })}>
+                    <option value="up">{t("raise")}</option>
+                    <option value="down">{t("lower")}</option>
+                  </select>
+                  <Input type="number" min={1} inputMode="decimal" className="h-10 w-20 tabular-nums" value={bulk.amount || ""} onChange={(e) => setBulk({ ...bulk, amount: Number(e.target.value) })} />
+                  <select className="h-10 rounded-md border border-input bg-transparent px-2" value={bulk.mode} onChange={(e) => setBulk({ ...bulk, mode: e.target.value as Adjust["mode"] })}>
+                    <option value="pct">%</option>
+                    <option value="rupees">₹</option>
+                  </select>
+                </div>
+                <ul className="text-sm">
+                  {list.map((p) => (
+                    <li key={p.id} className="flex justify-between gap-3 py-0.5">
+                      <span className="truncate">
+                        {pick(locale, p.nameTa, p.nameEn)} · {pick(locale, p.packTa, p.packEn)}
+                      </span>
+                      <span className="shrink-0 tabular-nums">
+                        {formatRupees(Math.round(p.priceRupees * 100))} → <b>{bulk.amount > 0 ? formatRupees(adjustPrice(Math.round(p.priceRupees * 100), bulk)) : "—"}</b>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex gap-2">
+                  <Button className="flex-1" disabled={pending || !(bulk.amount > 0)} onClick={() => run(() => bulkAdjustPrices(bulk), () => setBulk(null))}>
+                    {t("applyPrices")}
+                  </Button>
+                  <Button variant="outline" onClick={() => setBulk(null)}>
+                    {tc("cancel")}
+                  </Button>
+                </div>
+              </div>
+            )}
             {list.length === 0 && <p className="pt-2 text-sm text-muted-foreground">{t("noProducts")}</p>}
             <ul className="divide-y">
-              {list.map((p) => (
+              {list.map((p, pi) => (
                 <li key={p.id} className="flex flex-col gap-2 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex flex-col items-center gap-1">
@@ -268,6 +386,23 @@ export function CatalogueManager({ categories, products, canEdit, tracksStock }:
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold">{pick(locale, p.nameTa, p.nameEn)}</div>
+                      {p.offerRupees != null && (
+                        <div className={cn("mt-0.5 flex flex-wrap items-center gap-1.5 text-sm", !p.offerLive && "text-muted-foreground")}>
+                          <span className={cn("rounded-full px-2 text-xs font-semibold", p.offerLive ? "bg-yolk text-yolk-foreground" : "bg-muted")}>
+                            <Tag className="mr-0.5 inline size-3" />
+                            {p.offerLive ? t("offerOn") : t("offerEnded")}
+                          </span>
+                          <span className="tabular-nums">
+                            {formatRupees(Math.round(p.offerRupees * 100))}
+                            {p.offerEndsOn && ` · ${t("until", { day: dayText(p.offerEndsOn) })}`}
+                          </span>
+                          {canEdit && (
+                            <button type="button" className="text-xs underline underline-offset-2" disabled={pending} onClick={() => run(() => endOffer(p.id))}>
+                              {t("endOffer")}
+                            </button>
+                          )}
+                        </div>
+                      )}
                       <div className={cn("text-sm text-muted-foreground", tracksStock && p.stockQty <= 5 && "font-semibold text-destructive")}>
                         {pick(locale, p.packTa, p.packEn)}
                         {tracksStock && ` · ${t("left", { count: p.stockQty, unit: unitName(p.stockUnit) })}`}
@@ -312,9 +447,17 @@ export function CatalogueManager({ categories, products, canEdit, tracksStock }:
                       </button>
                     </div>}
                     {canEdit && (
-                      <Button variant="link" className="ml-auto" onClick={() => setDraft(p)}>
-                        {tc("edit")}
-                      </Button>
+                      <div className="ml-auto flex items-center gap-1">
+                        <button type="button" className="grid size-9 place-items-center rounded-lg text-muted-foreground disabled:opacity-30" disabled={pending || pi === 0} aria-label={t("moveUp")} onClick={() => run(() => moveProduct(p.id, "up"))}>
+                          <ArrowUp className="size-4" />
+                        </button>
+                        <button type="button" className="grid size-9 place-items-center rounded-lg text-muted-foreground disabled:opacity-30" disabled={pending || pi === list.length - 1} aria-label={t("moveDown")} onClick={() => run(() => moveProduct(p.id, "down"))}>
+                          <ArrowDown className="size-4" />
+                        </button>
+                        <Button variant="link" onClick={() => setDraft(p)}>
+                          {tc("edit")}
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </li>

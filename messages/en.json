@@ -71,7 +71,9 @@
     "rememberedHere": "This phone will remember you; next time your details are filled in.",
     "farmWillSendLink": "This number is already with us. The farm will send you your personal link.",
     "trackOrder": "Track this order",
-    "messageFarm": "Message the farm"
+    "messageFarm": "Message the farm",
+    "percentOff": "{pct}% off",
+    "offerUntil": "Offer till {day}"
   },
   "farm": {
     "nav": {
@@ -177,7 +179,24 @@
       "gstHint": "Fresh eggs and fresh chicken are generally GST-exempt (0%). Confirm with your CA.",
       "addPhoto": "Add photo",
       "changePhoto": "Change",
-      "removePhoto": "Remove photo"
+      "removePhoto": "Remove photo",
+      "offer": "Offer price",
+      "offerPrice": "Offer price (₹)",
+      "offerEnds": "Last day (optional)",
+      "offerPreview": "Customers see {now} instead of {was} ({pct}% off).",
+      "offerHint": "Leave empty for no offer. Without a last day, it runs until you end it.",
+      "offerOn": "Offer",
+      "offerEnded": "Offer ended",
+      "until": "till {day}",
+      "endOffer": "End offer",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "renameCategory": "Rename category",
+      "changePrices": "Change prices",
+      "deleteCategory": "Delete category",
+      "raise": "Raise by",
+      "lower": "Lower by",
+      "applyPrices": "Apply new prices"
     },
     "slots": {
       "title": "Delivery slots",
@@ -402,7 +421,10 @@
       "placeOrder": "Add order",
       "completeSale": "Complete sale",
       "saveChanges": "Save changes",
-      "saveAndConfirm": "Save and confirm"
+      "saveAndConfirm": "Save and confirm",
+      "agreedPrice": "Price for this order",
+      "changePrice": "Change price",
+      "discountGiven": "Discount {amount} · change"
     },
     "returns": {
       "title": "{code} — return",
@@ -639,7 +661,10 @@
     "otp_too_many_tries": "Too many wrong tries. Please ask for a new code.",
     "otp_no_code": "Please ask for a new code.",
     "otp_verify_again": "Please verify your number again.",
-    "sign_in_needed": "Please verify your mobile number first."
+    "sign_in_needed": "Please verify your mobile number first.",
+    "offer_not_lower": "The offer price must be lower than the usual price.",
+    "category_not_empty": "Move or delete the products in this category first.",
+    "price_invalid": "That price isn't allowed: it must be at least ₹1 and not above the usual price."
   },
   "my": {
     "connectTitle": "Connect with the farm",

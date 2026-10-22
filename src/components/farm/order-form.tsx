@@ -13,7 +13,8 @@ import { deliveryFee } from "@/domain/pricing"
 import { cn } from "@/lib/utils"
 
 export interface OrderFormData {
-  products: { id: string; name: string; pack: string; pricePaise: number; stockQty: number }[]
+  /** pricePaise: today's price (offer included); listPricePaise: the most staff may charge. */
+  products: { id: string; name: string; pack: string; pricePaise: number; listPricePaise: number; stockQty: number }[]
   slots: { key: string; label: string; full: boolean; left: number; afterCutoff: boolean }[]
   creditAccounts: boolean
   tracksStock: boolean
@@ -77,7 +78,24 @@ export function OrderForm({ data, mode }: { data: OrderFormData; mode: OrderForm
     setAddressId(c.addresses[0]?.id ?? "new")
   }
 
-  const priceOf = (p: OrderFormData["products"][number]) => (init?.agreedPrices[p.id] ?? p.pricePaise)
+  // Prices agreed with the customer on this order (a discount), by product, in paise.
+  const [prices, setPrices] = useState<Record<string, number>>({})
+  const [priceEdit, setPriceEdit] = useState<{ id: string; rupees: string } | null>(null)
+  const defaultPrice = (p: OrderFormData["products"][number]) => init?.agreedPrices[p.id] ?? p.pricePaise
+  const priceOf = (p: OrderFormData["products"][number]) => prices[p.id] ?? defaultPrice(p)
+  const applyPrice = (p: OrderFormData["products"][number]) => {
+    if (!priceEdit) return
+    const paise = Math.round(Number(priceEdit.rupees) * 100)
+    if (!(paise >= 100 && paise <= p.listPricePaise)) return setError(te("price_invalid"))
+    setError(null)
+    setPrices((c) => {
+      const next = { ...c }
+      if (paise === defaultPrice(p)) delete next[p.id]
+      else next[p.id] = paise
+      return next
+    })
+    setPriceEdit(null)
+  }
   const lines = useMemo(() => data.products.filter((p) => (items[p.id] ?? 0) > 0).map((p) => ({ p, qty: items[p.id] })), [data.products, items])
   const subtotal = lines.reduce((a, l) => a + priceOf(l.p) * l.qty, 0)
   const fee = walkIn ? 0 : deliveryFee(subtotal, data)
@@ -89,13 +107,14 @@ export function OrderForm({ data, mode }: { data: OrderFormData; mode: OrderForm
     e.preventDefault()
     setError(null)
     const itemList = lines.map((l) => ({ productId: l.p.id, qty: l.qty }))
+    const agreedPrices = Object.fromEntries(Object.entries(prices).filter(([id]) => (items[id] ?? 0) > 0))
     const address =
       addressId === "new"
         ? { line: newAddress.line || undefined, landmark: newAddress.landmark || undefined, pincode: /^[1-9]\d{5}$/.test(newAddress.pincode) ? newAddress.pincode : undefined }
         : { id: addressId }
     start(async () => {
       if (mode.kind === "edit") {
-        const r = await updateFarmOrder({ orderId: mode.orderId, items: itemList, slotKey, address, paymentMethod: payment, note: note || undefined, fromCall: mode.fromCall })
+        const r = await updateFarmOrder({ orderId: mode.orderId, items: itemList, slotKey, address, paymentMethod: payment, note: note || undefined, fromCall: mode.fromCall, prices: agreedPrices })
         if (!r.ok) return setError(r.error && te.has(r.error) ? te(r.error) : te("generic"))
         router.push(mode.fromCall ? "/farm/orders?tab=open" : "/farm/orders")
         return
@@ -110,6 +129,7 @@ export function OrderForm({ data, mode }: { data: OrderFormData; mode: OrderForm
         paymentMethod: payment,
         note: note || undefined,
         handover: walkIn ? handover : undefined,
+        prices: agreedPrices,
       })
       if (!r.ok) return setError(te.has(r.error) ? te(r.error) : te("generic"))
       router.push(r.invoiceId ? `/farm/invoices/${r.invoiceId}` : "/farm/orders")
@@ -193,8 +213,34 @@ export function OrderForm({ data, mode }: { data: OrderFormData; mode: OrderForm
                   <div className="font-medium">{p.name}</div>
                   <div className="text-sm text-muted-foreground tabular-nums">
                     {p.pack} · {formatRupees(priceOf(p))}
+                    {priceOf(p) < p.listPricePaise && <s className="ml-1">{formatRupees(p.listPricePaise)}</s>}
                     {data.tracksStock && ` · ${ts("left", { count: p.stockQty })}`}
                   </div>
+                  {qty > 0 &&
+                    (priceEdit?.id === p.id ? (
+                      <div className="mt-1 flex items-center gap-1.5">
+                        <span className="text-sm">₹</span>
+                        <Input
+                          autoFocus
+                          type="number"
+                          min={1}
+                          step="0.5"
+                          inputMode="decimal"
+                          aria-label={t("agreedPrice")}
+                          value={priceEdit.rupees}
+                          onChange={(e) => setPriceEdit({ id: p.id, rupees: e.target.value })}
+                          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), applyPrice(p))}
+                          className="h-9 w-24 tabular-nums"
+                        />
+                        <Button type="button" size="sm" onClick={() => applyPrice(p)}>
+                          OK
+                        </Button>
+                      </div>
+                    ) : (
+                      <button type="button" className="mt-0.5 text-xs font-medium text-primary underline-offset-2 hover:underline" onClick={() => setPriceEdit({ id: p.id, rupees: String(priceOf(p) / 100) })}>
+                        {prices[p.id] !== undefined ? t("discountGiven", { amount: formatRupees((defaultPrice(p) - priceOf(p)) * qty) }) : t("changePrice")}
+                      </button>
+                    ))}
                 </div>
                 <div className="flex shrink-0 items-center overflow-hidden rounded-xl border border-primary text-primary">
                   <button type="button" className="grid size-10 place-items-center disabled:opacity-40" disabled={qty === 0} aria-label={ts("removeOne")} onClick={() => setQty(p.id, qty - 1)}>

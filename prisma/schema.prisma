@@ -236,6 +236,7 @@ model Category {
   nameEn         String
   sortOrder      Int     @default(0)
   showOnWhatsApp Boolean @default(true)
+  deletedAt      DateTime? // removed by the farm; kept so old products and orders stay readable
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   products Product[]
@@ -255,6 +256,8 @@ model Product {
   noteTa     String?
   noteEn     String?
   pricePaise Int // GST-inclusive selling price
+  offerPricePaise Int? // a lower price for a while ("₹390 → ₹360")
+  offerEndsOn     String? // last IST day of the offer, "2026-10-25"; null = until removed
   stockQty   Int       @default(0)
   stockUnit  String    @default("packs")
   hsn        String?

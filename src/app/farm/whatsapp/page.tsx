@@ -12,6 +12,7 @@ import { formatIndianMobile } from "@/domain/phone"
 import { istDate } from "@/domain/ist"
 import { ShareCard } from "@/components/farm/share-card"
 import { TemplateEditor } from "@/components/farm/template-editor"
+import { currentPrice, offerActive } from "@/domain/offers"
 
 /** Share the shop on WhatsApp, print its QR code, and edit every message the farm sends. */
 export default async function WhatsAppPage() {
@@ -36,7 +37,7 @@ export default async function WhatsAppPage() {
       products.map((p) => ({
         name: lang === "ta" ? p.nameTa : p.nameEn,
         pack: lang === "ta" ? p.packTa : p.packEn,
-        price: formatRupees(p.pricePaise),
+        price: offerActive(p, istDate(new Date())) ? `${formatRupees(currentPrice(p, istDate(new Date())))} (${formatRupees(p.pricePaise)})` : formatRupees(p.pricePaise),
         soldOut: features.stockTracking && p.stockQty <= 0,
       })),
       lang

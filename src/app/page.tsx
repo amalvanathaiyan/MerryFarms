@@ -11,6 +11,7 @@ import { getSessionCustomer } from "@/lib/customer-session"
 import { artKind } from "@/domain/product-art"
 import { otpOn } from "@/server/otp"
 import { SignInGate } from "@/components/shop/sign-in-gate"
+import { currentPrice, offerActive, percentOff } from "@/domain/offers"
 
 export const dynamic = "force-dynamic"
 
@@ -36,7 +37,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   const t = await getTranslations("common")
   const db = tenantDb(tenant.id)
   const [categories, products, options] = await Promise.all([
-    db.category.findMany({ orderBy: { sortOrder: "asc" } }),
+    db.category.findMany({ where: { deletedAt: null }, orderBy: { sortOrder: "asc" } }),
     db.product.findMany({
       where: { isActive: true, onWeb: true, deletedAt: null },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -94,7 +95,10 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       name: pick(locale, p.nameTa, p.nameEn),
       pack: pick(locale, p.packTa, p.packEn),
       note: pick(locale, p.noteTa, p.noteEn),
-      pricePaise: p.pricePaise,
+      pricePaise: currentPrice(p, istDate(new Date())),
+      listPricePaise: offerActive(p, istDate(new Date())) ? p.pricePaise : null,
+      offerPct: offerActive(p, istDate(new Date())) ? percentOff(p) : 0,
+      offerEnds: offerActive(p, istDate(new Date())) && p.offerEndsOn ? dayLabel(p.offerEndsOn, locale, labels) : null,
       stockQty: p.stockQty,
       imageUrl: p.imageUrl,
       art: artKind(p.nameEn, p.nameTa, ...categories.filter((c) => c.id === p.categoryId).flatMap((c) => [c.nameEn, c.nameTa])),
