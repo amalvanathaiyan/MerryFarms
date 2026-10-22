@@ -3,11 +3,10 @@
 import { useMemo, useState, useTransition } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
-import { Minus, Phone, Plus, ShoppingBasket, UserRound, X } from "lucide-react"
+import { Minus, Phone, Plus, ShoppingBasket, X } from "lucide-react"
 import { formatIndianMobile } from "@/domain/phone"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { LanguageToggle } from "@/components/language-toggle"
 import { placeWebOrder } from "@/app/actions/shop"
 import { formatRupees } from "@/domain/money"
 import { deliveryFee } from "@/domain/pricing"
@@ -18,6 +17,7 @@ import { AreaCheck, type AreaResult } from "./area-check"
 import { EnablePush } from "@/components/push/enable-push"
 import { ProductPicture } from "@/components/product-picture"
 import type { ArtKind } from "@/domain/product-art"
+import { FarmBanner } from "@/components/farm-banner"
 
 export interface ShopData {
   farm: {
@@ -128,24 +128,11 @@ export function Shop({ data }: { data: ShopData }) {
   }
 
   const header = (
-    <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-header px-4 py-3 text-header-foreground">
-      <div className="flex min-w-0 items-center gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
-          {data.farm.orderPrefix}
-        </span>
-        {/* Tamil names run long: allow two lines rather than cutting the name off. */}
-        <span className="line-clamp-2 text-base font-semibold leading-snug break-words sm:text-lg">{data.farm.name}</span>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        {data.farm.accounts && (
-          <Link href="/my" className="inline-flex items-center gap-1 rounded-full border bg-card px-3 py-1.5 text-sm font-medium text-card-foreground" aria-label={t("myOrders")}>
-            <UserRound className="size-4" aria-hidden />
-            <span className="hidden min-[380px]:inline">{t("myOrders")}</span>
-          </Link>
-        )}
-        <LanguageToggle compact />
-      </div>
-    </header>
+    <FarmBanner
+      name={data.farm.name}
+      initials={data.farm.orderPrefix}
+      myOrders={data.farm.accounts ? { href: "/my", label: t("myOrders") } : undefined}
+    />
   )
 
   if (view === "done" && placed) {

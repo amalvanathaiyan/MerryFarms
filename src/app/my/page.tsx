@@ -12,7 +12,7 @@ import { customerBalance } from "@/server/billing"
 import { formatRupees } from "@/domain/money"
 import { orderCode, isOpen } from "@/domain/orders"
 import { formatIndianMobile } from "@/domain/phone"
-import { LanguageToggle } from "@/components/language-toggle"
+import { FarmBanner } from "@/components/farm-banner"
 import { Button } from "@/components/ui/button"
 import { ConnectForm } from "@/components/shop/connect-form"
 import { ForgetMe } from "@/components/shop/forget-me"
@@ -38,14 +38,7 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
   const me = await getSessionCustomer()
   const farmName = pick(locale, tenant.nameTa, tenant.nameEn)
 
-  const header = (
-    <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-header px-4 py-3 text-header-foreground">
-      <Link href="/" className="min-w-0">
-        <span className="line-clamp-2 font-semibold leading-snug">{farmName}</span>
-      </Link>
-      <LanguageToggle compact />
-    </header>
-  )
+  const header = <FarmBanner name={farmName} initials={tenant.invoicePrefix} />
 
   if (!me) {
     return (
