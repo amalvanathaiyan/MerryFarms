@@ -11,7 +11,7 @@ import { generatePlanOrders } from "@/server/plans"
 import { EnablePush } from "@/components/push/enable-push"
 
 export default async function TodayPage() {
-  const { db, tenant } = await requireStaff()
+  const { db, tenant, staff } = await requireStaff()
   const locale = await getLocale()
   const t = await getTranslations("farm.today")
   const tc = await getTranslations("common")
@@ -22,6 +22,9 @@ export default async function TodayPage() {
   const features = featuresOf(tenant)
   // Create today's and tomorrow's plan orders (idempotent), before counting anything.
   const planRun = features.subscriptions ? await generatePlanOrders(tenant) : null
+  // Owner and packing staff are reminded to enter the day's eggs, birds and feed.
+  const canRecord = features.farmRecords && staff.roles.some((r) => r === "owner" || r === "packing")
+  const needsRecord = canRecord && !(await db.dailyRecord.findFirst({ where: { date: today }, select: { id: true } }))
   const unreadMessages = features.messages ? await db.message.count({ where: { sender: "customer", seenAt: null } }) : 0
   const activePlans = features.subscriptions ? await db.subscription.count({ where: { status: "active" } }) : 0
 
@@ -76,6 +79,15 @@ export default async function TodayPage() {
   return (
     <div className="flex flex-col gap-5">
       {features.pushNotifications && <EnablePush who="staff" />}
+      {needsRecord && (
+        <Link href="/farm/records" className="flex items-center justify-between gap-3 rounded-2xl border border-dashed bg-card p-4">
+          <span>
+            <span className="block font-semibold">📒 {t("recordToday")}</span>
+            <span className="text-sm text-muted-foreground">{t("recordTodayHint")}</span>
+          </span>
+          <span aria-hidden>→</span>
+        </Link>
+      )}
       <div className="grid grid-cols-2 gap-3">
         {tiles.map((tile) => {
           const body = (

@@ -473,6 +473,37 @@ CREATE TABLE "closed_days" (
     CONSTRAINT "closed_days_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "daily_records" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "eggsCollected" INTEGER,
+    "eggsBroken" INTEGER,
+    "birds" INTEGER,
+    "birdsLost" INTEGER,
+    "feedKg" DOUBLE PRECISION,
+    "note" TEXT,
+    "byStaffId" TEXT,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "daily_records_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "expenses" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "kind" TEXT NOT NULL,
+    "amountPaise" INTEGER NOT NULL,
+    "note" TEXT,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "expenses_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -577,6 +608,12 @@ CREATE INDEX "otp_codes_tenantId_phone_createdAt_idx" ON "otp_codes"("tenantId",
 
 -- CreateIndex
 CREATE INDEX "closed_days_tenantId_date_idx" ON "closed_days"("tenantId", "date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "daily_records_tenantId_date_key" ON "daily_records"("tenantId", "date");
+
+-- CreateIndex
+CREATE INDEX "expenses_tenantId_date_idx" ON "expenses"("tenantId", "date");
 
 -- AddForeignKey
 ALTER TABLE "tenant_settings" ADD CONSTRAINT "tenant_settings_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;

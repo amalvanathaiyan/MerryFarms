@@ -101,7 +101,9 @@
       "plansOpen": "{count, plural, one {# plan} other {# plans}} →",
       "plansCreated": "{count, plural, one {# plan order} other {# plan orders}} created.",
       "planHeld": "{name}'s order for {date} was held",
-      "unreadMessages": "{count, plural, one {# new message} other {# new messages}}"
+      "unreadMessages": "{count, plural, one {# new message} other {# new messages}}",
+      "recordToday": "Enter today's farm record",
+      "recordTodayHint": "Eggs collected, birds and feed: takes 30 seconds."
     },
     "orders": {
       "tab_to_confirm": "To call",
@@ -405,6 +407,10 @@
       "whatsappAlerts": {
         "title": "WhatsApp alert for new orders",
         "hint": "Each new web order is sent to the farm's WhatsApp number automatically. About ₹0.12 per alert; works once FarmForYou's WhatsApp Business account is set up."
+      },
+      "farmRecords": {
+        "title": "Farm records and profit",
+        "hint": "Daily eggs, birds and feed, expenses, and profit in Reports."
       }
     },
     "orderForm": {
@@ -574,7 +580,19 @@
       "export_dues": "Dues list",
       "allData": "Download all my data",
       "allDataHint": "One file with all your products, customers, orders, bills, payments, dues and messages. Keep a copy now and then for your records.",
-      "allDataButton": "Download all data (JSON)"
+      "allDataButton": "Download all data (JSON)",
+      "farmProfit": "Farm and profit",
+      "records": "Records",
+      "spent": "Spent",
+      "profit": "Profit",
+      "eggsCollected": "Good eggs",
+      "perDay": "{count}/day",
+      "layingRate": "Laying rate",
+      "feedPerEgg": "Feed cost per egg",
+      "costPerEgg": "All costs per egg",
+      "birdsLost": "Birds lost",
+      "birdsNow": "{count} now",
+      "noRecords": "Enter daily records and expenses to see production and profit here."
     },
     "area": {
       "title": "Delivery area",
@@ -626,6 +644,42 @@
       "copy": "Copy",
       "passwordHint": "Send it to them privately (e.g. on WhatsApp). It is shown only now; you can make a new one any time.",
       "done": "Done"
+    },
+    "records": {
+      "title": "Farm records",
+      "hint": "Eggs, birds and feed each day, and what the farm spends. Reports turn this into profit.",
+      "dayTitle": "Day's record",
+      "eggsCollected": "Eggs collected",
+      "eggsBroken": "Broken / cracked",
+      "birds": "Birds in the flock",
+      "birdsLost": "Birds lost (died)",
+      "feedKg": "Feed used (kg)",
+      "note": "Note (optional)",
+      "notePlaceholder": "e.g. vaccine given, rain",
+      "save": "Save the day's record",
+      "saved": "Saved",
+      "recent": "Last two weeks",
+      "date": "Date",
+      "eggsShort": "Eggs",
+      "brokenShort": "Broken",
+      "birdsShort": "Birds",
+      "lostShort": "Lost",
+      "feedShort": "Feed kg",
+      "expenses": "Expenses",
+      "thisMonth": "This month",
+      "amount": "Amount (₹)",
+      "expenseNote": "Note (optional), e.g. 2 bags layer feed",
+      "addExpense": "Add expense",
+      "noExpenses": "No expenses this month yet.",
+      "deleteExpense": "Delete expense",
+      "kind_feed": "Feed",
+      "kind_medicine": "Medicine",
+      "kind_chicks": "Chicks / birds",
+      "kind_labour": "Labour",
+      "kind_transport": "Transport",
+      "kind_electricity": "Electricity / water",
+      "kind_packing": "Trays & packing",
+      "kind_other": "Other"
     }
   },
   "login": {
@@ -720,7 +774,11 @@
     "last_owner": "The farm needs at least one owner.",
     "cannot_change_self": "You can't remove your own owner access.",
     "staff_not_found": "That staff member wasn't found.",
-    "staff_login_failed": "Couldn't create or change the login. Check the email and try again."
+    "staff_login_failed": "Couldn't create or change the login. Check the email and try again.",
+    "record_invalid": "Check the numbers: whole numbers, not below zero.",
+    "broken_more_than_collected": "Broken eggs can't be more than eggs collected.",
+    "record_future": "Choose today or an earlier date.",
+    "feature_off": "This is switched off in Settings."
   },
   "my": {
     "connectTitle": "Connect with the farm",
