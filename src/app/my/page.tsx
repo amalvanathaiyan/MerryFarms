@@ -16,6 +16,7 @@ import { LanguageToggle } from "@/components/language-toggle"
 import { Button } from "@/components/ui/button"
 import { ConnectForm } from "@/components/shop/connect-form"
 import { ForgetMe } from "@/components/shop/forget-me"
+import { unreadForCustomer } from "@/server/chat"
 
 export const dynamic = "force-dynamic"
 export const metadata: Metadata = { robots: { index: false, follow: false } }
@@ -60,10 +61,11 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
   }
 
   const db = tenantDb(tenant.id)
-  const [orders, invoices, balance] = await Promise.all([
+  const [orders, invoices, balance, unread] = await Promise.all([
     db.order.findMany({ where: { customerId: me.id }, include: { items: { include: { product: true } } }, orderBy: { createdAt: "desc" }, take: 15 }),
     db.invoice.findMany({ where: { customerId: me.id }, select: { orderId: true, publicToken: true, number: true, type: true } }),
     features.creditAccounts ? customerBalance(tenant.id, me.id) : Promise.resolve(0),
+    features.messages ? unreadForCustomer(tenant.id, me.id) : Promise.resolve(0),
   ])
   const open = orders.filter((o) => isOpen(o.status))
   const past = orders.filter((o) => !isOpen(o.status))
@@ -90,6 +92,17 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
             </a>
           </Button>
         </div>
+
+        {features.messages && (
+          <Link href="/my/messages" className="flex items-center justify-between rounded-2xl border bg-card p-4 font-semibold">
+            <span>💬 {t("messageFarm")}</span>
+            {unread > 0 ? (
+              <span className="rounded-full bg-destructive px-2 text-sm font-bold leading-6 text-destructive-foreground">{t("newReplies", { count: unread })}</span>
+            ) : (
+              <span aria-hidden>→</span>
+            )}
+          </Link>
+        )}
 
         {features.creditAccounts && balance !== 0 && (
           <section className="rounded-2xl border bg-card p-4">

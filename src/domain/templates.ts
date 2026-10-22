@@ -20,6 +20,7 @@ export type TemplateKey =
   | "share_shop"
   | "price_list"
   | "personal_link"
+  | "new_message"
 
 export interface TemplateDef {
   vars: string[]
@@ -90,6 +91,13 @@ export const TEMPLATES: Record<TemplateKey, TemplateDef> = {
     defaults: {
       ta: "வணக்கம்! {farm} — பண்ணையிலிருந்து நேரடியாக உங்கள் வீட்டுக்கு.\nஆர்டர் செய்ய: {link}\nஅழைக்க: {phone}",
       en: "Hello! {farm} — straight from our farm to your door.\nOrder here: {link}\nCall us: {phone}",
+    },
+  },
+  new_message: {
+    vars: ["name", "farm", "preview", "link"],
+    defaults: {
+      ta: "வணக்கம் {name}, {farm}-லிருந்து புதிய செய்தி:\n\"{preview}\"\nபதில் பார்க்க: {link}",
+      en: "Hello {name}, a new message from {farm}:\n\"{preview}\"\nSee it here: {link}",
     },
   },
   personal_link: {

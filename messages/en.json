@@ -79,7 +79,8 @@
       "orders": "Orders",
       "catalogue": "Products",
       "slots": "Slots",
-      "customers": "Customers"
+      "customers": "Customers",
+      "messages": "Messages"
     },
     "today": {
       "toConfirm": "To confirm by call",
@@ -95,7 +96,8 @@
       "plans": "Weekly / daily plans",
       "plansOpen": "{count, plural, one {# plan} other {# plans}} →",
       "plansCreated": "{count, plural, one {# plan order} other {# plan orders}} created.",
-      "planHeld": "{name}'s order for {date} was held"
+      "planHeld": "{name}'s order for {date} was held",
+      "unreadMessages": "{count, plural, one {# new message} other {# new messages}}"
     },
     "orders": {
       "tab_to_confirm": "To call",
@@ -277,7 +279,8 @@
       "freeAbove": "Free above (₹)",
       "freeAboveHint": "0 means always charged.",
       "save": "Save",
-      "saved": "Saved"
+      "saved": "Saved",
+      "slotsLink": "Delivery slots"
     },
     "units": {
       "packs": "packs",
@@ -444,7 +447,8 @@
       "tpl_invoice": "Sending an invoice",
       "tpl_share_shop": "Sharing the shop link",
       "tpl_price_list": "Price list",
-      "tpl_personal_link": "Personal link"
+      "tpl_personal_link": "Personal link",
+      "tpl_new_message": "New message nudge"
     },
     "plans": {
       "title": "Weekly / daily plans",
@@ -603,7 +607,12 @@
     "out_of_area": "Sorry, we don't deliver to your area yet. Please call the farm.",
     "location_invalid": "That location isn't valid.",
     "pincode_invalid": "Enter valid 6-digit PIN codes.",
-    "accounts_off": "Customer connect is switched off for this farm."
+    "accounts_off": "Customer connect is switched off for this farm.",
+    "messages_off": "Messages are switched off for this farm.",
+    "not_connected": "Connect with the farm first.",
+    "message_empty": "The message is empty.",
+    "message_too_long": "The message is too long (up to 1000 characters).",
+    "message_rate_limited": "Too many messages this hour. Please wait a little or call the farm."
   },
   "my": {
     "connectTitle": "Connect with the farm",
@@ -623,6 +632,27 @@
     "bill": "Bill",
     "orderAgain": "Order again",
     "notYou": "Not you? Forget me on this phone",
-    "forgetConfirm": "Tap again to confirm"
+    "forgetConfirm": "Tap again to confirm",
+    "messageFarm": "Message the farm",
+    "newReplies": "{count} new"
+  },
+  "chat": {
+    "title": "Messages",
+    "inboxEmpty": "No messages yet. Customers can write to you from their 'My orders' page.",
+    "you": "You",
+    "waitingHours": "Waiting {hours, plural, one {# hour} other {# hours}} for a reply",
+    "call": "Call",
+    "notSeenYet": "The customer hasn't seen your reply yet.",
+    "notSeenLong": "Your reply hasn't been seen for {hours, plural, one {# hour} other {# hours}}. Call them or let them know on WhatsApp.",
+    "nudgeWhatsApp": "Let them know on WhatsApp",
+    "replyPlaceholder": "Write a reply…",
+    "readOnly": "Replying needs order-desk access",
+    "empty": "No messages yet.",
+    "seen": "Seen",
+    "sent": "Sent",
+    "send": "Send",
+    "back": "Back",
+    "customerHint": "Write to the farm directly. Replies appear here.",
+    "placeholder": "Your message…"
   }
 }

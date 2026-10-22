@@ -21,6 +21,7 @@ export default async function TodayPage() {
   const features = featuresOf(tenant)
   // Create today's and tomorrow's plan orders (idempotent), before counting anything.
   const planRun = features.subscriptions ? await generatePlanOrders(tenant) : null
+  const unreadMessages = features.messages ? await db.message.count({ where: { sender: "customer", seenAt: null } }) : 0
   const activePlans = features.subscriptions ? await db.subscription.count({ where: { status: "active" } }) : 0
 
   const [toConfirm, open, todays, balances, toPack, lowStock] = await Promise.all([
@@ -99,6 +100,12 @@ export default async function TodayPage() {
           {t("lowStock", { name: `${pick(locale, p.nameTa, p.nameEn)} (${pick(locale, p.packTa, p.packEn)})`, count: p.stockQty, unit: unitName(p.stockUnit) })}
         </p>
       ))}
+
+      {unreadMessages > 0 && (
+        <Link href="/farm/messages" className="flex items-center justify-between rounded-2xl border-2 border-primary bg-accent p-4 font-semibold">
+          {t("unreadMessages", { count: unreadMessages })} <span aria-hidden>→</span>
+        </Link>
+      )}
 
       {features.subscriptions && (
         <section className="flex flex-col gap-2 rounded-2xl border bg-card p-4">

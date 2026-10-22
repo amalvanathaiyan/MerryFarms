@@ -606,3 +606,47 @@ describe("customer identity without login", () => {
     staffOverride: true,
   })
 })
+
+describe("messages in the app", () => {
+  let chat: typeof import("./chat")
+  let priyaId = ""
+  beforeAll(async () => {
+    chat = await import("./chat")
+    priyaId = (await tenantDb(merry.id).customer.findFirst({ where: { phone: "+919000010001" } }))!.id
+  })
+
+  it("delivers a customer message to the farm's inbox as unread and waiting", async () => {
+    await chat.sendFromCustomer(merry.id, priyaId, "  நாளை 2 தட்டு வேண்டும்  ")
+    expect(await chat.unreadForFarm(merry.id)).toBe(1)
+    const [row] = await chat.inbox(merry.id)
+    expect(row).toMatchObject({ customerId: priyaId, unread: 1, last: { body: "நாளை 2 தட்டு வேண்டும்", sender: "customer" } })
+    expect(row.waitingSince).not.toBeNull()
+  })
+
+  it("marks messages seen when the farm opens the conversation, and the reply clears 'waiting'", async () => {
+    await chat.markSeen(merry.id, priyaId, "farm")
+    expect(await chat.unreadForFarm(merry.id)).toBe(0)
+    await chat.sendFromFarm(merry.id, priyaId, "சரி, 2 தட்டு அனுப்புகிறோம்.", "staff-1")
+    expect(await chat.unreadForCustomer(merry.id, priyaId)).toBe(1)
+    const [row] = await chat.inbox(merry.id)
+    expect(row.waitingSince).toBeNull()
+    expect(row.last.seenAt).toBeNull() // not seen by the customer yet
+    await chat.markSeen(merry.id, priyaId, "customer")
+    const [after] = await chat.inbox(merry.id)
+    expect(after.last.seenAt).not.toBeNull() // ✓✓ Seen
+    expect((await chat.thread(merry.id, priyaId)).map((m) => m.sender)).toEqual(["customer", "farm"])
+  })
+
+  it("refuses empty or overlong messages, and floods", async () => {
+    await expect(chat.sendFromCustomer(merry.id, priyaId, "   ")).rejects.toThrow("message_empty")
+    await expect(chat.sendFromCustomer(merry.id, priyaId, "x".repeat(1001))).rejects.toThrow("message_too_long")
+    for (let i = 0; i < chat.CUSTOMER_HOURLY_LIMIT - 1; i++) await chat.sendFromCustomer(merry.id, priyaId, `hi ${i}`)
+    await expect(chat.sendFromCustomer(merry.id, priyaId, "one too many")).rejects.toThrow("message_rate_limited")
+  })
+
+  it("keeps conversations inside their farm", async () => {
+    expect(await chat.inbox(other.id)).toEqual([])
+    await expect(chat.sendFromFarm(other.id, priyaId, "hello", "staff-x")).rejects.toThrow("customer_not_found")
+    expect(await chat.thread(other.id, priyaId)).toEqual([])
+  })
+})

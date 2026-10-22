@@ -15,6 +15,8 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
   const locale = await getLocale()
   const t = await getTranslations("common")
   const toConfirm = await db.order.count({ where: { status: "to_confirm" } })
+  const messagesOn = featuresOf(tenant).messages
+  const unread = messagesOn ? await db.message.count({ where: { sender: "customer", seenAt: null } }) : 0
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col">
@@ -48,7 +50,7 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
         </div>
       </header>
       <main className="flex-1 px-4 pb-28 pt-4">{children}</main>
-      <FarmNav toConfirm={toConfirm} />
+      <FarmNav toConfirm={toConfirm} unread={unread} messagesOn={messagesOn} />
     </div>
   )
 }
