@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { checkStaffChange, tempPassword } from "./staff"
+import { checkStaffChange } from "./staff"
+import { tempPassword } from "./staff-password"
 
 const owner = { id: "o", roles: ["owner" as const], isActive: true }
 const desk = { id: "d", roles: ["order_desk" as const], isActive: true }
