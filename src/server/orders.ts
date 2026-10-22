@@ -18,6 +18,7 @@ export function areaOf(t: { farmLat: number | null; farmLng: number | null; deli
   }
 }
 import { featuresOf } from "@/lib/features"
+import { currentPrice, validAgreedPrice } from "@/domain/offers"
 
 export class OrderError extends Error {
   constructor(public code: string) {
@@ -76,6 +77,8 @@ export interface PlaceOrderInput {
   /** Set when a weekly/daily plan creates the order: no call needed, plan price applies. */
   subscriptionId?: string
   discountPct?: number
+  /** Staff only: a price agreed with the customer for a product (a discount, ≤ list price). */
+  prices?: Record<string, number>
 }
 
 /** Merges duplicate lines so stock checks see the real quantity. */
@@ -135,7 +138,7 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
         const lines = products.map((p) => ({
           productId: p.id,
           qty: qtyById.get(p.id)!,
-          unitPricePaise: planUnitPrice(p.pricePaise, input.discountPct ?? 0),
+          unitPricePaise: agreedOr(p, input.staffOverride ? input.prices : undefined, () => planUnitPrice(currentPrice(p, istDate(now)), input.discountPct ?? 0)),
           gstRate: p.gstRate,
         }))
         // Walk-ins carry their goods home: no delivery charge.
@@ -262,6 +265,8 @@ export interface EditOrderInput {
   note?: string
   /** Set when the edit is the result of a confirmation call ("Changed"): confirms the order too. */
   fromCall?: boolean
+  /** A price agreed with the customer for a product (a discount, ≤ list price). */
+  prices?: Record<string, number>
 }
 
 /**
@@ -302,7 +307,7 @@ export async function editOrder(tenant: Tenant, orderId: string, input: EditOrde
     const lines = products.map((p) => ({
       productId: p.id,
       qty: qtyById.get(p.id)!,
-      unitPricePaise: agreed.get(p.id)?.unitPricePaise ?? p.pricePaise,
+      unitPricePaise: agreedOr(p, input.prices, () => agreed.get(p.id)?.unitPricePaise ?? currentPrice(p, istDate(now))),
       gstRate: agreed.get(p.id)?.gstRate ?? p.gstRate,
     }))
 
@@ -448,4 +453,12 @@ export async function recordCall(
   const db = tenantDb(tenantId)
   const settings = await db.tenantSettings.findFirst()
   return db.$transaction((tx) => callInTx(tx, tenantId, orderId, outcome, byStaffId, note, settings?.maxCallAttempts ?? 3))
+}
+
+/** The staff-agreed price for this product if one was given (checked), else the default. */
+function agreedOr(p: { id: string; pricePaise: number }, prices: Record<string, number> | undefined, fallback: () => number) {
+  const agreed = prices?.[p.id]
+  if (agreed === undefined) return fallback()
+  if (!validAgreedPrice(agreed, p.pricePaise)) throw new OrderError("price_invalid")
+  return agreed
 }

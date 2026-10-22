@@ -83,6 +83,8 @@ const addressSchema = z.object({
   pincode: z.string().trim().regex(/^[1-9]\d{5}$/).optional(),
 })
 const paymentSchema = z.enum(["upi_on_delivery", "cash_on_delivery", "credit"])
+/** Prices agreed with the customer, in paise, by product id (checked against the list price). */
+const pricesSchema = z.record(z.string(), z.number().int().min(100).max(100_000_000)).optional()
 
 const createSchema = z.object({
   channel: z.enum(["phone", "whatsapp", "walk_in"]),
@@ -94,6 +96,7 @@ const createSchema = z.object({
   note: z.string().trim().max(300).optional(),
   /** Walk-in only: how the customer paid when taking the goods. */
   handover: z.enum(["cash", "upi", "credit"]).optional(),
+  prices: pricesSchema,
 })
 
 type CreateResult = { ok: true; orderId: string; invoiceId?: string } | { ok: false; error: string }
@@ -119,6 +122,7 @@ export async function createFarmOrder(raw: unknown): Promise<CreateResult> {
       note: input.note,
       byStaffId: staff.id,
       staffOverride: true,
+      prices: input.prices,
     })
     let invoiceId: string | undefined
     if (input.channel === "walk_in" && input.handover) {
@@ -141,6 +145,7 @@ const editSchema = z.object({
   paymentMethod: paymentSchema,
   note: z.string().trim().max(300).optional(),
   fromCall: z.boolean().optional(),
+  prices: pricesSchema,
 })
 
 export async function updateFarmOrder(raw: unknown): Promise<{ ok: boolean; error?: string }> {

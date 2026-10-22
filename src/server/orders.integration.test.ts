@@ -804,3 +804,42 @@ describe("WhatsApp alert to the farm for new orders", () => {
     }
   })
 })
+
+describe("offer prices and staff discounts", () => {
+  const db = () => tenantDb(merry.id)
+  const walkIn = (over: Partial<import("./orders").PlaceOrderInput> = {}) =>
+    order({ channel: "walk_in", slotKey: null, address: null, customer: { phone: "+919000070001", name: "Offer test", language: "ta" }, items: [{ productId: "p-eggs", qty: 1 }], byStaffId: "staff-1", staffOverride: true, ...over })
+  beforeAll(async () => {
+    await db().product.updateMany({ where: { id: "p-eggs" }, data: { stockQty: 100, pricePaise: 39_000, offerPricePaise: 36_000, offerEndsOn: "2026-10-21" } })
+  })
+  afterAll(async () => {
+    await db().product.updateMany({ where: { id: "p-eggs" }, data: { offerPricePaise: null, offerEndsOn: null } })
+  })
+
+  it("charges the offer price up to its last day, then the usual price", async () => {
+    const onLastDay = await svc.placeOrder(merry, walkIn(), NOW) // 21 Oct IST
+    expect(onLastDay.order.totalPaise).toBe(36_000)
+    const dayAfter = await svc.placeOrder(merry, walkIn(), new Date("2026-10-22T06:00:00Z"))
+    expect(dayAfter.order.totalPaise).toBe(39_000)
+  })
+
+  it("lets staff agree a lower price, never above the usual price", async () => {
+    const { order: o } = await svc.placeOrder(merry, walkIn({ prices: { "p-eggs": 35_000 } }), NOW)
+    expect(o.totalPaise).toBe(35_000)
+    await expect(svc.placeOrder(merry, walkIn({ prices: { "p-eggs": 40_000 } }), NOW)).rejects.toThrow("price_invalid")
+  })
+
+  it("ignores prices sent with a customer's own web order", async () => {
+    const { order: o } = await svc.placeOrder(merry, order({ items: [{ productId: "p-eggs", qty: 1 }], slotKey: "2026-10-26|slot-am", prices: { "p-eggs": 100 } }), NOW)
+    expect(o.subtotalPaise).toBe(36_000)
+  })
+
+  it("keeps an agreed price when editing, and can change it", async () => {
+    const { order: o } = await svc.placeOrder(merry, order({ channel: "phone", items: [{ productId: "p-eggs", qty: 2 }], slotKey: "2026-10-23|slot-am", byStaffId: "staff-1", staffOverride: true, prices: { "p-eggs": 35_000 } }), NOW)
+    const base = { items: [{ productId: "p-eggs", qty: 2 }], slotKey: "2026-10-23|slot-am", address: { id: o.addressId! }, paymentMethod: "upi_on_delivery" as const }
+    await svc.editOrder(merry, o.id, base, "staff-1", NOW)
+    expect((await db().orderItem.findFirst({ where: { orderId: o.id } }))!.unitPricePaise).toBe(35_000)
+    await svc.editOrder(merry, o.id, { ...base, prices: { "p-eggs": 34_000 } }, "staff-1", NOW)
+    expect((await db().orderItem.findFirst({ where: { orderId: o.id } }))!.unitPricePaise).toBe(34_000)
+  })
+})

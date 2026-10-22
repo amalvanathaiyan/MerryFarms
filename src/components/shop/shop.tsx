@@ -50,7 +50,13 @@ export interface ShopData {
     name: string
     pack: string
     note: string | null
+    /** Today's price (the offer price while an offer runs). */
     pricePaise: number
+    /** The usual price, shown struck through during an offer; null otherwise. */
+    listPricePaise: number | null
+    offerPct: number
+    /** "Sat, 25 Oct" — last day of the offer, if it has one. */
+    offerEnds: string | null
     stockQty: number
     /** The farm's photo, or null for a drawn placeholder. */
     imageUrl: string | null
@@ -378,7 +384,14 @@ export function Shop({ data }: { data: ShopData }) {
                 const soldOut = data.farm.tracksStock && p.stockQty <= 0
                 return (
                   <article key={p.id} className={cn("flex gap-3 rounded-2xl border bg-card p-3", soldOut && "opacity-60")}>
-                    <ProductPicture src={p.imageUrl} kind={p.art} alt={p.name} className="size-24" />
+                    <div className="relative shrink-0">
+                      <ProductPicture src={p.imageUrl} kind={p.art} alt={p.name} className="size-24" />
+                      {p.offerPct > 0 && (
+                        <span className="absolute -top-1.5 -left-1.5 rounded-full bg-yolk px-2 py-0.5 text-xs font-bold text-yolk-foreground shadow-sm tabular-nums">
+                          {t("percentOff", { pct: p.offerPct })}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex min-w-0 flex-1 flex-col">
                       <h3 className="font-semibold leading-snug">{p.name}</h3>
                       <p className="text-sm text-muted-foreground">
@@ -386,7 +399,13 @@ export function Shop({ data }: { data: ShopData }) {
                         {p.note && ` · ${p.note}`}
                       </p>
                       <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-2">
-                        <p className="text-lg font-bold tabular-nums">{formatRupees(p.pricePaise)}</p>
+                        <div className="flex flex-col">
+                          <p className="flex items-baseline gap-1.5 tabular-nums">
+                            <span className="text-lg font-bold">{formatRupees(p.pricePaise)}</span>
+                            {p.listPricePaise && <s className="text-sm text-muted-foreground">{formatRupees(p.listPricePaise)}</s>}
+                          </p>
+                          {p.offerEnds && <span className="text-xs text-muted-foreground">{t("offerUntil", { day: p.offerEnds })}</span>}
+                        </div>
                         {soldOut ? (
                           <span className="rounded-full border px-3 py-1 text-sm">{t("soldOut")}</span>
                         ) : !data.farm.webOrdering ? null : qty === 0 ? (

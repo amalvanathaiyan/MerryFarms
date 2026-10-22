@@ -2,14 +2,18 @@ import { getTranslations } from "next-intl/server"
 import { requireStaff } from "@/lib/auth"
 import { CatalogueManager } from "@/components/farm/catalogue-manager"
 import { featuresOf } from "@/lib/features"
+import { offerActive } from "@/domain/offers"
+import { istDate } from "@/domain/ist"
 
 export default async function CataloguePage() {
   const { db, staff, tenant } = await requireStaff()
   const t = await getTranslations("farm.catalogue")
   const [categories, products] = await Promise.all([
-    db.category.findMany({ orderBy: { sortOrder: "asc" } }),
+    db.category.findMany({ where: { deletedAt: null }, orderBy: { sortOrder: "asc" } }),
     db.product.findMany({ where: { deletedAt: null }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
   ])
+
+  const today = istDate(new Date())
 
   return (
     <div className="flex flex-col gap-4">
@@ -17,6 +21,7 @@ export default async function CataloguePage() {
       <CatalogueManager
         canEdit={staff.roles.includes("owner")}
         tracksStock={featuresOf(tenant).stockTracking}
+        today={today}
         categories={categories.map(({ id, nameTa, nameEn }) => ({ id, nameTa, nameEn }))}
         products={products.map((p) => ({
           id: p.id,
@@ -34,6 +39,9 @@ export default async function CataloguePage() {
           hsn: p.hsn ?? "",
           isActive: p.isActive,
           imageUrl: p.imageUrl,
+          offerRupees: p.offerPricePaise != null ? p.offerPricePaise / 100 : null,
+          offerEndsOn: p.offerEndsOn ?? "",
+          offerLive: offerActive(p, today),
         }))}
       />
     </div>

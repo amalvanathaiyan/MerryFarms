@@ -133,6 +133,7 @@ CREATE TABLE "categories" (
     "nameEn" TEXT NOT NULL,
     "sortOrder" INTEGER NOT NULL DEFAULT 0,
     "showOnWhatsApp" BOOLEAN NOT NULL DEFAULT true,
+    "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "categories_pkey" PRIMARY KEY ("id")
 );
@@ -149,6 +150,8 @@ CREATE TABLE "products" (
     "noteTa" TEXT,
     "noteEn" TEXT,
     "pricePaise" INTEGER NOT NULL,
+    "offerPricePaise" INTEGER,
+    "offerEndsOn" TEXT,
     "stockQty" INTEGER NOT NULL DEFAULT 0,
     "stockUnit" TEXT NOT NULL DEFAULT 'packs',
     "hsn" TEXT,

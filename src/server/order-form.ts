@@ -6,6 +6,8 @@ import { slotRangeLabel } from "@/domain/slots"
 import type { Tenant } from "@/lib/tenant"
 import type { OrderFormData } from "@/components/farm/order-form"
 import { openSlotOptions } from "./orders"
+import { currentPrice } from "@/domain/offers"
+import { istDate } from "@/domain/ist"
 
 /**
  * Everything the farm's new/edit order form needs: products (plus any hidden ones
@@ -32,7 +34,8 @@ export async function loadOrderFormData(
       id: p.id,
       name: pick(locale, p.nameTa, p.nameEn),
       pack: pick(locale, p.packTa, p.packEn),
-      pricePaise: p.pricePaise,
+      pricePaise: currentPrice(p, istDate(now)),
+      listPricePaise: p.pricePaise,
       stockQty: p.stockQty,
     })),
     slots: options.map((o) => ({
