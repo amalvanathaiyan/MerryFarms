@@ -15,6 +15,8 @@ import { formatIndianMobile } from "@/domain/phone"
 import { FarmBanner } from "@/components/farm-banner"
 import { Button } from "@/components/ui/button"
 import { ConnectForm } from "@/components/shop/connect-form"
+import { SignInFlow } from "@/components/shop/sign-in-flow"
+import { otpOn } from "@/server/otp"
 import { ForgetMe } from "@/components/shop/forget-me"
 import { EnablePush } from "@/components/push/enable-push"
 import { unreadForCustomer } from "@/server/chat"
@@ -48,7 +50,7 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
           <h1 className="text-2xl font-bold">{t("connectTitle")}</h1>
           {link === "expired" && <p className="rounded-lg bg-yolk p-3 text-sm text-yolk-foreground">{t("linkExpired")}</p>}
           <p className="text-muted-foreground">{t("connectHint", { farm: farmName })}</p>
-          <ConnectForm farmPhone={tenant.phone} />
+          {otpOn(tenant) ? <SignInFlow /> : <ConnectForm farmPhone={tenant.phone} />}
         </main>
       </div>
     )

@@ -652,3 +652,18 @@ model ProductImage {
   @@index([tenantId])
   @@map("product_images")
 }
+
+/// A sign-in code sent to a customer's mobile. Only a keyed hash of the code is kept.
+model OtpCode {
+  id        String    @id @default(uuid())
+  tenantId  String
+  phone     String
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int       @default(0)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([tenantId, phone, createdAt])
+  @@map("otp_codes")
+}

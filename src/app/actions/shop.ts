@@ -11,6 +11,7 @@ import { tenantDb } from "@/lib/tenant-db"
 import { forgetCustomer, getSessionCustomer, rememberCustomer } from "@/lib/customer-session"
 import { connectCustomer, issueToken } from "@/server/customers"
 import { notifyStaff } from "@/server/notify"
+import { otpOn } from "@/server/otp"
 import { staffNewOrderNote } from "@/domain/notifications"
 import { orderCode } from "@/domain/orders"
 
@@ -50,8 +51,8 @@ export async function placeWebOrder(raw: unknown): Promise<PlaceWebOrderResult> 
   if (!parsed.success) return { ok: false, error: "invalid_form" }
   const input = parsed.data
 
-  const phone = normaliseIndianMobile(input.phone)
-  if (!phone) return { ok: false, error: "phone_invalid" }
+  const typed = normaliseIndianMobile(input.phone)
+  if (!typed) return { ok: false, error: "phone_invalid" }
 
   const tenant = await requireTenant()
   if (tenant.status === "suspended") return { ok: false, error: "shop_paused" }
@@ -59,6 +60,10 @@ export async function placeWebOrder(raw: unknown): Promise<PlaceWebOrderResult> 
 
   const accounts = featuresOf(tenant).customerAccounts
   const session = accounts ? await getSessionCustomer() : null
+  // With code sign-in, only a verified number can order, and always as itself.
+  const verifiedOnly = otpOn(tenant)
+  if (verifiedOnly && !session) return { ok: false, error: "sign_in_needed" }
+  const phone = verifiedOnly && session ? session.phone : typed
   const known = accounts && !session ? await tenantDb(tenant.id).customer.findFirst({ where: { phone }, select: { id: true } }) : null
 
   try {
@@ -125,6 +130,7 @@ export async function connectAction(raw: unknown): Promise<{ ok: true; status: "
   if (!phone) return { ok: false, error: "phone_invalid" }
   const tenant = await requireTenant()
   if (!featuresOf(tenant).customerAccounts) return { ok: false, error: "accounts_off" }
+  if (otpOn(tenant)) return { ok: false, error: "sign_in_needed" }
   const r = await connectCustomer(tenant, { ...parsed.data, phone })
   if (r.status === "connected") await rememberCustomer(r.token)
   return { ok: true, status: r.status }

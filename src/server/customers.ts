@@ -48,3 +48,24 @@ export async function connectCustomer(tenant: Tenant, input: { name: string; pho
   })
   return { status: "connected", token, customerId: c.id }
 }
+
+/**
+ * Registers a customer whose number was just proven by a sign-in code. If the number is
+ * already a customer (e.g. two tabs), signs that customer in instead of making a duplicate.
+ */
+export async function registerVerified(
+  tenant: Tenant,
+  input: { phone: string; name: string; language: "ta" | "en"; address?: { line: string; landmark?: string; pincode?: string } }
+) {
+  const db = tenantDb(tenant.id)
+  const existing = await db.customer.findFirst({ where: { phone: input.phone }, select: { id: true } })
+  if (existing) return { customerId: existing.id, token: await ensureToken(tenant.id, existing.id) }
+  const token = newToken()
+  const c = await db.customer.create({
+    data: { tenantId: tenant.id, phone: input.phone, name: input.name, language: input.language, accessToken: token, tokenIssuedAt: new Date() },
+  })
+  if (input.address) {
+    await db.address.create({ data: { tenantId: tenant.id, customerId: c.id, line: input.address.line, landmark: input.address.landmark || null, pincode: input.address.pincode || null } })
+  }
+  return { customerId: c.id, token }
+}
