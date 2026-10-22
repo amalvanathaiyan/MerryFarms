@@ -913,3 +913,31 @@ describe("customers cancelling and changing their own orders", () => {
     expect(next.customerId).toBe(customer.id)
   })
 })
+
+describe("staff management", () => {
+  let staffSvc: typeof import("./staff")
+  beforeAll(async () => {
+    process.env.DEMO_LOGIN = "1"
+    staffSvc = await import("./staff")
+  })
+  afterAll(() => {
+    delete process.env.DEMO_LOGIN
+  })
+
+  it("adds staff once per email, with a login and the chosen roles", async () => {
+    const { member } = await staffSvc.addStaff(small.id, { name: "Muthu", email: "Muthu@Example.com", roles: ["delivery"] })
+    expect(member).toMatchObject({ name: "Muthu", email: "muthu@example.com", roles: ["delivery"], isActive: true })
+    expect(member.authUserId).toMatch(/^demo-/)
+    await expect(staffSvc.addStaff(small.id, { name: "Muthu again", email: "muthu@example.com", roles: ["packing"] })).rejects.toThrow("staff_exists")
+  })
+
+  it("never leaves a farm without an owner, and is per farm", async () => {
+    const { member: owner } = await staffSvc.addStaff(small.id, { name: "Owner", email: "owner@small.test", roles: ["owner"] })
+    const { member: helper } = await staffSvc.addStaff(small.id, { name: "Helper", email: "helper@small.test", roles: ["order_desk"] })
+    await expect(staffSvc.updateStaff(small.id, helper.id, owner.id, { name: "Owner", roles: ["packing"] })).rejects.toThrow("last_owner")
+    await expect(staffSvc.setStaffActive(small.id, owner.id, owner.id, false)).rejects.toThrow("cannot_change_self")
+    await staffSvc.setStaffActive(small.id, owner.id, helper.id, false)
+    expect((await tenantDb(small.id).staffMember.findFirst({ where: { id: helper.id } }))!.isActive).toBe(false)
+    await expect(staffSvc.setStaffActive(other.id, owner.id, helper.id, true)).rejects.toThrow("staff_not_found")
+  })
+})
