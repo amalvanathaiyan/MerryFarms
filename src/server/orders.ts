@@ -7,6 +7,16 @@ import { orderTotals } from "@/domain/pricing"
 import { slotKey, slotRangeLabel, upcomingSlots } from "@/domain/slots"
 import { addDays, istDate } from "@/domain/ist"
 import { planUnitPrice } from "@/domain/plans"
+import { areaConfigured, checkArea, type DeliveryArea } from "@/domain/delivery-area"
+
+/** The farm's delivery area as the rules need it. */
+export function areaOf(t: { farmLat: number | null; farmLng: number | null; deliveryRadiusKm: number | null; servedPincodes: string[] }): DeliveryArea {
+  return {
+    farm: t.farmLat != null && t.farmLng != null ? { lat: t.farmLat, lng: t.farmLng } : null,
+    radiusKm: t.deliveryRadiusKm,
+    pincodes: t.servedPincodes,
+  }
+}
 import { featuresOf } from "@/lib/features"
 
 export class OrderError extends Error {
@@ -54,7 +64,7 @@ export interface PlaceOrderInput {
   channel: "web" | "whatsapp" | "phone" | "walk_in"
   customer: { phone: string; name: string; language: "ta" | "en" }
   /** An existing address of this customer (`id`), a new one (`line`), or none for walk-ins. */
-  address: { id?: string; line?: string; landmark?: string } | null
+  address: { id?: string; line?: string; landmark?: string; pincode?: string; lat?: number; lng?: number } | null
   items: { productId: string; qty: number }[]
   /** `${date}|${slotId}`; null only for walk-in sales at the farm. */
   slotKey: string | null
@@ -137,18 +147,29 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
           create: { tenantId: tenant.id, phone: input.customer.phone, name: input.customer.name, language: input.customer.language },
         })
 
-        let addressId: string | null = null
+        let address: { id: string; lat: number | null; lng: number | null; pincode: string | null } | null = null
         if (input.address?.id) {
-          const existing = await tx.address.findFirst({ where: { id: input.address.id, customerId: customer.id } })
-          if (!existing) throw new OrderError("address_not_found")
-          addressId = existing.id
+          address = await tx.address.findFirst({ where: { id: input.address.id, customerId: customer.id } })
+          if (!address) throw new OrderError("address_not_found")
         } else if (input.address?.line) {
-          addressId = (
-            await tx.address.create({
-              data: { tenantId: tenant.id, customerId: customer.id, line: input.address.line, landmark: input.address.landmark || null },
-            })
-          ).id
+          address = await tx.address.create({
+            data: {
+              tenantId: tenant.id,
+              customerId: customer.id,
+              line: input.address.line,
+              landmark: input.address.landmark || null,
+              pincode: input.address.pincode || null,
+              lat: input.address.lat ?? null,
+              lng: input.address.lng ?? null,
+            },
+          })
         }
+        const addressId = address?.id ?? null
+
+        // Delivery area: customers outside it can't order online; staff orders are only flagged.
+        const area = isWalkIn || !features.deliveryArea ? null : areaOf(tenant)
+        const check = area && areaConfigured(area) ? checkArea(area, { location: address?.lat != null && address.lng != null ? { lat: address.lat, lng: address.lng } : null, pincode: address?.pincode }) : null
+        if (check?.result === "outside" && input.channel === "web") throw new OrderError("out_of_area")
 
         const history = await tx.order.findMany({
           where: { customerId: customer.id, status: "delivered" },
@@ -191,6 +212,8 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
             needsCall: decision.needsCall,
             note: input.note || null,
             subscriptionId: input.subscriptionId ?? null,
+            areaCheck: check?.result ?? null,
+            distanceKm: check?.distanceKm ?? null,
             items: { create: lines.map((l) => ({ ...l, tenantId: tenant.id })) },
             events: {
               create: { tenantId: tenant.id, toStatus: status, byStaffId: input.byStaffId ?? null, note: decision.reason },
@@ -221,7 +244,7 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
 export interface EditOrderInput {
   items: { productId: string; qty: number }[]
   slotKey: string
-  address: { id?: string; line?: string; landmark?: string }
+  address: { id?: string; line?: string; landmark?: string; pincode?: string; lat?: number; lng?: number }
   paymentMethod: "upi_on_delivery" | "cash_on_delivery" | "upi_prepaid" | "credit"
   note?: string
   /** Set when the edit is the result of a confirmation call ("Changed"): confirms the order too. */
@@ -289,10 +312,21 @@ export async function editOrder(tenant: Tenant, orderId: string, input: EditOrde
     } else if (input.address.line) {
       addressId = (
         await tx.address.create({
-          data: { tenantId: tenant.id, customerId: order.customerId, line: input.address.line, landmark: input.address.landmark || null },
+          data: {
+            tenantId: tenant.id,
+            customerId: order.customerId,
+            line: input.address.line,
+            landmark: input.address.landmark || null,
+            pincode: input.address.pincode || null,
+            lat: input.address.lat ?? null,
+            lng: input.address.lng ?? null,
+          },
         })
       ).id
     }
+    const addr = addressId ? await tx.address.findFirst({ where: { id: addressId } }) : null
+    const area = features.deliveryArea ? areaOf(tenant) : null
+    const check = area && areaConfigured(area) ? checkArea(area, { location: addr?.lat != null && addr.lng != null ? { lat: addr.lat, lng: addr.lng } : null, pincode: addr?.pincode }) : null
 
     const totals = orderTotals(lines, tenant)
     await tx.orderItem.deleteMany({ where: { orderId } })
@@ -304,6 +338,8 @@ export async function editOrder(tenant: Tenant, orderId: string, input: EditOrde
         addressId,
         paymentMethod: input.paymentMethod,
         note: input.note || null,
+        areaCheck: check?.result ?? null,
+        distanceKm: check?.distanceKm ?? null,
         subtotalPaise: totals.subtotalPaise,
         deliveryFeePaise: totals.deliveryFeePaise,
         totalPaise: totals.totalPaise,

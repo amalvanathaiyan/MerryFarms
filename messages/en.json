@@ -55,7 +55,20 @@
     "callFarm": "Call the farm",
     "waOrderText": "Hello! My order {code}:\n{items}\nTotal {total}\n{name}",
     "orderingOff": "To order, call the farm or send them a WhatsApp message.",
-    "whatsappFarm": "Order on WhatsApp"
+    "whatsappFarm": "Order on WhatsApp",
+    "area": {
+      "pincode": "PIN code",
+      "shareLocation": "Share my location",
+      "locating": "Finding your location…",
+      "locationAdded": "Location added ✓",
+      "removeLocation": "Remove",
+      "locationHint": "Sharing your location helps the delivery person find you.",
+      "weDeliverWithin": "We deliver within {km} km of the farm. Share your location to check right away.",
+      "locationDenied": "Location permission was refused. Your PIN code is enough.",
+      "locationUnavailable": "This phone couldn't share its location. Your PIN code is enough.",
+      "inside": "We deliver to your area.",
+      "outside": "Sorry, we don't deliver to your area yet. Please call the farm."
+    }
   },
   "farm": {
     "nav": {
@@ -125,7 +138,10 @@
       "returnRefund": "Return / refund",
       "returnedAmount": "Returned: {amount}",
       "planBadge": "Plan",
-      "plans": "Plans"
+      "plans": "Plans",
+      "directions": "Directions",
+      "outsideArea": "Outside the delivery area — check on the call.",
+      "areaUnchecked": "Location not checked — ask on the call."
     },
     "catalogue": {
       "title": "Products & prices",
@@ -315,6 +331,10 @@
       "returns": {
         "title": "Returns & credit notes",
         "hint": "Refund or credit customers for damaged, short or returned goods."
+      },
+      "deliveryArea": {
+        "title": "Delivery area check",
+        "hint": "Take online orders only within a distance of the farm or from listed PIN codes."
       }
     },
     "orderForm": {
@@ -477,6 +497,26 @@
       "export_payments": "Payments",
       "export_products": "Product totals",
       "export_dues": "Dues list"
+    },
+    "area": {
+      "title": "Delivery area",
+      "hint": "Where the farm is, how far you deliver, and extra PIN codes. Online orders from outside this area are stopped.",
+      "farmLocation": "Farm location",
+      "notSet": "Not set yet.",
+      "viewOnMap": "View on map",
+      "useHere": "I'm at the farm now — use this location",
+      "pastePlaceholder": "Google Maps link or 12.95, 80.14",
+      "use": "Use",
+      "needsHttps": "Getting the location needs a secure (https) connection. Paste a Google Maps link instead.",
+      "locationDenied": "Location permission was refused. Paste a Google Maps link instead.",
+      "pasteNotUnderstood": "Couldn't find a location in that link. Open the farm in Google Maps and paste the full link from the address bar.",
+      "radius": "Delivery distance (km)",
+      "radiusHint": "Straight-line distance from the farm. Leave empty to deliver by PIN code only.",
+      "pincodes": "PIN codes you deliver to (optional)",
+      "pincodesHint": "Delivered even if they're beyond the distance.",
+      "badPins": "Invalid PIN: {pins}",
+      "save": "Save",
+      "saved": "Saved"
     }
   },
   "login": {
@@ -539,6 +579,9 @@
     "plan_not_found": "Plan not found.",
     "plan_no_items": "Add at least one item.",
     "plan_no_days": "Pick at least one day.",
-    "plan_bad_discount": "The discount must be between 0 and 50%."
+    "plan_bad_discount": "The discount must be between 0 and 50%.",
+    "out_of_area": "Sorry, we don't deliver to your area yet. Please call the farm.",
+    "location_invalid": "That location isn't valid.",
+    "pincode_invalid": "Enter valid 6-digit PIN codes."
   }
 }

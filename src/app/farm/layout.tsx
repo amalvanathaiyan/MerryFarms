@@ -20,11 +20,11 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col">
       <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-header px-4 py-3 text-header-foreground print:hidden">
         <div className="min-w-0">
-          <div className="truncate font-semibold">{pick(locale, tenant.nameTa, tenant.nameEn)}</div>
+          <div className="line-clamp-2 font-semibold leading-snug break-words">{pick(locale, tenant.nameTa, tenant.nameEn)}</div>
           <div className="truncate text-xs opacity-80">{staff.name}</div>
         </div>
         <div className="flex items-center gap-2">
-          <LanguageToggle />
+          <LanguageToggle compact />
           {featuresOf(tenant).whatsappLite && (
             <Link href="/farm/whatsapp" aria-label="WhatsApp" className="opacity-80 hover:opacity-100">
               <MessageCircle className="size-5" />
