@@ -49,6 +49,8 @@ export default async function ShopPage() {
       paused: tenant.status === "suspended",
       webOrdering: features.webShop,
       tracksStock: features.stockTracking,
+      // Only the radius is shown; the farm's exact location stays on the server.
+      radiusKm: features.deliveryArea ? tenant.deliveryRadiusKm : null,
     },
     categories: categories
       .filter((c) => products.some((p) => p.categoryId === c.id))

@@ -12,6 +12,7 @@ import { deliveryFee } from "@/domain/pricing"
 import { orderCode } from "@/domain/orders"
 import { waMeLink } from "@/domain/whatsapp-lite"
 import { cn } from "@/lib/utils"
+import { AreaCheck, type AreaResult } from "./area-check"
 
 export interface ShopData {
   farm: {
@@ -24,6 +25,7 @@ export interface ShopData {
     paused: boolean
     webOrdering: boolean
     tracksStock: boolean
+    radiusKm: number | null
   }
   categories: { id: string; name: string }[]
   products: {
@@ -52,11 +54,14 @@ export function Shop({ data }: { data: ShopData }) {
     phone: "",
     addressLine: "",
     landmark: "",
+    pincode: "",
     note: "",
     slotKey: data.slots.find((s) => !s.full)?.key ?? "",
     paymentMethod: "upi_on_delivery" as "upi_on_delivery" | "cash_on_delivery",
   })
   const [error, setError] = useState<string | null>(null)
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [area, setArea] = useState<AreaResult | null>(null)
   const [placed, setPlaced] = useState<{ code: string; totalPaise: number; needsCall: boolean; lines: string } | null>(null)
   const [pending, start] = useTransition()
 
@@ -86,6 +91,8 @@ export function Shop({ data }: { data: ShopData }) {
         ...form,
         landmark: form.landmark || undefined,
         note: form.note || undefined,
+        lat: location?.lat,
+        lng: location?.lng,
         language: locale === "en" ? "en" : "ta",
         items: lines.map((l) => ({ productId: l.product.id, qty: l.qty })),
       })
@@ -186,6 +193,14 @@ export function Shop({ data }: { data: ShopData }) {
           <Field label={t("landmark")} id="landmark">
             <Input id="landmark" value={form.landmark} onChange={(e) => setForm({ ...form, landmark: e.target.value })} className="h-12" />
           </Field>
+          <AreaCheck
+            pincode={form.pincode}
+            onPincode={(pincode) => setForm((f) => ({ ...f, pincode }))}
+            location={location}
+            onLocation={setLocation}
+            onResult={setArea}
+            radiusKm={data.farm.radiusKm}
+          />
 
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-2 text-sm font-semibold">{t("slot")}</legend>
@@ -225,7 +240,7 @@ export function Shop({ data }: { data: ShopData }) {
               {error}
             </p>
           )}
-          <Button type="submit" size="lg" className="h-14 text-lg" disabled={pending || !canOrder || count === 0 || !form.slotKey}>
+          <Button type="submit" size="lg" className="h-14 text-lg" disabled={pending || !canOrder || count === 0 || !form.slotKey || area === "outside"}>
             {pending ? t("placing") : t("placeOrder", { total: formatRupees(total) })}
           </Button>
         </form>

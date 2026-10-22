@@ -77,6 +77,7 @@ const addressSchema = z.object({
   id: z.string().optional(),
   line: z.string().trim().max(300).optional(),
   landmark: z.string().trim().max(120).optional(),
+  pincode: z.string().trim().regex(/^[1-9]\d{5}$/).optional(),
 })
 const paymentSchema = z.enum(["upi_on_delivery", "cash_on_delivery", "credit"])
 

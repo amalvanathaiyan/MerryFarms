@@ -53,7 +53,7 @@ export function OrderForm({ data, mode }: { data: OrderFormData; mode: OrderForm
   const [items, setItems] = useState<Record<string, number>>(init?.items ?? {})
   const [slotKey, setSlotKey] = useState(init?.slotKey ?? data.slots.find((s) => !s.full && !s.afterCutoff)?.key ?? data.slots[0]?.key ?? "")
   const [addressId, setAddressId] = useState<string | "new">(init?.addressId ?? "new")
-  const [newAddress, setNewAddress] = useState({ line: "", landmark: "" })
+  const [newAddress, setNewAddress] = useState({ line: "", landmark: "", pincode: "" })
   const [payment, setPayment] = useState<Payment>(init?.paymentMethod ?? "upi_on_delivery")
   const [handover, setHandover] = useState<"cash" | "upi" | "credit">("cash")
   const [note, setNote] = useState(init?.note ?? "")
@@ -89,7 +89,10 @@ export function OrderForm({ data, mode }: { data: OrderFormData; mode: OrderForm
     e.preventDefault()
     setError(null)
     const itemList = lines.map((l) => ({ productId: l.p.id, qty: l.qty }))
-    const address = addressId === "new" ? { line: newAddress.line || undefined, landmark: newAddress.landmark || undefined } : { id: addressId }
+    const address =
+      addressId === "new"
+        ? { line: newAddress.line || undefined, landmark: newAddress.landmark || undefined, pincode: /^[1-9]\d{5}$/.test(newAddress.pincode) ? newAddress.pincode : undefined }
+        : { id: addressId }
     start(async () => {
       if (mode.kind === "edit") {
         const r = await updateFarmOrder({ orderId: mode.orderId, items: itemList, slotKey, address, paymentMethod: payment, note: note || undefined, fromCall: mode.fromCall })
@@ -244,6 +247,7 @@ export function OrderForm({ data, mode }: { data: OrderFormData; mode: OrderForm
               <div className="flex flex-col gap-2">
                 <textarea rows={2} value={newAddress.line} onChange={(e) => setNewAddress({ ...newAddress, line: e.target.value })} placeholder={ts("address")} aria-label={ts("address")} className="rounded-md border border-input bg-transparent px-3 py-2" />
                 <Input value={newAddress.landmark} onChange={(e) => setNewAddress({ ...newAddress, landmark: e.target.value })} placeholder={ts("landmark")} aria-label={ts("landmark")} className="h-11" />
+                <Input inputMode="numeric" maxLength={6} value={newAddress.pincode} onChange={(e) => setNewAddress({ ...newAddress, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })} placeholder={ts("area.pincode")} aria-label={ts("area.pincode")} className="h-11 w-40 tabular-nums" />
               </div>
             )}
           </fieldset>

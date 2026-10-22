@@ -42,6 +42,10 @@ const tenantRow = (id: string, slug: string, features: Record<string, boolean> =
   deliveryFeePaise: 3000,
   freeAbovePaise: 50_000,
   features,
+  farmLat: null as number | null,
+  farmLng: null as number | null,
+  deliveryRadiusKm: null as number | null,
+  servedPincodes: [] as string[],
   trialEndsAt: null,
   createdAt: NOW,
   updatedAt: NOW,
@@ -499,5 +503,52 @@ describe("reports", () => {
     expect(empty.calls.ordersCalled).toBe(0)
     const dues = await duesList(merry.id)
     expect(dues.every((d) => d.balancePaise > 0)).toBe(true)
+  })
+})
+
+describe("delivery area", () => {
+  // Farm near Tambaram; delivers within 8 km, plus one extra PIN code.
+  const af = { ...tenantRow("t5", "areafarm"), farmLat: 12.95, farmLng: 80.14, deliveryRadiusKm: 8, servedPincodes: ["600048"] }
+  const adb = () => tenantDb(af.id)
+  const web = (address: import("./orders").PlaceOrderInput["address"], phone = "+919000050001") =>
+    order({ customer: { phone, name: "Area test", language: "ta" }, address, items: [{ productId: "p-t5", qty: 1 }], slotKey: "2026-10-22|slot-t5" })
+
+  beforeAll(async () => {
+    await prisma.tenant.create({ data: af })
+    await adb().category.create({ data: { id: "t5-cat", tenantId: af.id, nameTa: "முட்டை", nameEn: "Eggs" } })
+    await adb().deliverySlot.create({ data: { id: "slot-t5", tenantId: af.id, nameTa: "காலை", nameEn: "Morning", startTime: "07:00", endTime: "09:00", daysOfWeek: [0, 1, 2, 3, 4, 5, 6], cutoffHours: 12, maxOrders: 50 } })
+    await adb().product.create({ data: { id: "p-t5", tenantId: af.id, categoryId: "t5-cat", nameTa: "முட்டை", nameEn: "Eggs", packTa: "30", packEn: "Tray of 30", pricePaise: 39_000, stockQty: 50 } })
+  })
+
+  it("accepts a web order whose shared location is inside the radius, and saves the distance", async () => {
+    const { order: o } = await svc.placeOrder(af, web({ line: "Near the farm", pincode: "600126", lat: 12.96, lng: 80.15 }), NOW)
+    expect(o.areaCheck).toBe("inside")
+    expect(o.distanceKm).toBeGreaterThan(1)
+    expect(o.distanceKm).toBeLessThan(2)
+  })
+
+  it("refuses a web order from outside the area", async () => {
+    await expect(svc.placeOrder(af, web({ line: "Chennai Central", pincode: "600003", lat: 13.0827, lng: 80.2757 }), NOW)).rejects.toThrow("out_of_area")
+  })
+
+  it("accepts a listed PIN even past the radius", async () => {
+    const { order: o } = await svc.placeOrder(af, web({ line: "Across the highway", pincode: "600048", lat: 13.0827, lng: 80.2757 }, "+919000050002"), NOW)
+    expect(o.areaCheck).toBe("inside")
+  })
+
+  it("lets an order through as 'unknown' when it can't tell, for staff to check on the call", async () => {
+    const { order: o } = await svc.placeOrder(af, web({ line: "No location shared", pincode: "600126" }, "+919000050003"), NOW)
+    expect(o).toMatchObject({ areaCheck: "unknown", status: "to_confirm" })
+  })
+
+  it("only flags staff orders from outside the area", async () => {
+    const { order: o } = await svc.placeOrder(af, { ...web({ line: "Chennai Central", pincode: "600003", lat: 13.0827, lng: 80.2757 }, "+919000050004"), channel: "phone", staffOverride: true }, NOW)
+    expect(o.areaCheck).toBe("outside")
+  })
+
+  it("checks nothing when the farm switches the delivery area off", async () => {
+    const off = { ...af, features: { deliveryArea: false } }
+    const { order: o } = await svc.placeOrder(off, web({ line: "Chennai Central", pincode: "600003", lat: 13.0827, lng: 80.2757 }, "+919000050005"), NOW)
+    expect(o.areaCheck).toBeNull()
   })
 })

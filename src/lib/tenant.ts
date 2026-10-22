@@ -10,7 +10,9 @@ import { prisma } from "@/lib/prisma"
 export const getTenant = cache(async () => {
   const slug = (await headers()).get("x-tenant-slug")
   if (!slug) return null
-  return prisma.tenant.findUnique({ where: { slug } })
+  // Secrets are never loaded with the farm record, so they can't reach a page or the browser
+  // (React's development tools serialise awaited values). Fetch them on purpose where needed.
+  return prisma.tenant.findUnique({ where: { slug }, omit: { whatsappAccessToken: true } })
 })
 
 export async function requireTenant() {

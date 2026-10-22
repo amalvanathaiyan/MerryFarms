@@ -9,6 +9,7 @@ import { isValidUpiId } from "@/domain/upi"
 import { normaliseIndianMobile } from "@/domain/phone"
 import { deliverOrder, recordPayment } from "@/server/billing"
 import { cannotEnable, FEATURE_KEYS, parseChoices } from "@/domain/features"
+import { parsePincodes } from "@/domain/delivery-area"
 import { OrderError } from "@/server/orders"
 
 type Result = { ok: true; invoiceId?: string } | { ok: false; error: string }
@@ -154,6 +155,30 @@ export async function saveFeatures(raw: unknown): Promise<Result> {
     choices[key] = want
   }
   await prisma.tenant.update({ where: { id: tenant.id }, data: { features: choices } })
+  revalidatePath("/", "layout")
+  return { ok: true }
+}
+
+const areaSettingsSchema = z.object({
+  lat: z.number().min(-90).max(90).nullable(),
+  lng: z.number().min(-180).max(180).nullable(),
+  radiusKm: z.number().min(0).max(100).nullable(),
+  pincodes: z.string().max(2000),
+})
+
+/** The owner sets the farm's location, delivery radius and PIN codes served. */
+export async function saveDeliveryArea(raw: unknown): Promise<Result> {
+  const parsed = areaSettingsSchema.safeParse(raw)
+  if (!parsed.success) return { ok: false, error: "invalid" }
+  const { lat, lng, radiusKm, pincodes } = parsed.data
+  if ((lat === null) !== (lng === null)) return { ok: false, error: "location_invalid" }
+  const pins = parsePincodes(pincodes)
+  if (pins.invalid.length) return { ok: false, error: "pincode_invalid" }
+  const { tenant } = await requireStaff(OWNER_ONLY)
+  await prisma.tenant.update({
+    where: { id: tenant.id },
+    data: { farmLat: lat, farmLng: lng, deliveryRadiusKm: radiusKm && radiusKm > 0 ? radiusKm : null, servedPincodes: pins.valid },
+  })
   revalidatePath("/", "layout")
   return { ok: true }
 }

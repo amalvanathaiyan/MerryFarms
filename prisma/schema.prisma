@@ -148,6 +148,12 @@ model Tenant {
   // What is actually on = plan allows it AND the farm switched it on.
   features Json @default("{}")
 
+  // Delivery area (src/domain/delivery-area.ts): radius around the farm and/or PIN codes served.
+  farmLat          Float?
+  farmLng          Float?
+  deliveryRadiusKm Float?
+  servedPincodes   String[]
+
   // Delivery charges
   deliveryFeePaise Int @default(3000)
   freeAbovePaise   Int @default(50000) // 0 = never free
@@ -357,6 +363,8 @@ model Order {
   note             String?
   deliveredAt      DateTime?
   subscriptionId   String? // set when a weekly/daily plan created this order
+  areaCheck        String? // "inside" | "outside" | "unknown"; null when the farm has no area set
+  distanceKm       Float? // from the farm, when the customer shared their location
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 

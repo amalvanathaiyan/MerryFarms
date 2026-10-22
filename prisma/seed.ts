@@ -95,7 +95,11 @@ async function main() {
 
   if (demo) {
     // Demo farm details so invoices and UPI links have something to show.
-    await prisma.tenant.update({ where: { id: tenant.id }, data: { upiId: tenant.upiId ?? "merryfarms@okaxis", fssaiNo: tenant.fssaiNo ?? "12345678901234" } })
+    // Sample delivery area (near Tambaram, 10 km) so the area check can be tried. Change it in Settings.
+    await prisma.tenant.update({
+      where: { id: tenant.id },
+      data: { upiId: tenant.upiId ?? "merryfarms@okaxis", fssaiNo: tenant.fssaiNo ?? "12345678901234", farmLat: 12.95, farmLng: 80.14, deliveryRadiusKm: 10, servedPincodes: ["600048"] },
+    })
 
     // Demo staff: signed in with the demo buttons on /login (npm run demo only).
     const staff = [
@@ -138,7 +142,7 @@ async function main() {
         update: {},
         create: { tenantId: tenant.id, phone: s.phone, name: s.name, language: /[a-z]/i.test(s.name[0]) ? "en" : "ta", notes: "Demo data — delete before going live" },
       })
-      const address = await prisma.address.create({ data: { tenantId: tenant.id, customerId: customer.id, line: s.line, landmark: s.landmark } })
+      const address = await prisma.address.create({ data: { tenantId: tenant.id, customerId: customer.id, line: s.line, landmark: s.landmark, pincode: "600126" } })
       const lines = s.items.map(([i, qty]) => ({ p: products[i], qty }))
       const subtotal = lines.reduce((a, l) => a + l.p.pricePaise * l.qty, 0)
       const fee = subtotal >= tenant.freeAbovePaise ? 0 : tenant.deliveryFeePaise

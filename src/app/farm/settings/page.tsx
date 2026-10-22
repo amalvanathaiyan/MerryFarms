@@ -4,6 +4,7 @@ import { formatIndianMobile } from "@/domain/phone"
 import { cannotEnable, FEATURE_KEYS, FEATURES, parseChoices, resolveFeatures } from "@/domain/features"
 import { SettingsForm } from "@/components/farm/settings-form"
 import { FeatureSwitches, type FeatureRow } from "@/components/farm/feature-switches"
+import { DeliveryAreaForm } from "@/components/farm/delivery-area-form"
 
 export default async function SettingsPage() {
   const { tenant } = await requireStaff(OWNER_ONLY)
@@ -26,6 +27,15 @@ export default async function SettingsPage() {
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-bold">{t("title")}</h1>
       <FeatureSwitches rows={rows} />
+      {resolved.deliveryArea && (
+        <DeliveryAreaForm
+          initial={{
+            location: tenant.farmLat != null && tenant.farmLng != null ? { lat: tenant.farmLat, lng: tenant.farmLng } : null,
+            radiusKm: tenant.deliveryRadiusKm,
+            pincodes: tenant.servedPincodes,
+          }}
+        />
+      )}
       <SettingsForm
         initial={{
           nameTa: tenant.nameTa,

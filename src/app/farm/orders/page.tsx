@@ -4,13 +4,14 @@ import type { OrderStatus } from "@prisma/client"
 import { requireStaff } from "@/lib/auth"
 import { dayLabel, pick } from "@/lib/i18n-helpers"
 import { formatRupees } from "@/domain/money"
-import { orderCode } from "@/domain/orders"
+import { isOpen, orderCode } from "@/domain/orders"
 import { formatIndianMobile } from "@/domain/phone"
 import { liteOrderMessage, waMeLink, type LiteMessageKind } from "@/domain/whatsapp-lite"
 import { OrderActions } from "@/components/farm/order-actions"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { templateOverrides } from "@/server/messages"
+import { directionsLink } from "@/domain/delivery-area"
 import { featuresOf } from "@/lib/features"
 
 const TABS: Record<string, OrderStatus[]> = {
@@ -142,8 +143,20 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                 <div className="text-sm text-muted-foreground">
                   {o.address.line}
                   {o.address.landmark && ` · ${o.address.landmark}`}
+                  {o.address.pincode && ` · ${o.address.pincode}`}
+                  {o.address.lat != null && o.address.lng != null && (
+                    <>
+                      {" · "}
+                      <a href={directionsLink({ lat: o.address.lat, lng: o.address.lng })} target="_blank" rel="noreferrer" className="font-medium text-primary underline-offset-4 hover:underline">
+                        📍 {t("directions")}
+                        {o.distanceKm != null && ` (${o.distanceKm} km)`}
+                      </a>
+                    </>
+                  )}
                 </div>
               )}
+              {o.areaCheck === "outside" && <p className="text-sm font-semibold text-destructive">{t("outsideArea")}</p>}
+              {o.areaCheck === "unknown" && isOpen(o.status) && <p className="text-sm font-medium text-yolk-foreground">{t("areaUnchecked")}</p>}
             </div>
             <ul className="text-sm">
               {items.map((i) => (
