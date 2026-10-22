@@ -433,6 +433,17 @@ CREATE TABLE "push_subscriptions" (
     CONSTRAINT "push_subscriptions_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "product_images" (
+    "productId" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "mime" TEXT NOT NULL,
+    "data" BYTEA NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "product_images_pkey" PRIMARY KEY ("productId")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -528,6 +539,9 @@ CREATE INDEX "push_subscriptions_tenantId_staffId_idx" ON "push_subscriptions"("
 
 -- CreateIndex
 CREATE UNIQUE INDEX "push_subscriptions_tenantId_endpoint_key" ON "push_subscriptions"("tenantId", "endpoint");
+
+-- CreateIndex
+CREATE INDEX "product_images_tenantId_idx" ON "product_images"("tenantId");
 
 -- AddForeignKey
 ALTER TABLE "tenant_settings" ADD CONSTRAINT "tenant_settings_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;

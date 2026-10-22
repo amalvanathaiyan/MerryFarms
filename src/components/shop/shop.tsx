@@ -16,6 +16,8 @@ import { waMeLink } from "@/domain/whatsapp-lite"
 import { cn } from "@/lib/utils"
 import { AreaCheck, type AreaResult } from "./area-check"
 import { EnablePush } from "@/components/push/enable-push"
+import { ProductPicture } from "@/components/product-picture"
+import type { ArtKind } from "@/domain/product-art"
 
 export interface ShopData {
   farm: {
@@ -44,6 +46,9 @@ export interface ShopData {
     note: string | null
     pricePaise: number
     stockQty: number
+    /** The farm's photo, or null for a drawn placeholder. */
+    imageUrl: string | null
+    art: ArtKind
   }[]
   slots: { key: string; label: string; full: boolean; left: number }[]
   nextDelivery: { label: string; orderBy: string } | null
@@ -192,7 +197,8 @@ export function Shop({ data }: { data: ShopData }) {
           <ul className="divide-y rounded-xl border bg-card">
             {lines.map(({ product, qty }) => (
               <li key={product.id} className="flex items-center justify-between gap-3 p-3">
-                <div className="min-w-0">
+                <ProductPicture src={product.imageUrl} kind={product.art} alt="" className="size-12" />
+                <div className="min-w-0 flex-1">
                   <div className="font-medium">{product.name}</div>
                   <div className="text-sm text-muted-foreground">
                     {product.pack} · {formatRupees(product.pricePaise * qty)}
@@ -330,24 +336,27 @@ export function Shop({ data }: { data: ShopData }) {
                 const qty = cart[p.id] ?? 0
                 const soldOut = data.farm.tracksStock && p.stockQty <= 0
                 return (
-                  <article key={p.id} className={cn("flex items-center justify-between gap-3 rounded-2xl border bg-card p-4", soldOut && "opacity-60")}>
-                    <div className="min-w-0">
+                  <article key={p.id} className={cn("flex gap-3 rounded-2xl border bg-card p-3", soldOut && "opacity-60")}>
+                    <ProductPicture src={p.imageUrl} kind={p.art} alt={p.name} className="size-24" />
+                    <div className="flex min-w-0 flex-1 flex-col">
                       <h3 className="font-semibold leading-snug">{p.name}</h3>
                       <p className="text-sm text-muted-foreground">
                         {p.pack}
                         {p.note && ` · ${p.note}`}
                       </p>
-                      <p className="mt-1 text-lg font-bold tabular-nums">{formatRupees(p.pricePaise)}</p>
+                      <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-2">
+                        <p className="text-lg font-bold tabular-nums">{formatRupees(p.pricePaise)}</p>
+                        {soldOut ? (
+                          <span className="rounded-full border px-3 py-1 text-sm">{t("soldOut")}</span>
+                        ) : !data.farm.webOrdering ? null : qty === 0 ? (
+                          <Button variant="outline" className="h-10 border-primary px-5 text-primary" disabled={!canOrder} onClick={() => change(p.id, 1)}>
+                            {t("add")}
+                          </Button>
+                        ) : (
+                          <Stepper qty={qty} max={maxQty(p)} onChange={(d) => change(p.id, d)} labels={{ add: t("addOne"), remove: t("removeOne") }} />
+                        )}
+                      </div>
                     </div>
-                    {soldOut ? (
-                      <span className="shrink-0 rounded-full border px-3 py-1 text-sm">{t("soldOut")}</span>
-                    ) : !data.farm.webOrdering ? null : qty === 0 ? (
-                      <Button variant="outline" size="lg" className="shrink-0 border-primary text-primary" disabled={!canOrder} onClick={() => change(p.id, 1)}>
-                        {t("add")}
-                      </Button>
-                    ) : (
-                      <Stepper qty={qty} max={maxQty(p)} onChange={(d) => change(p.id, d)} labels={{ add: t("addOne"), remove: t("removeOne") }} />
-                    )}
                   </article>
                 )
               })}

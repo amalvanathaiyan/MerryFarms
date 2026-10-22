@@ -22,6 +22,7 @@ const TENANT_MODELS = new Set([
   "Subscription",
   "Message",
   "PushSubscription",
+  "ProductImage",
 ])
 
 const WHERE_OPS = new Set([

@@ -33,6 +33,7 @@ export default async function CataloguePage() {
           gstRate: p.gstRate as 0 | 5 | 12 | 18,
           hsn: p.hsn ?? "",
           isActive: p.isActive,
+          imageUrl: p.imageUrl,
         }))}
       />
     </div>

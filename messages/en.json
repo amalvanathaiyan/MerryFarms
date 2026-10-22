@@ -174,7 +174,10 @@
       "left": "{count} {unit} left",
       "addTitle": "New product",
       "editTitle": "Edit product",
-      "gstHint": "Fresh eggs and fresh chicken are generally GST-exempt (0%). Confirm with your CA."
+      "gstHint": "Fresh eggs and fresh chicken are generally GST-exempt (0%). Confirm with your CA.",
+      "addPhoto": "Add photo",
+      "changePhoto": "Change",
+      "removePhoto": "Remove photo"
     },
     "slots": {
       "title": "Delivery slots",
@@ -616,7 +619,9 @@
     "not_connected": "Connect with the farm first.",
     "message_empty": "The message is empty.",
     "message_too_long": "The message is too long (up to 1000 characters).",
-    "message_rate_limited": "Too many messages this hour. Please wait a little or call the farm."
+    "message_rate_limited": "Too many messages this hour. Please wait a little or call the farm.",
+    "photo_type": "That photo couldn't be used. Please choose a JPG or PNG photo.",
+    "photo_too_big": "That photo is too large. Please choose another."
   },
   "my": {
     "connectTitle": "Connect with the farm",
