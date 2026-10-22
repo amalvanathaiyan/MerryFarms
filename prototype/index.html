@@ -241,7 +241,7 @@ td .tn i{width:30px;height:30px;border-radius:9px;display:grid;place-items:cente
 <div class="wrap">
   <header class="intro">
     <div>
-      <div class="eyebrow">Clickable prototype · sample data · platform name "Farm4U" is a placeholder</div>
+      <div class="eyebrow">Clickable prototype · sample data · platform: FarmForYou</div>
       <h1>Merry Farms, built so <span>any farm</span> can run its own shop on it.</h1>
       <p>Merry Farms is the first farm on a shared platform. Each farm gets its own shop link, WhatsApp number, products, delivery slots and customers, kept apart from every other farm. You run the whole platform from one admin panel, the same way Hotelier-4U works for hotels.</p>
     </div>
@@ -282,7 +282,7 @@ td .tn i{width:30px;height:30px;border-radius:9px;display:grid;place-items:cente
   <div class="toast" id="plat-toast" role="status"></div>
 
   <section class="notes">
-    <div class="note"><div class="eyebrow">Multi-tenant</div><h3>One app, many farms</h3><p>Every record carries the farm's ID, and database rules stop one farm from ever seeing another's orders or customers. Each farm gets its own link, such as merryfarms.farm4u.in.</p></div>
+    <div class="note"><div class="eyebrow">Multi-tenant</div><h3>One app, many farms</h3><p>Every record carries the farm's ID, and database rules stop one farm from ever seeing another's orders or customers. Each farm gets its own link, such as merryfarms.farmforyou.in.</p></div>
     <div class="note"><div class="eyebrow">Per farm</div><h3>Their own WhatsApp number</h3><p>Each farm connects its own WhatsApp Business number, so customers chat with the farm they know. A farm can start with only the web shop and connect WhatsApp later.</p></div>
     <div class="note"><div class="eyebrow">Platform</div><h3>Plans, trials and support</h3><p>The platform admin onboards farms from a starter catalogue, runs free trials, tracks monthly revenue, and can pause a farm that stops paying.</p></div>
   </section>
@@ -290,9 +290,9 @@ td .tn i{width:30px;height:30px;border-radius:9px;display:grid;place-items:cente
 
 <script>
 (function(){
-const KEY='farm4u-proto-v2';
+const KEY='farmforyou-proto-v2';
 const ME='c1';
-const DOMAIN='farm4u.in';
+const DOMAIN='farmforyou.in';
 const STATUS=['new','confirmed','out','delivered'];
 const SLABEL={new:'New',confirmed:'Confirmed',out:'Out for delivery',delivered:'Delivered',cancelled:'Cancelled'};
 const NEXT={new:'Confirm order',confirmed:'Send out for delivery',out:'Mark delivered'};
@@ -642,7 +642,7 @@ function audiences(t){const ok=t.customers.filter(c=>c.optIn);return{all:ok,reg:
 function renderFarm(){
   const t=T(),el=document.getElementById('farm'),av=S.ui.av,mk=esc(initials(t.name));let h=statusBar();
   const top=(title,extra='')=>`<div class="topbar"><div style="min-width:0">${extra}<h1 class="title">${title}</h1></div><div class="mark">${mk}</div></div>`;
-  const acct=t.status==='suspended'?`<div class="banner bad">Your shop is paused, so customers can't order. Contact Farm4U support to restart it.</div>`
+  const acct=t.status==='suspended'?`<div class="banner bad">Your shop is paused, so customers can't order. Contact FarmForYou support to restart it.</div>`
     :t.status==='trial'?`<div class="banner">Free trial: ${Math.max(0,Math.ceil((t.trialEnds-Date.now())/864e5))} days left on the ${PLANS[t.plan].name} plan.</div>`:'';
   if(av==='today'){
     const hr=new Date().getHours();
@@ -775,7 +775,7 @@ function renderPlatform(){
   const mrr=ts.filter(t=>t.status==='active').reduce((a,t)=>a+PLANS[t.plan].price,0);
   const ord7=ts.reduce((a,t)=>a+t.orders.filter(o=>o.created>=wk&&o.status!=='cancelled').length,0);
   const gmv=ts.reduce((a,t)=>a+t.orders.filter(o=>o.created>=wk&&o.status!=='cancelled').reduce((x,o)=>x+o.total,0),0);
-  el.innerHTML=`<div class="plat-head"><div><div class="eyebrow">Farm4U · platform admin</div><h2>All farms</h2></div><span class="sub">Only you see this panel. Each farm sees only its own data.</span></div>
+  el.innerHTML=`<div class="plat-head"><div><div class="eyebrow">FarmForYou · platform admin</div><h2>All farms</h2></div><span class="sub">Only you see this panel. Each farm sees only its own data.</span></div>
   <div class="ptiles">
     <div class="tile"><span>Farms</span><b class="num">${ts.length}</b><span>${ts.filter(t=>t.status==='trial').length} on trial · ${ts.filter(t=>t.status==='suspended').length} paused</span></div>
     <div class="tile"><span>Monthly subscription revenue</span><b class="num">${rs(mrr)}</b><span>Paying farms only</span></div>

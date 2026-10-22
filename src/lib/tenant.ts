@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 
 /**
  * The farm this request is for. The proxy (src/proxy.ts) resolves it from the
- * subdomain (merryfarms.farm4u.in) or DEFAULT_TENANT_SLUG and passes it as x-tenant-slug.
+ * subdomain (merryfarms.farmforyou.in) or DEFAULT_TENANT_SLUG and passes it as x-tenant-slug.
  */
 export const getTenant = cache(async () => {
   const slug = (await headers()).get("x-tenant-slug")

@@ -1,6 +1,6 @@
-# Merry Farms (on the Farm4U platform)
+# FarmForYou
 
-A Tamil-first, multi-tenant platform for small farms that sell direct to customers over WhatsApp and a web shop. Merry Farms (country eggs and naatu kozhi) is the first farm. "Farm4U" is a placeholder platform name.
+A Tamil-first, multi-tenant platform for small farms that sell direct to customers over WhatsApp and a web shop. Each farm is a tenant with its own shop, staff, customers and data. Merry Farms (country eggs and naatu kozhi) is the first farm.
 
 - Product & tech plan: https://claude.ai/code/artifact/f8a2eb07-5b60-4226-bfb6-7fc7bef59c26
 - Clickable prototype: `prototype/index.html`

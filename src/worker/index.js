@@ -6,9 +6,9 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data ? event.data.json() : {}
   } catch {
-    data = { title: "Merry Farms", body: event.data ? event.data.text() : "" }
+    data = { title: "FarmForYou", body: event.data ? event.data.text() : "" }
   }
-  const title = data.title || "Merry Farms"
+  const title = data.title || "FarmForYou"
   event.waitUntil(
     Promise.all([
       self.registration.showNotification(title, {

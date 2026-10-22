@@ -15,11 +15,11 @@ const tamil = Noto_Sans_Tamil({
 export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getTenant()
   const locale = await getLocale()
-  const name = tenant ? (locale === "ta" ? tenant.nameTa : tenant.nameEn) : "Farm4U"
+  const name = tenant ? (locale === "ta" ? tenant.nameTa : tenant.nameEn) : "FarmForYou"
   return {
     title: name,
     description: tenant ? `${tenant.nameEn} — farm-fresh orders` : "Farm-fresh orders from local farms",
-    manifest: "/manifest.webmanifest",
+    manifest: "/app-manifest",
     appleWebApp: { capable: true, title: name, statusBarStyle: "default" },
   }
 }
