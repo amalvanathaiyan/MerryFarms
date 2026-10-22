@@ -7,7 +7,7 @@ import { DEMO_AUTH_PREFIX, DEMO_COOKIE, isDemoLoginEnabled } from "./lib/demo-au
  * Multi-tenant proxy (Next.js 16 — renamed from middleware)
  *
  * 1. Resolves the farm from the host and passes it on as the x-tenant-slug REQUEST header:
- *      merryfarms.farm4u.in   → "merryfarms"   (NEXT_PUBLIC_ROOT_DOMAIN=farm4u.in)
+ *      merryfarms.farmforyou.in → "merryfarms" (NEXT_PUBLIC_ROOT_DOMAIN=farmforyou.in)
  *      merryfarms.localhost   → "merryfarms"   (local dev)
  *      anything else          → DEFAULT_TENANT_SLUG (single-farm launch on a free host)
  * 2. Passes the language on as x-locale: NEXT_LOCALE cookie, else Tamil.
@@ -74,5 +74,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icons/|manifest.webmanifest|sw.js|workbox-).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icons/|sw.js|workbox-).*)"],
 }

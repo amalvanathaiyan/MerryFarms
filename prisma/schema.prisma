@@ -1,4 +1,4 @@
-// MerryFarms (Farm4U) — Prisma schema
+// FarmForYou — Prisma schema (Merry Farms is the first farm)
 // Multi-tenant farm-shop platform. Database: Supabase Postgres (free tier at launch).
 // Tenant isolation: tenantId on every farm-owned model, enforced in code by
 // src/lib/tenant-db.ts, plus RLS enabled with no public policies (prisma/sql/rls.sql).
@@ -215,7 +215,7 @@ model StaffMember {
   @@map("staff_members")
 }
 
-/// Platform owners (Farm4U). Not tied to a tenant.
+/// Platform owners (FarmForYou). Not tied to a tenant.
 model PlatformAdmin {
   id         String   @id @default(uuid())
   authUserId String   @unique

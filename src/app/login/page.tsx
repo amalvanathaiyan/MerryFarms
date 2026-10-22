@@ -25,7 +25,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <LanguageToggle />
       </div>
       <div>
-        <p className="text-sm text-muted-foreground">{tenant ? pick(locale, tenant.nameTa, tenant.nameEn) : "Farm4U"}</p>
+        <p className="text-sm text-muted-foreground">{tenant ? pick(locale, tenant.nameTa, tenant.nameEn) : "FarmForYou"}</p>
         <h1 className="text-2xl font-bold">{t("title")}</h1>
       </div>
       {error === "not_staff" && (
