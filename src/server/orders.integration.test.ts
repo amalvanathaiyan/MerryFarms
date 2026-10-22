@@ -941,3 +941,24 @@ describe("staff management", () => {
     await expect(staffSvc.setStaffActive(other.id, owner.id, helper.id, true)).rejects.toThrow("staff_not_found")
   })
 })
+
+describe("download all my data", () => {
+  it("has this farm's records only, and no keys, links or tokens", async () => {
+    const { exportFarm } = await import("./export")
+    const data = await exportFarm(merry.id)
+    const text = JSON.stringify(data)
+    expect(data.orders.length).toBeGreaterThan(0)
+    expect(data.orders.every((o) => o.tenantId === merry.id)).toBe(true)
+    expect(data.customers.every((c) => c.tenantId === merry.id)).toBe(true)
+
+    const tokens = await tenantDb(merry.id).customer.findMany({ where: { accessToken: { not: null } }, select: { accessToken: true } })
+    const links = await tenantDb(merry.id).invoice.findMany({ select: { publicToken: true } })
+    expect(tokens.length + links.length).toBeGreaterThan(0)
+    for (const t of [...tokens.map((x) => x.accessToken!), ...links.map((x) => x.publicToken)]) expect(text).not.toContain(t)
+    expect(text).not.toContain("whatsappAccessToken")
+    expect(text).not.toContain("codeHash")
+
+    const otherOrders = await tenantDb(other.id).order.findMany({ select: { id: true } })
+    for (const o of otherOrders) expect(text).not.toContain(o.id)
+  })
+})

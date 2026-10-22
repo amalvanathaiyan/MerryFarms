@@ -571,7 +571,10 @@
       "export_sales": "Sales register (with GST)",
       "export_payments": "Payments",
       "export_products": "Product totals",
-      "export_dues": "Dues list"
+      "export_dues": "Dues list",
+      "allData": "Download all my data",
+      "allDataHint": "One file with all your products, customers, orders, bills, payments, dues and messages. Keep a copy now and then for your records.",
+      "allDataButton": "Download all data (JSON)"
     },
     "area": {
       "title": "Delivery area",
