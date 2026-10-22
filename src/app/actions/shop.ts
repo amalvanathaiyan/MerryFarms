@@ -10,6 +10,9 @@ import { areaOf } from "@/server/orders"
 import { tenantDb } from "@/lib/tenant-db"
 import { forgetCustomer, getSessionCustomer, rememberCustomer } from "@/lib/customer-session"
 import { connectCustomer, issueToken } from "@/server/customers"
+import { notifyStaff } from "@/server/notify"
+import { staffNewOrderNote } from "@/domain/notifications"
+import { orderCode } from "@/domain/orders"
 
 const schema = z.object({
   name: z.string().trim().min(1).max(80),
@@ -77,6 +80,10 @@ export async function placeWebOrder(raw: unknown): Promise<PlaceWebOrderResult> 
         account = "connected"
       } else account = "known"
     }
+    await notifyStaff(
+      tenant.id,
+      staffNewOrderNote({ code: orderCode(tenant.invoicePrefix, order.number), customerName: customer.name, totalPaise: order.totalPaise, needsCall: decision.needsCall })
+    )
     return { ok: true, orderNumber: order.number, totalPaise: order.totalPaise, needsCall: decision.needsCall, account }
   } catch (e) {
     if (e instanceof OrderError) return { ok: false, error: e.code }

@@ -621,3 +621,21 @@ model Message {
   @@index([tenantId, sender, seenAt])
   @@map("messages")
 }
+
+/// A phone that accepted notifications (web push), for a customer or a staff member.
+model PushSubscription {
+  id         String    @id @default(uuid())
+  tenantId   String
+  customerId String?
+  staffId    String?
+  endpoint   String
+  p256dh     String
+  auth       String
+  createdAt  DateTime  @default(now())
+  lastSentAt DateTime?
+
+  @@unique([tenantId, endpoint])
+  @@index([tenantId, customerId])
+  @@index([tenantId, staffId])
+  @@map("push_subscriptions")
+}

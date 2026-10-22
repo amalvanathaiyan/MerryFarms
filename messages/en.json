@@ -357,6 +357,10 @@
       "messages": {
         "title": "Messages in the app",
         "hint": "Customers message the farm inside the app; no WhatsApp needed."
+      },
+      "pushNotifications": {
+        "title": "Phone notifications",
+        "hint": "Staff hear about new orders and messages; customers hear about replies and order updates. Only on phones that allow it."
       }
     },
     "orderForm": {
@@ -654,5 +658,19 @@
     "back": "Back",
     "customerHint": "Write to the farm directly. Replies appear here.",
     "placeholder": "Your message…"
+  },
+  "push": {
+    "title": "Get updates on this phone",
+    "hintCustomer": "We'll let you know when the farm replies and when your order is confirmed or on the way.",
+    "hintStaff": "Get a notification on this phone for new orders and customer messages.",
+    "enable": "Turn on notifications",
+    "on": "Notifications are on for this phone",
+    "failed": "Couldn't turn on notifications. Please try again.",
+    "blocked": "Notifications are blocked",
+    "blockedHint": "Allow notifications for this site in your phone's browser settings, then open this page again.",
+    "iosIntro": "On iPhone, add this app to your Home Screen first:",
+    "iosStep1": "Tap the Share button",
+    "iosStep2": "Choose \"Add to Home Screen\"",
+    "iosStep3": "Open the app from your Home Screen and tap this button again"
   }
 }

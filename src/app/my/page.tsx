@@ -16,6 +16,7 @@ import { LanguageToggle } from "@/components/language-toggle"
 import { Button } from "@/components/ui/button"
 import { ConnectForm } from "@/components/shop/connect-form"
 import { ForgetMe } from "@/components/shop/forget-me"
+import { EnablePush } from "@/components/push/enable-push"
 import { unreadForCustomer } from "@/server/chat"
 
 export const dynamic = "force-dynamic"
@@ -173,6 +174,7 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
           </section>
         )}
 
+        {features.pushNotifications && <EnablePush who="customer" />}
         <ForgetMe />
       </main>
     </div>

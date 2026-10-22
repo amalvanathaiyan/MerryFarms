@@ -15,6 +15,7 @@ import { orderCode } from "@/domain/orders"
 import { waMeLink } from "@/domain/whatsapp-lite"
 import { cn } from "@/lib/utils"
 import { AreaCheck, type AreaResult } from "./area-check"
+import { EnablePush } from "@/components/push/enable-push"
 
 export interface ShopData {
   farm: {
@@ -29,6 +30,8 @@ export interface ShopData {
     tracksStock: boolean
     radiusKm: number | null
     accounts: boolean
+    /** Phone notifications are on for this farm. */
+    push: boolean
   }
   me: { name: string; phone: string; address: { line: string; landmark: string; pincode: string; lat: number | null; lng: number | null } | null } | null
   initialCart: Record<string, number> | null
@@ -161,6 +164,7 @@ export function Shop({ data }: { data: ShopData }) {
               </Link>
             </p>
           )}
+          {placed.account === "connected" && data.farm.push && <EnablePush who="customer" />}
           {placed.account === "known" && <p className="rounded-xl bg-accent p-3 text-sm">{t("farmWillSendLink")}</p>}
           <Button asChild size="lg" variant="outline" className="h-12 text-base">
             <a href={waMeLink(data.farm.whatsappNumber, waText)} target="_blank" rel="noreferrer">

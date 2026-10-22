@@ -418,6 +418,21 @@ CREATE TABLE "messages" (
     CONSTRAINT "messages_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "push_subscriptions" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "customerId" TEXT,
+    "staffId" TEXT,
+    "endpoint" TEXT NOT NULL,
+    "p256dh" TEXT NOT NULL,
+    "auth" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastSentAt" TIMESTAMP(3),
+
+    CONSTRAINT "push_subscriptions_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -504,6 +519,15 @@ CREATE INDEX "messages_tenantId_customerId_createdAt_idx" ON "messages"("tenantI
 
 -- CreateIndex
 CREATE INDEX "messages_tenantId_sender_seenAt_idx" ON "messages"("tenantId", "sender", "seenAt");
+
+-- CreateIndex
+CREATE INDEX "push_subscriptions_tenantId_customerId_idx" ON "push_subscriptions"("tenantId", "customerId");
+
+-- CreateIndex
+CREATE INDEX "push_subscriptions_tenantId_staffId_idx" ON "push_subscriptions"("tenantId", "staffId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "push_subscriptions_tenantId_endpoint_key" ON "push_subscriptions"("tenantId", "endpoint");
 
 -- AddForeignKey
 ALTER TABLE "tenant_settings" ADD CONSTRAINT "tenant_settings_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;

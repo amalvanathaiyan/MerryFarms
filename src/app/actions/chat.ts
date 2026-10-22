@@ -9,6 +9,8 @@ import { getSessionCustomer } from "@/lib/customer-session"
 import { sendFromCustomer, sendFromFarm } from "@/server/chat"
 import { OrderError } from "@/server/orders"
 import { notifyCustomer, notifyStaff } from "@/server/notify"
+import { customerMessageNote, staffMessageNote } from "@/domain/notifications"
+import { prisma } from "@/lib/prisma"
 
 type Result = { ok: true } | { ok: false; error: string }
 const body = z.string().max(1000)
@@ -23,7 +25,7 @@ export async function customerSend(raw: unknown): Promise<Result> {
   if (!me) return { ok: false, error: "not_connected" }
   try {
     const m = await sendFromCustomer(tenant.id, me.id, parsed.data.body, parsed.data.orderId)
-    await notifyStaff(tenant.id, { title: me.name, body: m.body, url: `/farm/messages/${me.id}` })
+    await notifyStaff(tenant.id, staffMessageNote(me.name, me.id, m.body))
   } catch (e) {
     if (e instanceof OrderError) return { ok: false, error: e.code }
     throw e
@@ -40,7 +42,9 @@ export async function farmSend(raw: unknown): Promise<Result> {
   if (!featuresOf(tenant).messages) return { ok: false, error: "messages_off" }
   try {
     const m = await sendFromFarm(tenant.id, parsed.data.customerId, parsed.data.body, staff.id)
-    await notifyCustomer(tenant.id, parsed.data.customerId, { title: tenant.nameTa, body: m.body, url: "/my/messages" })
+    const who = await prisma.customer.findUnique({ where: { id: parsed.data.customerId }, select: { language: true } })
+    const lang = who?.language ?? "ta"
+    await notifyCustomer(tenant.id, parsed.data.customerId, customerMessageNote(lang, lang === "ta" ? tenant.nameTa : tenant.nameEn, m.body))
   } catch (e) {
     if (e instanceof OrderError) return { ok: false, error: e.code }
     throw e

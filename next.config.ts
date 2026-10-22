@@ -14,6 +14,8 @@ const withPWA = withPWAInit({
   fallbacks: {
     document: "/offline",
   },
+  // Phone-notification handlers, added to the generated service worker.
+  customWorkerSrc: "src/worker",
 })
 
 const nextConfig: NextConfig = {

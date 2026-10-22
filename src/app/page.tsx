@@ -58,6 +58,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       // Only the radius is shown; the farm's exact location stays on the server.
       radiusKm: features.deliveryArea ? tenant.deliveryRadiusKm : null,
       accounts: features.customerAccounts,
+      push: features.pushNotifications,
     },
     me: me
       ? {

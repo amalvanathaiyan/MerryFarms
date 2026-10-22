@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { allBalances } from "@/server/billing"
 import { featuresOf } from "@/lib/features"
 import { generatePlanOrders } from "@/server/plans"
+import { EnablePush } from "@/components/push/enable-push"
 
 export default async function TodayPage() {
   const { db, tenant } = await requireStaff()
@@ -74,6 +75,7 @@ export default async function TodayPage() {
 
   return (
     <div className="flex flex-col gap-5">
+      {features.pushNotifications && <EnablePush who="staff" />}
       <div className="grid grid-cols-2 gap-3">
         {tiles.map((tile) => {
           const body = (
