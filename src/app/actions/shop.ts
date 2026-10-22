@@ -10,7 +10,7 @@ import { areaOf } from "@/server/orders"
 import { tenantDb } from "@/lib/tenant-db"
 import { forgetCustomer, getSessionCustomer, rememberCustomer } from "@/lib/customer-session"
 import { connectCustomer, issueToken } from "@/server/customers"
-import { notifyStaff } from "@/server/notify"
+import { alertFarmOnWhatsApp, notifyStaff } from "@/server/notify"
 import { otpOn } from "@/server/otp"
 import { staffNewOrderNote } from "@/domain/notifications"
 import { orderCode } from "@/domain/orders"
@@ -85,10 +85,9 @@ export async function placeWebOrder(raw: unknown): Promise<PlaceWebOrderResult> 
         account = "connected"
       } else account = "known"
     }
-    await notifyStaff(
-      tenant.id,
-      staffNewOrderNote({ code: orderCode(tenant.invoicePrefix, order.number), customerName: customer.name, totalPaise: order.totalPaise, needsCall: decision.needsCall })
-    )
+    const code = orderCode(tenant.invoicePrefix, order.number)
+    await notifyStaff(tenant.id, staffNewOrderNote({ code, customerName: customer.name, totalPaise: order.totalPaise, needsCall: decision.needsCall }))
+    await alertFarmOnWhatsApp(tenant, { code, customerName: customer.name, totalPaise: order.totalPaise, needsCall: decision.needsCall, items: await itemsText(tenant.id, order.id) })
     return { ok: true, orderNumber: order.number, totalPaise: order.totalPaise, needsCall: decision.needsCall, account }
   } catch (e) {
     if (e instanceof OrderError) return { ok: false, error: e.code }
@@ -139,4 +138,10 @@ export async function connectAction(raw: unknown): Promise<{ ok: true; status: "
 /** "Not you?" on a shared phone: forget the customer on this phone. */
 export async function forgetMeAction() {
   await forgetCustomer()
+}
+
+/** "2 × நாட்டுக் கோழி முட்டை (30 முட்டை), …" for the farm's WhatsApp alert. */
+async function itemsText(tenantId: string, orderId: string) {
+  const items = await tenantDb(tenantId).orderItem.findMany({ where: { orderId }, include: { product: true } })
+  return items.map((i) => `${i.qty} × ${i.product.nameTa} (${i.product.packTa})`).join(", ")
 }
