@@ -483,3 +483,21 @@ describe("weekly and daily plans", () => {
     expect(all.map((a) => a.slug)).toEqual(["planfarm"])
   })
 })
+
+describe("reports", () => {
+  it("adds up a farm's delivered orders, returns, payments and calls, and nothing from other farms", async () => {
+    const { loadReport, duesList } = await import("./reports")
+    const { istDate } = await import("@/domain/ist")
+    const range = { from: "2026-10-01", to: istDate(new Date()) > "2026-10-21" ? istDate(new Date()) : "2026-10-21" }
+    const r = await loadReport(merry.id, range.from, range.to)
+    expect(r.summary.orders).toBeGreaterThan(0)
+    expect(r.summary.netPaise).toBe(r.summary.grossPaise - r.summary.returnsPaise)
+    expect(r.products.length).toBeGreaterThan(0)
+    expect(r.calls.ordersCalled).toBeGreaterThan(0)
+    const empty = await loadReport(other.id, range.from, range.to)
+    expect(empty.summary.orders).toBe(0)
+    expect(empty.calls.ordersCalled).toBe(0)
+    const dues = await duesList(merry.id)
+    expect(dues.every((d) => d.balancePaise > 0)).toBe(true)
+  })
+})
