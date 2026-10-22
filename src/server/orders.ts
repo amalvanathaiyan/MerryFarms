@@ -6,6 +6,7 @@ import { afterCall, canTransition, decideCall, isEditable, stockDeltas, type Cal
 import { orderTotals } from "@/domain/pricing"
 import { slotKey, slotRangeLabel, upcomingSlots } from "@/domain/slots"
 import { addDays, istDate } from "@/domain/ist"
+import { planUnitPrice } from "@/domain/plans"
 import { featuresOf } from "@/lib/features"
 
 export class OrderError extends Error {
@@ -62,6 +63,9 @@ export interface PlaceOrderInput {
   byStaffId?: string
   /** Staff booking: allowed after the online cut-off and into a full slot. */
   staffOverride?: boolean
+  /** Set when a weekly/daily plan creates the order: no call needed, plan price applies. */
+  subscriptionId?: string
+  discountPct?: number
 }
 
 /** Merges duplicate lines so stock checks see the real quantity. */
@@ -121,7 +125,7 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
         const lines = products.map((p) => ({
           productId: p.id,
           qty: qtyById.get(p.id)!,
-          unitPricePaise: p.pricePaise,
+          unitPricePaise: planUnitPrice(p.pricePaise, input.discountPct ?? 0),
           gstRate: p.gstRate,
         }))
         // Walk-ins carry their goods home: no delivery charge.
@@ -159,6 +163,7 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
               channel: input.channel,
               paymentMethod: input.paymentMethod,
               totalPaise: totals.totalPaise,
+              isPlanOrder: !!input.subscriptionId,
               customer: {
                 isTrusted: customer.isTrusted,
                 deliveredOrders: history.length,
@@ -185,6 +190,7 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
             totalPaise: totals.totalPaise,
             needsCall: decision.needsCall,
             note: input.note || null,
+            subscriptionId: input.subscriptionId ?? null,
             items: { create: lines.map((l) => ({ ...l, tenantId: tenant.id })) },
             events: {
               create: { tenantId: tenant.id, toStatus: status, byStaffId: input.byStaffId ?? null, note: decision.reason },

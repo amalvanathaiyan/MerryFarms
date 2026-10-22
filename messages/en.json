@@ -74,7 +74,11 @@
       "runs": "Delivery runs",
       "noRuns": "No deliveries planned.",
       "stops": "{count, plural, one {# stop} other {# stops}}",
-      "dues": "Dues to collect"
+      "dues": "Dues to collect",
+      "plans": "Weekly / daily plans",
+      "plansOpen": "{count, plural, one {# plan} other {# plans}} →",
+      "plansCreated": "{count, plural, one {# plan order} other {# plan orders}} created.",
+      "planHeld": "{name}'s order for {date} was held"
     },
     "orders": {
       "tab_to_confirm": "To call",
@@ -118,7 +122,9 @@
       "atFarm": "Bought at the farm",
       "edit": "Edit",
       "returnRefund": "Return / refund",
-      "returnedAmount": "Returned: {amount}"
+      "returnedAmount": "Returned: {amount}",
+      "planBadge": "Plan",
+      "plans": "Plans"
     },
     "catalogue": {
       "title": "Products & prices",
@@ -218,7 +224,10 @@
       "save": "Save",
       "saved": "Saved",
       "type_credit_note": "Goods returned",
-      "type_refund": "Money refunded"
+      "type_refund": "Money refunded",
+      "plans": "{count, plural, =0 {No plans} one {# plan} other {# plans}}",
+      "seePlans": "See plans →",
+      "startPlan": "Start a plan →"
     },
     "settings": {
       "title": "Farm settings",
@@ -395,6 +404,40 @@
       "tpl_invoice": "Sending an invoice",
       "tpl_share_shop": "Sharing the shop link",
       "tpl_price_list": "Price list"
+    },
+    "plans": {
+      "title": "Weekly / daily plans",
+      "newPlan": "+ New plan",
+      "newTitle": "New plan",
+      "editTitle": "{name} — plan",
+      "none": "No plans yet. Start one for a regular customer.",
+      "status_active": "Active",
+      "status_paused": "Paused",
+      "status_cancelled": "Cancelled",
+      "pausedUntil": "Paused until {date}",
+      "everyDay": "Every day",
+      "discount": "{pct}% off",
+      "next": "Next deliveries",
+      "skipNext": "Skip {date}",
+      "pause": "Pause",
+      "pauseUntil": "Until:",
+      "pauseTill": "Pause until then",
+      "pauseOpen": "Pause until resumed",
+      "resume": "Resume",
+      "edit": "Edit",
+      "cancel": "Cancel plan",
+      "confirmCancel": "Tap again to cancel",
+      "skipped": "Skipped days",
+      "unskip": "Add back",
+      "customerHint": "Pick a customer who has ordered before (an address is needed).",
+      "eachDelivery": "Each delivery",
+      "days": "Which days?",
+      "slotOffDays": "This slot doesn't run on {days}; no order will be made those days.",
+      "startDate": "Start date",
+      "discountLabel": "Plan discount (%)",
+      "perDelivery": "Per delivery",
+      "create": "Start plan",
+      "save": "Save"
     }
   },
   "login": {
@@ -452,6 +495,11 @@
     "not_on_order": "That item isn't on this order.",
     "fee_needs_full_return": "The delivery charge can only be refunded when the whole order comes back.",
     "template_too_long": "The message is too long (up to 1000 characters).",
-    "template_unknown": "The message has an unknown detail."
+    "template_unknown": "The message has an unknown detail.",
+    "plans_off": "Plans are switched off for this farm.",
+    "plan_not_found": "Plan not found.",
+    "plan_no_items": "Add at least one item.",
+    "plan_no_days": "Pick at least one day.",
+    "plan_bad_discount": "The discount must be between 0 and 50%."
   }
 }

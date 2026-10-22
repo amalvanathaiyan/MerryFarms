@@ -46,7 +46,8 @@ async function main() {
       nameTa: "மெர்ரி ஃபார்ம்ஸ்",
       nameEn: "Merry Farms",
       status: "active",
-      plan: "free",
+      // The platform owner's own farm: every feature available.
+      plan: "pro",
       phone,
       whatsappNumber: phone,
       whatsappMode: "lite",
