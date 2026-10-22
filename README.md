@@ -18,10 +18,13 @@ A Tamil-first, multi-tenant platform for small farms that sell direct to custome
 | WhatsApp (Lite) | **WhatsApp page**: share the shop link or today's price list (built from the catalogue, sold-out items marked) to customers, groups or Status in one tap, or copy it; printable **shop QR code** for trays, bags and bills. **Message wording**: every message the farm sends (order updates, missed call, dues, invoice, shop link, price list) is a template the owner edits in Tamil and English, with placeholder buttons, a live preview and reset to default; misspelt placeholders are caught on save. |
 | Returns & credit notes | **Return / refund** on delivered orders: items and quantities (never more than delivered), reason, settle by crediting the account or refunding cash/UPI, optional restock, delivery charge refunded only when the whole order comes back; credit note in its own series (MF-CN/2026-27/0001) against the original invoice; statement shows returns and refunds. Switchable like every feature. |
 | Customers & billing | Customer list with search and dues filter; customer page with statement (running balance), payments, dues reminder on WhatsApp, trusted flag, credit limit, offers opt-in with consent date; **Mark delivered** asks cash / UPI / on account and issues the invoice in the same step; bilingual invoice (bill of supply or tax invoice with CGST/SGST) numbered per financial year, frozen at issue; customer invoice link `/i/<token>` with a UPI pay button; farm settings (UPI ID, GSTIN, FSSAI, delivery charges) |
+| Customer connect (no logins) | A customer is remembered on their phone by a private key in a cookie, so name, phone and address are pre-filled next time; **My orders** (`/my`) shows open and past orders with progress, bills and dues, and a reorder button. Brand-new numbers connect when they order or scan the shop QR code; a number the farm already knows is never connected by typing it in: the farm sends that customer their **personal link** (`/my/<key>`) on WhatsApp, and can reset it. "Not you?" forgets the phone. |
+| Messages in the app | Customers write to the farm from My orders; staff reply from **Messages** in the farm app. Stored in our database, not WhatsApp. Unread badges, "Seen" ticks, customers waiting 2+ hours marked; if a reply goes unseen, a one-tap WhatsApp nudge with the customer's link, or a call. |
+| Phone notifications | Standard web push (free, no WhatsApp): staff get new web orders and customer messages; customers get farm replies and order confirmed / on the way / delivered / cancelled, in their language. "Get updates on this phone" button on Today, My orders and after ordering, with Home Screen steps for iPhone. Phones that stop accepting notifications are forgotten automatically. Needs the hosted HTTPS app and VAPID keys (`node scripts/vapid-keys.mjs`); without keys the app works as before. |
 | Feature switches | Each farm switches features on or off in Settings (web shop ordering, confirmation calls, stock tracking, credit accounts, invoices, WhatsApp buttons, UPI links; subscriptions, broadcasts, automated WhatsApp and reports shown as coming soon). A feature works only if the plan allows it and the farm turned it on; the server enforces it, not just the screens. See `src/domain/features.ts`. |
 | Rules | Confirmation-call rules per farm, order lifecycle, IST dates and cut-offs, delivery charges, GST inside prices, invoice numbering per financial year, Indian mobile numbers |
 | Multi-tenancy | `tenantId` on every farm table, enforced by `src/lib/tenant-db.ts`; Supabase API roles locked out by `prisma/sql/rls.sql`; farm resolved from the subdomain or `DEFAULT_TENANT_SLUG` |
-| Installable app | Web app manifest, icons and offline page; service worker built with `npm run build` |
+| Installable app | Web app manifest, icons and offline page; service worker built with `npm run build`, including the notification handlers in `src/worker/` |
 
 Not yet: PDF files, automated WhatsApp (Cloud API), platform admin.
 
@@ -70,7 +73,8 @@ Open http://localhost:3000 for the shop. The farm app needs a real Supabase proj
    ```bash
    npm run staff:add -- --email you@example.com --password 'a-long-password' --name "Your name" --roles owner
    ```
-5. `npm run dev`, then sign in at http://localhost:3000/login.
+5. For phone notifications, run `node scripts/vapid-keys.mjs` once and add the three lines to `.env.local` (and to the host's environment settings). Keep `VAPID_PRIVATE_KEY` secret; changing the keys means everyone has to turn notifications on again.
+6. `npm run dev`, then sign in at http://localhost:3000/login.
 
 ## Commands
 

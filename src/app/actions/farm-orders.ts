@@ -5,6 +5,7 @@ import { z } from "zod"
 import { ORDER_DESK, requireStaff } from "@/lib/auth"
 import { editOrder, OrderError, placeOrder, recordCall, setOrderStatus } from "@/server/orders"
 import { deliverOrder } from "@/server/billing"
+import { notifyOrderStatus } from "@/server/notify"
 import { normaliseIndianMobile } from "@/domain/phone"
 
 const statusSchema = z.object({
@@ -22,6 +23,7 @@ export async function changeOrderStatus(raw: unknown): Promise<{ ok: boolean; er
   const { tenant, staff } = await requireStaff(needsDesk ? ORDER_DESK : undefined)
   try {
     await setOrderStatus(tenant.id, parsed.data.orderId, parsed.data.to, staff.id, parsed.data.note)
+    await notifyOrderStatus(tenant.id, parsed.data.orderId)
   } catch (e) {
     if (e instanceof OrderError) return { ok: false, error: e.code }
     throw e
@@ -42,6 +44,7 @@ export async function logCall(raw: unknown): Promise<{ ok: boolean; error?: stri
   const { tenant, staff } = await requireStaff(ORDER_DESK)
   try {
     const r = await recordCall(tenant.id, parsed.data.orderId, parsed.data.outcome, staff.id, parsed.data.note)
+    if (r.status) await notifyOrderStatus(tenant.id, parsed.data.orderId)
     revalidatePath("/farm", "layout")
     return { ok: true, retry: r.retry, needsOwner: r.needsOwner }
   } catch (e) {

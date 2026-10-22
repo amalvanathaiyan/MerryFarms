@@ -38,6 +38,9 @@ CREATE TYPE "LedgerType" AS ENUM ('charge', 'payment', 'adjustment', 'credit_not
 CREATE TYPE "SubscriptionStatus" AS ENUM ('active', 'paused', 'cancelled');
 
 -- CreateEnum
+CREATE TYPE "MessageSender" AS ENUM ('customer', 'farm');
+
+-- CreateEnum
 CREATE TYPE "ReturnReason" AS ENUM ('damaged', 'short_delivered', 'returned', 'quality', 'other');
 
 -- CreateEnum
@@ -190,6 +193,8 @@ CREATE TABLE "customers" (
     "marketingOptIn" BOOLEAN NOT NULL DEFAULT false,
     "optInAt" TIMESTAMP(3),
     "notes" TEXT,
+    "accessToken" TEXT,
+    "tokenIssuedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "customers_pkey" PRIMARY KEY ("id")
@@ -398,6 +403,36 @@ CREATE TABLE "subscriptions" (
     CONSTRAINT "subscriptions_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "messages" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "customerId" TEXT NOT NULL,
+    "sender" "MessageSender" NOT NULL,
+    "body" TEXT NOT NULL,
+    "orderId" TEXT,
+    "byStaffId" TEXT,
+    "seenAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "messages_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "push_subscriptions" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "customerId" TEXT,
+    "staffId" TEXT,
+    "endpoint" TEXT NOT NULL,
+    "p256dh" TEXT NOT NULL,
+    "auth" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastSentAt" TIMESTAMP(3),
+
+    CONSTRAINT "push_subscriptions_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -421,6 +456,9 @@ CREATE INDEX "products_tenantId_categoryId_idx" ON "products"("tenantId", "categ
 
 -- CreateIndex
 CREATE INDEX "delivery_slots_tenantId_idx" ON "delivery_slots"("tenantId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "customers_accessToken_key" ON "customers"("accessToken");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "customers_tenantId_phone_key" ON "customers"("tenantId", "phone");
@@ -475,6 +513,21 @@ CREATE UNIQUE INDEX "message_templates_tenantId_key_key" ON "message_templates"(
 
 -- CreateIndex
 CREATE INDEX "subscriptions_tenantId_status_idx" ON "subscriptions"("tenantId", "status");
+
+-- CreateIndex
+CREATE INDEX "messages_tenantId_customerId_createdAt_idx" ON "messages"("tenantId", "customerId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "messages_tenantId_sender_seenAt_idx" ON "messages"("tenantId", "sender", "seenAt");
+
+-- CreateIndex
+CREATE INDEX "push_subscriptions_tenantId_customerId_idx" ON "push_subscriptions"("tenantId", "customerId");
+
+-- CreateIndex
+CREATE INDEX "push_subscriptions_tenantId_staffId_idx" ON "push_subscriptions"("tenantId", "staffId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "push_subscriptions_tenantId_endpoint_key" ON "push_subscriptions"("tenantId", "endpoint");
 
 -- AddForeignKey
 ALTER TABLE "tenant_settings" ADD CONSTRAINT "tenant_settings_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -556,4 +609,7 @@ ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_customerId_fkey" FOREI
 
 -- AddForeignKey
 ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_slotId_fkey" FOREIGN KEY ("slotId") REFERENCES "delivery_slots"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "messages" ADD CONSTRAINT "messages_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

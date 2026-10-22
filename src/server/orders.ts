@@ -152,17 +152,30 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
           address = await tx.address.findFirst({ where: { id: input.address.id, customerId: customer.id } })
           if (!address) throw new OrderError("address_not_found")
         } else if (input.address?.line) {
-          address = await tx.address.create({
-            data: {
-              tenantId: tenant.id,
-              customerId: customer.id,
-              line: input.address.line,
-              landmark: input.address.landmark || null,
-              pincode: input.address.pincode || null,
-              lat: input.address.lat ?? null,
-              lng: input.address.lng ?? null,
-            },
+          // The same address typed again (returning customers) reuses the saved one.
+          const same = await tx.address.findFirst({
+            where: { customerId: customer.id, line: { equals: input.address.line.trim(), mode: "insensitive" }, pincode: input.address.pincode || null },
           })
+          address = same
+            ? await tx.address.update({
+                where: { id: same.id },
+                data: {
+                  landmark: input.address.landmark || same.landmark,
+                  lat: input.address.lat ?? same.lat,
+                  lng: input.address.lng ?? same.lng,
+                },
+              })
+            : await tx.address.create({
+                data: {
+                  tenantId: tenant.id,
+                  customerId: customer.id,
+                  line: input.address.line.trim(),
+                  landmark: input.address.landmark || null,
+                  pincode: input.address.pincode || null,
+                  lat: input.address.lat ?? null,
+                  lng: input.address.lng ?? null,
+                },
+              })
         }
         const addressId = address?.id ?? null
 

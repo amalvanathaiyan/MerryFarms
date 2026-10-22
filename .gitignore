@@ -28,3 +28,4 @@ npm-debug.log*
 # local dev database (npm run dev:db)
 /.pglite/
 /.pglite-demo/
+/public/worker-*.js

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { CalendarClock, ClipboardList, Package, Sun, Users } from "lucide-react"
+import { CalendarClock, ClipboardList, MessagesSquare, Package, Sun, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const ITEMS = [
@@ -11,15 +11,16 @@ const ITEMS = [
   { href: "/farm/orders", key: "orders", icon: ClipboardList },
   { href: "/farm/customers", key: "customers", icon: Users },
   { href: "/farm/catalogue", key: "catalogue", icon: Package },
-  { href: "/farm/slots", key: "slots", icon: CalendarClock },
 ] as const
+const SLOTS = { href: "/farm/slots", key: "slots", icon: CalendarClock } as const
+const MESSAGES = { href: "/farm/messages", key: "messages", icon: MessagesSquare } as const
 
-export function FarmNav({ toConfirm }: { toConfirm: number }) {
+export function FarmNav({ toConfirm, unread, messagesOn }: { toConfirm: number; unread: number; messagesOn: boolean }) {
   const t = useTranslations("farm.nav")
   const path = usePathname()
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 mx-auto grid max-w-2xl grid-cols-5 border-t bg-card pb-[env(safe-area-inset-bottom,0px)] print:hidden">
-      {ITEMS.map(({ href, key, icon: Icon }) => {
+      {[...ITEMS, messagesOn ? MESSAGES : SLOTS].map(({ href, key, icon: Icon }) => {
         const active = href === "/farm" ? path === "/farm" : path.startsWith(href)
         return (
           <Link
@@ -32,6 +33,11 @@ export function FarmNav({ toConfirm }: { toConfirm: number }) {
               <Icon className="size-6" />
             </span>
             {t(key)}
+            {key === "messages" && unread > 0 && (
+              <span className="absolute left-1/2 top-1 ml-2 min-w-5 rounded-full bg-destructive px-1 text-center text-[11px] font-bold leading-5 text-destructive-foreground tabular-nums">
+                {unread}
+              </span>
+            )}
             {key === "orders" && toConfirm > 0 && (
               <span className="absolute left-1/2 top-1 ml-2 min-w-5 rounded-full bg-destructive px-1 text-center text-[11px] font-bold leading-5 text-destructive-foreground tabular-nums">
                 {toConfirm}

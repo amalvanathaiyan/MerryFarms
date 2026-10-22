@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { getTranslations } from "next-intl/server"
 import { OWNER_ONLY, requireStaff } from "@/lib/auth"
 import { formatIndianMobile } from "@/domain/phone"
@@ -26,6 +27,9 @@ export default async function SettingsPage() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-bold">{t("title")}</h1>
+      <Link href="/farm/slots" className="flex items-center justify-between rounded-2xl border bg-card p-4 font-semibold">
+        {t("slotsLink")} <span aria-hidden>→</span>
+      </Link>
       <FeatureSwitches rows={rows} />
       {resolved.deliveryArea && (
         <DeliveryAreaForm

@@ -11,6 +11,7 @@ import { deliverOrder, recordPayment } from "@/server/billing"
 import { cannotEnable, FEATURE_KEYS, parseChoices } from "@/domain/features"
 import { parsePincodes } from "@/domain/delivery-area"
 import { OrderError } from "@/server/orders"
+import { notifyOrderStatus } from "@/server/notify"
 
 type Result = { ok: true; invoiceId?: string } | { ok: false; error: string }
 
@@ -28,6 +29,7 @@ export async function deliver(raw: unknown): Promise<Result> {
   const { tenant, staff } = await requireStaff(["owner", "order_desk", "delivery"])
   try {
     const { invoice } = await deliverOrder(tenant.id, parsed.data.orderId, parsed.data.payment, staff.id)
+    await notifyOrderStatus(tenant.id, parsed.data.orderId)
     revalidatePath("/farm", "layout")
     return { ok: true, invoiceId: invoice?.id }
   } catch (e) {

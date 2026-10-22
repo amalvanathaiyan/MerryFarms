@@ -68,7 +68,10 @@
       "locationUnavailable": "This phone couldn't share its location. Your PIN code is enough.",
       "inside": "We deliver to your area.",
       "outside": "Sorry, we don't deliver to your area yet. Please call the farm."
-    }
+    },
+    "myOrders": "My orders",
+    "rememberedHere": "This phone will remember you; next time your details are filled in.",
+    "farmWillSendLink": "This number is already with us. The farm will send you your personal link."
   },
   "farm": {
     "nav": {
@@ -76,7 +79,8 @@
       "orders": "Orders",
       "catalogue": "Products",
       "slots": "Slots",
-      "customers": "Customers"
+      "customers": "Customers",
+      "messages": "Messages"
     },
     "today": {
       "toConfirm": "To confirm by call",
@@ -92,7 +96,8 @@
       "plans": "Weekly / daily plans",
       "plansOpen": "{count, plural, one {# plan} other {# plans}} →",
       "plansCreated": "{count, plural, one {# plan order} other {# plan orders}} created.",
-      "planHeld": "{name}'s order for {date} was held"
+      "planHeld": "{name}'s order for {date} was held",
+      "unreadMessages": "{count, plural, one {# new message} other {# new messages}}"
     },
     "orders": {
       "tab_to_confirm": "To call",
@@ -244,7 +249,15 @@
       "type_refund": "Money refunded",
       "plans": "{count, plural, =0 {No plans} one {# plan} other {# plans}}",
       "seePlans": "See plans →",
-      "startPlan": "Start a plan →"
+      "startPlan": "Start a plan →",
+      "personalLink": "Personal link",
+      "personalLinkHint": "Opening it makes the customer's phone remember them: orders, bills, order again, messages. Send it to them only.",
+      "sendLink": "Send link on WhatsApp",
+      "copyLink": "Copy",
+      "copied": "Copied",
+      "resetLink": "Reset link (the old one stops working)",
+      "resetConfirm": "Tap again to reset",
+      "linkReset": "New link ready — refresh the page"
     },
     "settings": {
       "title": "Farm settings",
@@ -266,7 +279,8 @@
       "freeAbove": "Free above (₹)",
       "freeAboveHint": "0 means always charged.",
       "save": "Save",
-      "saved": "Saved"
+      "saved": "Saved",
+      "slotsLink": "Delivery slots"
     },
     "units": {
       "packs": "packs",
@@ -335,6 +349,18 @@
       "deliveryArea": {
         "title": "Delivery area check",
         "hint": "Take online orders only within a distance of the farm or from listed PIN codes."
+      },
+      "customerAccounts": {
+        "title": "Customer connect & My orders",
+        "hint": "The customer's phone remembers them without a password: My orders, order again, personal link."
+      },
+      "messages": {
+        "title": "Messages in the app",
+        "hint": "Customers message the farm inside the app; no WhatsApp needed."
+      },
+      "pushNotifications": {
+        "title": "Phone notifications",
+        "hint": "Staff hear about new orders and messages; customers hear about replies and order updates. Only on phones that allow it."
       }
     },
     "orderForm": {
@@ -424,7 +450,9 @@
       "tpl_dues": "Dues reminder",
       "tpl_invoice": "Sending an invoice",
       "tpl_share_shop": "Sharing the shop link",
-      "tpl_price_list": "Price list"
+      "tpl_price_list": "Price list",
+      "tpl_personal_link": "Personal link",
+      "tpl_new_message": "New message nudge"
     },
     "plans": {
       "title": "Weekly / daily plans",
@@ -582,6 +610,67 @@
     "plan_bad_discount": "The discount must be between 0 and 50%.",
     "out_of_area": "Sorry, we don't deliver to your area yet. Please call the farm.",
     "location_invalid": "That location isn't valid.",
-    "pincode_invalid": "Enter valid 6-digit PIN codes."
+    "pincode_invalid": "Enter valid 6-digit PIN codes.",
+    "accounts_off": "Customer connect is switched off for this farm.",
+    "messages_off": "Messages are switched off for this farm.",
+    "not_connected": "Connect with the farm first.",
+    "message_empty": "The message is empty.",
+    "message_too_long": "The message is too long (up to 1000 characters).",
+    "message_rate_limited": "Too many messages this hour. Please wait a little or call the farm."
+  },
+  "my": {
+    "connectTitle": "Connect with the farm",
+    "connectHint": "Give your name and mobile number to connect with {farm}. Next time you order, there's nothing to type again.",
+    "connect": "Connect",
+    "connectPrivacy": "No password. This phone will remember you.",
+    "knownNumber": "This number is already with the farm. Ask them to send your personal link — opening it connects you.",
+    "linkExpired": "This link no longer works. Ask the farm for a new one.",
+    "hello": "Hello, {name}!",
+    "shop": "Order now",
+    "callFarm": "Call the farm",
+    "dues": "Balance due",
+    "advance": "Advance",
+    "onTheWay": "Current orders",
+    "noOpen": "No orders right now.",
+    "past": "Earlier orders",
+    "bill": "Bill",
+    "orderAgain": "Order again",
+    "notYou": "Not you? Forget me on this phone",
+    "forgetConfirm": "Tap again to confirm",
+    "messageFarm": "Message the farm",
+    "newReplies": "{count} new"
+  },
+  "chat": {
+    "title": "Messages",
+    "inboxEmpty": "No messages yet. Customers can write to you from their 'My orders' page.",
+    "you": "You",
+    "waitingHours": "Waiting {hours, plural, one {# hour} other {# hours}} for a reply",
+    "call": "Call",
+    "notSeenYet": "The customer hasn't seen your reply yet.",
+    "notSeenLong": "Your reply hasn't been seen for {hours, plural, one {# hour} other {# hours}}. Call them or let them know on WhatsApp.",
+    "nudgeWhatsApp": "Let them know on WhatsApp",
+    "replyPlaceholder": "Write a reply…",
+    "readOnly": "Replying needs order-desk access",
+    "empty": "No messages yet.",
+    "seen": "Seen",
+    "sent": "Sent",
+    "send": "Send",
+    "back": "Back",
+    "customerHint": "Write to the farm directly. Replies appear here.",
+    "placeholder": "Your message…"
+  },
+  "push": {
+    "title": "Get updates on this phone",
+    "hintCustomer": "We'll let you know when the farm replies and when your order is confirmed or on the way.",
+    "hintStaff": "Get a notification on this phone for new orders and customer messages.",
+    "enable": "Turn on notifications",
+    "on": "Notifications are on for this phone",
+    "failed": "Couldn't turn on notifications. Please try again.",
+    "blocked": "Notifications are blocked",
+    "blockedHint": "Allow notifications for this site in your phone's browser settings, then open this page again.",
+    "iosIntro": "On iPhone, add this app to your Home Screen first:",
+    "iosStep1": "Tap the Share button",
+    "iosStep2": "Choose \"Add to Home Screen\"",
+    "iosStep3": "Open the app from your Home Screen and tap this button again"
   }
 }

@@ -552,3 +552,162 @@ describe("delivery area", () => {
     expect(o.areaCheck).toBeNull()
   })
 })
+
+describe("customer identity without login", () => {
+  let customers: typeof import("./customers")
+  beforeAll(async () => {
+    customers = await import("./customers")
+  })
+
+  it("connects a new number with a private key", async () => {
+    const r = await customers.connectCustomer(merry, { name: "QR visitor", phone: "+919000060001", language: "ta" })
+    expect(r.status).toBe("connected")
+    if (r.status !== "connected") return
+    expect(r.token.length).toBeGreaterThanOrEqual(30)
+    expect((await customers.customerByToken(merry.id, r.token))?.name).toBe("QR visitor")
+  })
+
+  it("never connects someone to an existing customer just by typing their number", async () => {
+    expect(await customers.connectCustomer(merry, { name: "Not Priya", phone: "+919000010001", language: "ta" })).toEqual({ status: "known" })
+  })
+
+  it("a key only works for its own farm", async () => {
+    const c = (await tenantDb(merry.id).customer.findFirst({ where: { phone: "+919000060001" } }))!
+    expect(await customers.customerByToken(other.id, c.accessToken!)).toBeNull()
+    expect(await customers.customerByToken(merry.id, "short")).toBeNull()
+  })
+
+  it("resetting a key cuts off the old link", async () => {
+    const c = (await tenantDb(merry.id).customer.findFirst({ where: { phone: "+919000060001" } }))!
+    const old = c.accessToken!
+    const fresh = await customers.issueToken(merry.id, c.id)
+    expect(fresh).not.toBe(old)
+    expect(await customers.customerByToken(merry.id, old)).toBeNull()
+    expect((await customers.customerByToken(merry.id, fresh))?.id).toBe(c.id)
+    expect(await customers.ensureToken(merry.id, c.id)).toBe(fresh)
+  })
+
+  it("reuses a returning customer's saved address instead of duplicating it", async () => {
+    const phone = "+919000060002"
+    const addr = { line: "5, Temple Street", pincode: "600126" }
+    await svc.placeOrder(merry, { ...staffOrderFor(phone), address: addr }, NOW)
+    await svc.placeOrder(merry, { ...staffOrderFor(phone), address: { ...addr, line: "5, temple street " } }, NOW)
+    const c = (await tenantDb(merry.id).customer.findFirst({ where: { phone }, include: { addresses: true } }))!
+    expect(c.addresses).toHaveLength(1)
+  })
+
+  const staffOrderFor = (phone: string): import("./orders").PlaceOrderInput => ({
+    channel: "phone",
+    customer: { phone, name: "Returning", language: "ta" },
+    address: null,
+    items: [{ productId: "p-eggs", qty: 1 }],
+    slotKey: "2026-10-23|slot-am",
+    paymentMethod: "cash_on_delivery",
+    staffOverride: true,
+  })
+})
+
+describe("messages in the app", () => {
+  let chat: typeof import("./chat")
+  let priyaId = ""
+  beforeAll(async () => {
+    chat = await import("./chat")
+    priyaId = (await tenantDb(merry.id).customer.findFirst({ where: { phone: "+919000010001" } }))!.id
+  })
+
+  it("delivers a customer message to the farm's inbox as unread and waiting", async () => {
+    await chat.sendFromCustomer(merry.id, priyaId, "  நாளை 2 தட்டு வேண்டும்  ")
+    expect(await chat.unreadForFarm(merry.id)).toBe(1)
+    const [row] = await chat.inbox(merry.id)
+    expect(row).toMatchObject({ customerId: priyaId, unread: 1, last: { body: "நாளை 2 தட்டு வேண்டும்", sender: "customer" } })
+    expect(row.waitingSince).not.toBeNull()
+  })
+
+  it("marks messages seen when the farm opens the conversation, and the reply clears 'waiting'", async () => {
+    await chat.markSeen(merry.id, priyaId, "farm")
+    expect(await chat.unreadForFarm(merry.id)).toBe(0)
+    await chat.sendFromFarm(merry.id, priyaId, "சரி, 2 தட்டு அனுப்புகிறோம்.", "staff-1")
+    expect(await chat.unreadForCustomer(merry.id, priyaId)).toBe(1)
+    const [row] = await chat.inbox(merry.id)
+    expect(row.waitingSince).toBeNull()
+    expect(row.last.seenAt).toBeNull() // not seen by the customer yet
+    await chat.markSeen(merry.id, priyaId, "customer")
+    const [after] = await chat.inbox(merry.id)
+    expect(after.last.seenAt).not.toBeNull() // ✓✓ Seen
+    expect((await chat.thread(merry.id, priyaId)).map((m) => m.sender)).toEqual(["customer", "farm"])
+  })
+
+  it("refuses empty or overlong messages, and floods", async () => {
+    await expect(chat.sendFromCustomer(merry.id, priyaId, "   ")).rejects.toThrow("message_empty")
+    await expect(chat.sendFromCustomer(merry.id, priyaId, "x".repeat(1001))).rejects.toThrow("message_too_long")
+    for (let i = 0; i < chat.CUSTOMER_HOURLY_LIMIT - 1; i++) await chat.sendFromCustomer(merry.id, priyaId, `hi ${i}`)
+    await expect(chat.sendFromCustomer(merry.id, priyaId, "one too many")).rejects.toThrow("message_rate_limited")
+  })
+
+  it("keeps conversations inside their farm", async () => {
+    expect(await chat.inbox(other.id)).toEqual([])
+    await expect(chat.sendFromFarm(other.id, priyaId, "hello", "staff-x")).rejects.toThrow("customer_not_found")
+    expect(await chat.thread(other.id, priyaId)).toEqual([])
+  })
+})
+
+describe("phone notifications", () => {
+  let notify: typeof import("./notify")
+  const sent: { endpoint: string; note: { title: string; url: string; tag?: string } }[] = []
+  const keys = { p256dh: "k", auth: "a" }
+  let priya = ""
+  beforeAll(async () => {
+    notify = await import("./notify")
+    notify.setPushSenderForTests(async (s, payload) => {
+      if (s.endpoint.endsWith("/gone")) throw Object.assign(new Error("gone"), { statusCode: 410 })
+      sent.push({ endpoint: s.endpoint, note: JSON.parse(payload) })
+    })
+    const db = tenantDb(merry.id)
+    priya = (await db.customer.findFirst({ where: { phone: "+919000010001" } }))!.id
+    await db.staffMember.createMany({
+      data: [
+        { id: "st-owner", tenantId: merry.id, authUserId: "u1", name: "Owner", roles: ["owner"] },
+        { id: "st-driver", tenantId: merry.id, authUserId: "u2", name: "Driver", roles: ["delivery"] },
+        { id: "st-left", tenantId: merry.id, authUserId: "u3", name: "Left", roles: ["order_desk"], isActive: false },
+      ],
+    })
+    await notify.saveSubscription(merry.id, { staffId: "st-owner" }, { endpoint: "https://push.test/owner", ...keys })
+    await notify.saveSubscription(merry.id, { staffId: "st-driver" }, { endpoint: "https://push.test/driver", ...keys })
+    await notify.saveSubscription(merry.id, { staffId: "st-left" }, { endpoint: "https://push.test/left", ...keys })
+    await notify.saveSubscription(merry.id, { customerId: priya }, { endpoint: "https://push.test/priya", ...keys })
+    await notify.saveSubscription(merry.id, { customerId: priya }, { endpoint: "https://push.test/gone", ...keys })
+    await notify.saveSubscription(other.id, { staffId: "st-x" }, { endpoint: "https://push.test/other-farm", ...keys })
+  })
+
+  it("new orders and messages reach active owner and order-desk phones only", async () => {
+    sent.length = 0
+    await notify.notifyStaff(merry.id, { title: "New order", body: "", url: "/farm/orders" })
+    expect(sent.map((s) => s.endpoint)).toEqual(["https://push.test/owner"])
+  })
+
+  it("order updates reach the customer in their language, and dropped phones are forgotten", async () => {
+    sent.length = 0
+    const o = await tenantDb(merry.id).order.findFirst({ where: { customerId: priya, status: "delivered" } })
+    await notify.notifyOrderStatus(merry.id, o!.id)
+    expect(sent).toHaveLength(1)
+    expect(sent[0]).toMatchObject({ endpoint: "https://push.test/priya", note: { url: "/my", tag: `order-MF-${o!.number}` } })
+    expect(sent[0].note.title).toContain("டெலிவரி")
+    expect(await tenantDb(merry.id).pushSubscription.count({ where: { customerId: priya } })).toBe(1)
+  })
+
+  it("a phone moves to whoever connected on it last (shared family phone)", async () => {
+    const c = await tenantDb(merry.id).customer.create({ data: { tenantId: merry.id, phone: "+919000050001", name: "Ravi" } })
+    await notify.saveSubscription(merry.id, { customerId: c.id }, { endpoint: "https://push.test/priya", ...keys })
+    sent.length = 0
+    await notify.notifyCustomer(merry.id, priya, { title: "x", body: "", url: "/my" })
+    expect(sent).toEqual([])
+  })
+
+  it("stays quiet when the farm switches notifications off", async () => {
+    await prisma.tenant.update({ where: { id: merry.id }, data: { features: { pushNotifications: false } } })
+    sent.length = 0
+    await notify.notifyStaff(merry.id, { title: "x", body: "", url: "/farm" })
+    expect(sent).toEqual([])
+    await prisma.tenant.update({ where: { id: merry.id }, data: { features: {} } })
+  })
+})

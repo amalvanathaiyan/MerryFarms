@@ -2,7 +2,9 @@
 
 import { useMemo, useState, useTransition } from "react"
 import { useLocale, useTranslations } from "next-intl"
-import { Minus, Phone, Plus, ShoppingBasket, X } from "lucide-react"
+import Link from "next/link"
+import { Minus, Phone, Plus, ShoppingBasket, UserRound, X } from "lucide-react"
+import { formatIndianMobile } from "@/domain/phone"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { LanguageToggle } from "@/components/language-toggle"
@@ -13,6 +15,7 @@ import { orderCode } from "@/domain/orders"
 import { waMeLink } from "@/domain/whatsapp-lite"
 import { cn } from "@/lib/utils"
 import { AreaCheck, type AreaResult } from "./area-check"
+import { EnablePush } from "@/components/push/enable-push"
 
 export interface ShopData {
   farm: {
@@ -26,7 +29,12 @@ export interface ShopData {
     webOrdering: boolean
     tracksStock: boolean
     radiusKm: number | null
+    accounts: boolean
+    /** Phone notifications are on for this farm. */
+    push: boolean
   }
+  me: { name: string; phone: string; address: { line: string; landmark: string; pincode: string; lat: number | null; lng: number | null } | null } | null
+  initialCart: Record<string, number> | null
   categories: { id: string; name: string }[]
   products: {
     id: string
@@ -47,22 +55,24 @@ export function Shop({ data }: { data: ShopData }) {
   const t = useTranslations("shop")
   const te = useTranslations("errors")
   const locale = useLocale()
-  const [view, setView] = useState<View>("shop")
-  const [cart, setCart] = useState<Record<string, number>>({})
+  const [view, setView] = useState<View>(data.initialCart && Object.keys(data.initialCart).length ? "cart" : "shop")
+  const [cart, setCart] = useState<Record<string, number>>(data.initialCart ?? {})
   const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    addressLine: "",
-    landmark: "",
-    pincode: "",
+    name: data.me?.name ?? "",
+    phone: data.me ? formatIndianMobile(data.me.phone) : "",
+    addressLine: data.me?.address?.line ?? "",
+    landmark: data.me?.address?.landmark ?? "",
+    pincode: data.me?.address?.pincode ?? "",
     note: "",
     slotKey: data.slots.find((s) => !s.full)?.key ?? "",
     paymentMethod: "upi_on_delivery" as "upi_on_delivery" | "cash_on_delivery",
   })
   const [error, setError] = useState<string | null>(null)
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
+    data.me?.address?.lat != null && data.me.address.lng != null ? { lat: data.me.address.lat, lng: data.me.address.lng } : null
+  )
   const [area, setArea] = useState<AreaResult | null>(null)
-  const [placed, setPlaced] = useState<{ code: string; totalPaise: number; needsCall: boolean; lines: string } | null>(null)
+  const [placed, setPlaced] = useState<{ code: string; totalPaise: number; needsCall: boolean; lines: string; account: "connected" | "known" | "off" } | null>(null)
   const [pending, start] = useTransition()
 
   const byId = useMemo(() => new Map(data.products.map((p) => [p.id, p])), [data.products])
@@ -104,6 +114,7 @@ export function Shop({ data }: { data: ShopData }) {
         code: orderCode(data.farm.orderPrefix, r.orderNumber),
         totalPaise: r.totalPaise,
         needsCall: r.needsCall,
+        account: r.account,
         lines: lines.map((l) => `${l.qty} × ${l.product.name} (${l.product.pack})`).join("\n"),
       })
       setCart({})
@@ -120,7 +131,15 @@ export function Shop({ data }: { data: ShopData }) {
         {/* Tamil names run long: allow two lines rather than cutting the name off. */}
         <span className="line-clamp-2 text-base font-semibold leading-snug break-words sm:text-lg">{data.farm.name}</span>
       </div>
-      <LanguageToggle compact />
+      <div className="flex shrink-0 items-center gap-2">
+        {data.farm.accounts && (
+          <Link href="/my" className="inline-flex items-center gap-1 rounded-full border bg-card px-3 py-1.5 text-sm font-medium text-card-foreground" aria-label={t("myOrders")}>
+            <UserRound className="size-4" aria-hidden />
+            <span className="hidden min-[380px]:inline">{t("myOrders")}</span>
+          </Link>
+        )}
+        <LanguageToggle compact />
+      </div>
     </header>
   )
 
@@ -137,7 +156,17 @@ export function Shop({ data }: { data: ShopData }) {
             {"\n"}
             {t("toPay")}: {formatRupees(placed.totalPaise)}
           </pre>
-          <Button asChild size="lg" className="h-12 text-base">
+          {placed.account === "connected" && (
+            <p className="rounded-xl bg-accent p-3 text-sm">
+              {t("rememberedHere")}{" "}
+              <Link href="/my" className="font-semibold underline underline-offset-4">
+                {t("myOrders")} →
+              </Link>
+            </p>
+          )}
+          {placed.account === "connected" && data.farm.push && <EnablePush who="customer" />}
+          {placed.account === "known" && <p className="rounded-xl bg-accent p-3 text-sm">{t("farmWillSendLink")}</p>}
+          <Button asChild size="lg" variant="outline" className="h-12 text-base">
             <a href={waMeLink(data.farm.whatsappNumber, waText)} target="_blank" rel="noreferrer">
               {t("placedWhatsApp")}
             </a>

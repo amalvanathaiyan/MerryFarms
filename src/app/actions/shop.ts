@@ -7,6 +7,12 @@ import { OrderError, placeOrder } from "@/server/orders"
 import { featuresOf } from "@/lib/features"
 import { areaConfigured, checkArea } from "@/domain/delivery-area"
 import { areaOf } from "@/server/orders"
+import { tenantDb } from "@/lib/tenant-db"
+import { forgetCustomer, getSessionCustomer, rememberCustomer } from "@/lib/customer-session"
+import { connectCustomer, issueToken } from "@/server/customers"
+import { notifyStaff } from "@/server/notify"
+import { staffNewOrderNote } from "@/domain/notifications"
+import { orderCode } from "@/domain/orders"
 
 const schema = z.object({
   name: z.string().trim().min(1).max(80),
@@ -24,7 +30,15 @@ const schema = z.object({
 })
 
 export type PlaceWebOrderResult =
-  | { ok: true; orderNumber: number; totalPaise: number; needsCall: boolean }
+  | {
+      ok: true
+      orderNumber: number
+      totalPaise: number
+      needsCall: boolean
+      /** "connected": this phone now remembers the customer. "known": the number belongs to an
+       *  existing customer, so the farm will send their personal link instead. */
+      account: "connected" | "known" | "off"
+    }
   | { ok: false; error: string }
 
 /**
@@ -43,8 +57,12 @@ export async function placeWebOrder(raw: unknown): Promise<PlaceWebOrderResult> 
   if (tenant.status === "suspended") return { ok: false, error: "shop_paused" }
   if (!featuresOf(tenant).webShop) return { ok: false, error: "shop_ordering_off" }
 
+  const accounts = featuresOf(tenant).customerAccounts
+  const session = accounts ? await getSessionCustomer() : null
+  const known = accounts && !session ? await tenantDb(tenant.id).customer.findFirst({ where: { phone }, select: { id: true } }) : null
+
   try {
-    const { order, decision } = await placeOrder(tenant, {
+    const { order, decision, customer } = await placeOrder(tenant, {
       channel: "web",
       customer: { phone, name: input.name, language: input.language },
       address: { line: input.addressLine, landmark: input.landmark, pincode: input.pincode, lat: input.lat, lng: input.lng },
@@ -53,7 +71,20 @@ export async function placeWebOrder(raw: unknown): Promise<PlaceWebOrderResult> 
       paymentMethod: input.paymentMethod,
       note: input.note,
     })
-    return { ok: true, orderNumber: order.number, totalPaise: order.totalPaise, needsCall: decision.needsCall }
+    let account: "connected" | "known" | "off" = "off"
+    if (accounts) {
+      if (session && session.id === customer.id) account = "connected"
+      else if (!session && !known) {
+        // A brand-new customer: give this phone their key so next time is pre-filled.
+        await rememberCustomer(await issueToken(tenant.id, customer.id))
+        account = "connected"
+      } else account = "known"
+    }
+    await notifyStaff(
+      tenant.id,
+      staffNewOrderNote({ code: orderCode(tenant.invoicePrefix, order.number), customerName: customer.name, totalPaise: order.totalPaise, needsCall: decision.needsCall })
+    )
+    return { ok: true, orderNumber: order.number, totalPaise: order.totalPaise, needsCall: decision.needsCall, account }
   } catch (e) {
     if (e instanceof OrderError) return { ok: false, error: e.code }
     throw e
@@ -78,4 +109,28 @@ export async function checkMyArea(raw: unknown): Promise<{ result: "inside" | "o
   if (!featuresOf(tenant).deliveryArea || !areaConfigured(area)) return { result: "not_set" }
   const { pincode, lat, lng } = parsed.data
   return { result: checkArea(area, { pincode, location: lat != null && lng != null ? { lat, lng } : null }).result }
+}
+
+const connectSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  phone: z.string().trim().min(10).max(20),
+  language: z.enum(["ta", "en"]),
+})
+
+/** A visitor (e.g. from the QR code) connects with name and number, before any order. */
+export async function connectAction(raw: unknown): Promise<{ ok: true; status: "connected" | "known" } | { ok: false; error: string }> {
+  const parsed = connectSchema.safeParse(raw)
+  if (!parsed.success) return { ok: false, error: "invalid_form" }
+  const phone = normaliseIndianMobile(parsed.data.phone)
+  if (!phone) return { ok: false, error: "phone_invalid" }
+  const tenant = await requireTenant()
+  if (!featuresOf(tenant).customerAccounts) return { ok: false, error: "accounts_off" }
+  const r = await connectCustomer(tenant, { ...parsed.data, phone })
+  if (r.status === "connected") await rememberCustomer(r.token)
+  return { ok: true, status: r.status }
+}
+
+/** "Not you?" on a shared phone: forget the customer on this phone. */
+export async function forgetMeAction() {
+  await forgetCustomer()
 }
