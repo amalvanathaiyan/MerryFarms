@@ -24,12 +24,12 @@ import { adjustPrice, type Adjust } from "@/domain/offers"
 import { formatRupees } from "@/domain/money"
 import { dayLabel } from "@/lib/i18n-helpers"
 import { ProductPicture } from "@/components/product-picture"
-import { artKind } from "@/domain/product-art"
+import { ART_KINDS, artFor, artKind, STARTER_CATEGORIES, type ArtKind } from "@/domain/product-art"
 import { shrinkPhoto } from "@/lib/shrink-photo"
 import { pick } from "@/lib/i18n-helpers"
 import { cn } from "@/lib/utils"
 
-type Category = { id: string; nameTa: string; nameEn: string }
+type Category = { id: string; nameTa: string; nameEn: string; kind: string | null }
 type Product = {
   id: string
   categoryId: string
@@ -54,7 +54,7 @@ type Product = {
 }
 type Draft = Omit<Product, "id" | "imageUrl" | "offerLive"> & { id?: string }
 
-const UNITS = ["packs", "trays", "kg", "birds", "litres", "pieces", "boxes", "jars"]
+const UNITS = ["packs", "kg", "grams", "litres", "ml", "bottles", "jars", "pieces", "dozen", "bunches", "trays", "boxes", "bags", "birds"]
 
 export function CatalogueManager({
   categories,
@@ -79,7 +79,7 @@ export function CatalogueManager({
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [draft, setDraft] = useState<Draft | null>(null)
-  const [cat, setCat] = useState<{ id?: string; nameTa: string; nameEn: string } | null>(null)
+  const [cat, setCat] = useState<{ id?: string; nameTa: string; nameEn: string; kind?: ArtKind } | null>(null)
   const [bulk, setBulk] = useState<(Adjust & { categoryId: string }) | null>(null)
   const dayText = (d: string) => dayLabel(d, locale, { today: tc("today"), tomorrow: tc("tomorrow") })
   const [armedDelete, setArmedDelete] = useState(false)
@@ -261,15 +261,43 @@ export function CatalogueManager({
           className="flex flex-col gap-3 rounded-2xl border bg-card p-4"
           onSubmit={(e) => {
             e.preventDefault()
-            run(() => (cat.id ? renameCategory(cat) : addCategory(cat)), () => setCat(null))
+            const withKind = { ...cat, kind: cat.kind ?? artKind(cat.nameEn, cat.nameTa) }
+            run(() => (cat.id ? renameCategory(withKind) : addCategory(withKind)), () => setCat(null))
           }}
         >
+          {!cat.id && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-sm font-semibold">{t("quickCategories")}</span>
+              <div className="flex flex-wrap gap-1.5">
+                {STARTER_CATEGORIES.filter((s) => !categories.some((c) => c.nameEn === s.nameEn)).map((s) => (
+                  <button key={s.nameEn} type="button" onClick={() => setCat({ nameTa: s.nameTa, nameEn: s.nameEn, kind: s.kind })} className={cn("flex items-center gap-1.5 rounded-full border py-1 pr-3 pl-1 text-sm", cat.nameEn === s.nameEn ? "border-primary bg-accent" : "bg-card")}>
+                    <ProductPicture src={null} kind={s.kind} alt="" className="size-7 rounded-full" />
+                    {pick(locale, s.nameTa, s.nameEn)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <Labelled label={t("categoryNameTa")}>
-            <Input required lang="ta" value={cat.nameTa} onChange={(e) => setCat({ ...cat, nameTa: e.target.value })} placeholder="முட்டை" />
+            <Input required lang="ta" value={cat.nameTa} onChange={(e) => setCat({ ...cat, nameTa: e.target.value })} placeholder="செக்கு எண்ணெய்" />
           </Labelled>
           <Labelled label={t("categoryNameEn")}>
-            <Input required lang="en" value={cat.nameEn} onChange={(e) => setCat({ ...cat, nameEn: e.target.value })} placeholder="Eggs" />
+            <Input required lang="en" value={cat.nameEn} onChange={(e) => setCat({ ...cat, nameEn: e.target.value })} placeholder="Cold-pressed oils" />
           </Labelled>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-semibold">{t("categoryType")}</span>
+            <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+              {ART_KINDS.map((k) => {
+                const chosen = (cat.kind ?? artKind(cat.nameEn, cat.nameTa)) === k
+                return (
+                  <button key={k} type="button" aria-pressed={chosen} onClick={() => setCat({ ...cat, kind: k })} className={cn("flex flex-col items-center gap-1 rounded-xl border p-1.5 text-xs", chosen ? "border-primary bg-accent font-semibold" : "bg-card")}>
+                    <ProductPicture src={null} kind={k} alt="" className="size-10" />
+                    {t(`art_${k}`)}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
           <div className="flex gap-2">
             <Button type="submit" disabled={pending} className="flex-1">
               {tc("save")}
@@ -298,7 +326,7 @@ export function CatalogueManager({
                   <button type="button" className={icon} disabled={pending || ci === categories.length - 1} aria-label={t("moveDown")} onClick={() => run(() => moveCategory(c.id, "down"))}>
                     <ArrowDown className="size-4" />
                   </button>
-                  <button type="button" className={icon} aria-label={t("renameCategory")} onClick={() => setCat({ id: c.id, nameTa: c.nameTa, nameEn: c.nameEn })}>
+                  <button type="button" className={icon} aria-label={t("renameCategory")} onClick={() => setCat({ id: c.id, nameTa: c.nameTa, nameEn: c.nameEn, kind: (c.kind as ArtKind | null) ?? undefined })}>
                     <Pencil className="size-4" />
                   </button>
                   {list.length > 0 ? (
@@ -355,7 +383,7 @@ export function CatalogueManager({
                 <li key={p.id} className="flex flex-col gap-2 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex flex-col items-center gap-1">
-                      <ProductPicture src={p.imageUrl} kind={artKind(p.nameEn, p.nameTa, c.nameEn, c.nameTa)} alt={pick(locale, p.nameTa, p.nameEn)} className="size-16" />
+                      <ProductPicture src={p.imageUrl} kind={artFor(c.kind, p.nameEn, p.nameTa, c.nameEn, c.nameTa)} alt={pick(locale, p.nameTa, p.nameEn)} className="size-16" />
                       {canEdit && (
                         <label className={cn("flex cursor-pointer items-center gap-1 text-xs font-medium text-primary", pending && "pointer-events-none opacity-50")}>
                           <Camera className="size-3.5" /> {p.imageUrl ? t("changePhoto") : t("addPhoto")}

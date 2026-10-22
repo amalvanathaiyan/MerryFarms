@@ -160,7 +160,7 @@
       "addCategory": "+ Add category",
       "categoryNameTa": "Category name (Tamil)",
       "categoryNameEn": "Category name (English)",
-      "noCategories": "Add a category first (for example: Eggs).",
+      "noCategories": "Add a category first: tap + Add category and pick one, e.g. Eggs, Milk or Cold-pressed oils.",
       "noProducts": "No products in this category yet.",
       "category": "Category",
       "nameTa": "Name (Tamil)",
@@ -180,7 +180,7 @@
       "left": "{count} {unit} left",
       "addTitle": "New product",
       "editTitle": "Edit product",
-      "gstHint": "Fresh eggs and fresh chicken are generally GST-exempt (0%). Confirm with your CA.",
+      "gstHint": "Fresh produce (eggs, milk, vegetables, fruit) is usually GST-exempt (0%). Packed or processed items (ghee, oils, pickles, flour) often carry 5% or 12%. Confirm with your CA.",
       "addPhoto": "Add photo",
       "changePhoto": "Change",
       "removePhoto": "Remove photo",
@@ -200,7 +200,23 @@
       "deleteCategory": "Delete category",
       "raise": "Raise by",
       "lower": "Lower by",
-      "applyPrices": "Apply new prices"
+      "applyPrices": "Apply new prices",
+      "quickCategories": "Quick add",
+      "categoryType": "What it holds (picks the picture)",
+      "art_egg": "Eggs",
+      "art_chicken": "Poultry & meat",
+      "art_milk": "Milk",
+      "art_dairy": "Ghee & dairy",
+      "art_oil": "Oils",
+      "art_vegetables": "Vegetables",
+      "art_greens": "Greens",
+      "art_fruits": "Fruits",
+      "art_grains": "Rice & grains",
+      "art_honey": "Honey",
+      "art_spices": "Spices",
+      "art_pickles": "Pickles & homemade",
+      "art_plants": "Plants & seeds",
+      "art_basket": "Other"
     },
     "slots": {
       "title": "Delivery slots",
@@ -328,7 +344,13 @@
       "litres": "litres",
       "pieces": "pieces",
       "boxes": "boxes",
-      "jars": "jars"
+      "jars": "jars",
+      "grams": "grams",
+      "ml": "ml",
+      "bottles": "bottles",
+      "dozen": "dozen",
+      "bunches": "bunches",
+      "bags": "bags"
     },
     "features": {
       "title": "Features",
@@ -366,7 +388,7 @@
       },
       "subscriptions": {
         "title": "Weekly / daily plans",
-        "hint": "Repeat orders such as eggs every week or milk every day. Turn on only if your supply is steady."
+        "hint": "Repeat orders such as milk every day or eggs every week. Turn on only if your supply is steady."
       },
       "broadcasts": {
         "title": "WhatsApp broadcasts",
@@ -483,7 +505,7 @@
       "shareHint": "Send it to a customer, a group or your Status.",
       "printQr": "Print QR",
       "qrTitle": "Shop QR code",
-      "qrHint": "Stick it on egg trays, bags and bills. Scanning it opens your shop.",
+      "qrHint": "Stick it on trays, bottles, bags and bills. Scanning it opens your shop.",
       "qrScan": "Scan to order",
       "templatesTitle": "Message wording",
       "templatesHint": "Change any message you send to customers into your own words.",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { checkDayRecord, costs, production, profit } from "./records"
+import { checkDayRecord, checkProduction, costs, keepsPoultry, production, productionStockDelta, productionTotals, profit } from "./records"
 
 const day = (date: string, eggs: number | null, birds: number | null, over = {}) => ({ date, eggsCollected: eggs, eggsBroken: 0, birds, birdsLost: 0, feedKg: 6, ...over })
 
@@ -46,5 +46,36 @@ describe("day entry checks", () => {
     expect(checkDayRecord({ ...ok, eggsCollected: -1 })).toBe("record_invalid")
     expect(checkDayRecord({ ...ok, birds: 10.5 })).toBe("record_invalid")
     expect(checkDayRecord({ ...ok, eggsBroken: 80 })).toBe("broken_more_than_collected")
+  })
+})
+
+describe("production for any farm", () => {
+  it("moves stock only by the change in good quantity", () => {
+    expect(productionStockDelta(null, { made: 40, wasted: 2 })).toBe(38)
+    expect(productionStockDelta({ made: 40, wasted: 2 }, { made: 45, wasted: 2 })).toBe(5)
+    expect(productionStockDelta({ made: 40, wasted: 2 }, { made: 40, wasted: 5 })).toBe(-3)
+    expect(productionStockDelta({ made: 10, wasted: 0 }, { made: 0, wasted: 0 })).toBe(-10)
+  })
+
+  it("checks entries and totals per product", () => {
+    expect(checkProduction({ made: 18.5, wasted: 0.5 })).toBeNull()
+    expect(checkProduction({ made: 5, wasted: 6 })).toBe("wasted_more_than_made")
+    expect(checkProduction({ made: -1, wasted: 0 })).toBe("record_invalid")
+    expect(
+      productionTotals([
+        { productId: "milk", made: 18.5, wasted: 0.5 },
+        { productId: "oil", made: 40, wasted: 2 },
+        { productId: "milk", made: 19, wasted: 0 },
+      ])
+    ).toEqual([
+      { productId: "oil", made: 40, wasted: 2, days: 1 },
+      { productId: "milk", made: 37.5, wasted: 0.5, days: 2 },
+    ])
+  })
+
+  it("shows poultry figures only to farms with poultry", () => {
+    expect(keepsPoultry(["oil", "pickles"], false)).toBe(false)
+    expect(keepsPoultry(["milk", "egg"], false)).toBe(true)
+    expect(keepsPoultry([null], true)).toBe(true)
   })
 })

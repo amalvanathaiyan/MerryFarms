@@ -1,9 +1,11 @@
 /**
- * Farm records: daily flock figures and expenses, and what they add up to over a period
- * (production, losses, feed, costs and profit). Pure; money in paise, dates IST.
+ * Farm records for any kind of farm: what was made or collected each day per product,
+ * flock figures for poultry, expenses, and what they add up to (production, costs, profit).
+ * Pure; money in paise, dates IST.
  */
 
-export const EXPENSE_KINDS = ["feed", "medicine", "chicks", "labour", "transport", "electricity", "packing", "other"] as const
+/** "chicks" covers any animals bought (chicks, calves, goats). */
+export const EXPENSE_KINDS = ["raw_materials", "feed", "seeds", "medicine", "chicks", "labour", "transport", "electricity", "packing", "rent", "repairs", "other"] as const
 export type ExpenseKind = (typeof EXPENSE_KINDS)[number]
 
 export interface DayRecord {
@@ -96,3 +98,42 @@ export function checkDayRecord(r: Omit<DayRecord, "date">): string | null {
   if (r.eggsBroken != null && r.eggsCollected != null && r.eggsBroken > r.eggsCollected) return "broken_more_than_collected"
   return null
 }
+
+// ── Production per product (any farm) ─────────────────────────────────────────
+
+export interface ProductionRow {
+  productId: string
+  made: number
+  wasted: number
+}
+
+/** Good quantity a day's entry adds to stock. */
+export const goodQty = (r: { made: number; wasted: number } | null | undefined) => (r ? Math.max(0, r.made - r.wasted) : 0)
+
+/** How stock moves when a day's entry is saved: only the difference from what was saved before. */
+export function productionStockDelta(before: { made: number; wasted: number } | null, after: { made: number; wasted: number }): number {
+  return goodQty(after) - goodQty(before)
+}
+
+export function checkProduction(r: { made: number; wasted: number }): string | null {
+  if (!Number.isFinite(r.made) || !Number.isFinite(r.wasted) || r.made < 0 || r.wasted < 0 || r.made > 10_000_000) return "record_invalid"
+  if (r.wasted > r.made) return "wasted_more_than_made"
+  return null
+}
+
+/** Totals per product over a period, biggest first. */
+export function productionTotals(rows: ProductionRow[]): { productId: string; made: number; wasted: number; days: number }[] {
+  const by = new Map<string, { productId: string; made: number; wasted: number; days: number }>()
+  for (const r of rows) {
+    const t = by.get(r.productId) ?? { productId: r.productId, made: 0, wasted: 0, days: 0 }
+    t.made += r.made
+    t.wasted += r.wasted
+    t.days += 1
+    by.set(r.productId, t)
+  }
+  const round = (n: number) => Math.round(n * 100) / 100
+  return [...by.values()].map((t) => ({ ...t, made: round(t.made), wasted: round(t.wasted) })).sort((a, b) => b.made - a.made)
+}
+
+/** Poultry figures matter for farms with eggs or birds on their categories (or old flock records). */
+export const keepsPoultry = (categoryKinds: (string | null)[], hasFlockRecords: boolean) => hasFlockRecords || categoryKinds.some((k) => k === "egg" || k === "chicken")

@@ -22,7 +22,7 @@ export default async function CataloguePage() {
         canEdit={staff.roles.includes("owner")}
         tracksStock={featuresOf(tenant).stockTracking}
         today={today}
-        categories={categories.map(({ id, nameTa, nameEn }) => ({ id, nameTa, nameEn }))}
+        categories={categories.map(({ id, nameTa, nameEn, kind }) => ({ id, nameTa, nameEn, kind }))}
         products={products.map((p) => ({
           id: p.id,
           categoryId: p.categoryId,

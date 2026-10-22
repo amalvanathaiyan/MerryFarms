@@ -133,6 +133,7 @@ CREATE TABLE "categories" (
     "nameEn" TEXT NOT NULL,
     "sortOrder" INTEGER NOT NULL DEFAULT 0,
     "showOnWhatsApp" BOOLEAN NOT NULL DEFAULT true,
+    "kind" TEXT,
     "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "categories_pkey" PRIMARY KEY ("id")
@@ -504,6 +505,20 @@ CREATE TABLE "expenses" (
     CONSTRAINT "expenses_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "production_entries" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "productId" TEXT NOT NULL,
+    "made" DOUBLE PRECISION NOT NULL,
+    "wasted" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "byStaffId" TEXT,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "production_entries_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -614,6 +629,9 @@ CREATE UNIQUE INDEX "daily_records_tenantId_date_key" ON "daily_records"("tenant
 
 -- CreateIndex
 CREATE INDEX "expenses_tenantId_date_idx" ON "expenses"("tenantId", "date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "production_entries_tenantId_date_productId_key" ON "production_entries"("tenantId", "date", "productId");
 
 -- AddForeignKey
 ALTER TABLE "tenant_settings" ADD CONSTRAINT "tenant_settings_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;

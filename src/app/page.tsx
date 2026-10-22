@@ -8,7 +8,7 @@ import { openSlotOptions } from "@/server/orders"
 import { Shop, type ShopData } from "@/components/shop/shop"
 import { featuresOf } from "@/lib/features"
 import { getSessionCustomer } from "@/lib/customer-session"
-import { artKind } from "@/domain/product-art"
+import { artFor } from "@/domain/product-art"
 import { otpOn } from "@/server/otp"
 import { SignInGate } from "@/components/shop/sign-in-gate"
 import { currentPrice, offerActive, percentOff } from "@/domain/offers"
@@ -109,7 +109,10 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       offerEnds: offerActive(p, istDate(new Date())) && p.offerEndsOn ? dayLabel(p.offerEndsOn, locale, labels) : null,
       stockQty: p.stockQty,
       imageUrl: p.imageUrl,
-      art: artKind(p.nameEn, p.nameTa, ...categories.filter((c) => c.id === p.categoryId).flatMap((c) => [c.nameEn, c.nameTa])),
+      art: (() => {
+        const c = categories.find((x) => x.id === p.categoryId)
+        return artFor(c?.kind, p.nameEn, p.nameTa, c?.nameEn, c?.nameTa)
+      })(),
     })),
     slots: options.map((o) => ({
       key: o.key,
