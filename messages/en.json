@@ -50,10 +50,8 @@
     "placedTitle": "Order {code} received",
     "placedCall": "{farm} will call you shortly to confirm it.",
     "placedConfirmed": "Your order is confirmed.",
-    "placedWhatsApp": "Send to the farm on WhatsApp",
     "orderMore": "Order more",
     "callFarm": "Call the farm",
-    "waOrderText": "Hello! My order {code}:\n{items}\nTotal {total}\n{name}",
     "orderingOff": "To order, call the farm or send them a WhatsApp message.",
     "whatsappFarm": "Order on WhatsApp",
     "area": {
@@ -71,7 +69,9 @@
     },
     "myOrders": "My orders",
     "rememberedHere": "This phone will remember you; next time your details are filled in.",
-    "farmWillSendLink": "This number is already with us. The farm will send you your personal link."
+    "farmWillSendLink": "This number is already with us. The farm will send you your personal link.",
+    "trackOrder": "Track this order",
+    "messageFarm": "Message the farm"
   },
   "farm": {
     "nav": {
@@ -368,6 +368,10 @@
       "otpLogin": {
         "title": "Sign in with a code",
         "hint": "Customers enter their mobile number and a one-time code (WhatsApp or SMS) before ordering. About ₹0.12–0.25 per code; needs a code sender set up for the platform."
+      },
+      "whatsappAlerts": {
+        "title": "WhatsApp alert for new orders",
+        "hint": "Each new web order is sent to the farm's WhatsApp number automatically. About ₹0.12 per alert; works once FarmForYou's WhatsApp Business account is set up."
       }
     },
     "orderForm": {

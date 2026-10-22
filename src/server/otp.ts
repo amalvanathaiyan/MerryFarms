@@ -4,12 +4,13 @@ import { prisma } from "@/lib/prisma"
 import { tenantDb } from "@/lib/tenant-db"
 import { featuresOf } from "@/lib/features"
 import type { Tenant } from "@/lib/tenant"
+import { sendTemplate } from "./whatsapp-cloud"
 import { canSend, checkCode, CODE_TTL_MS, hashCode, newCode, type CheckResult } from "@/domain/otp"
 
 /**
  * Who delivers sign-in codes. Set once for the whole platform:
- *   OTP_PROVIDER=whatsapp  WhatsApp Cloud API "authentication" template (WHATSAPP_OTP_TOKEN,
- *                          WHATSAPP_OTP_PHONE_NUMBER_ID, WHATSAPP_OTP_TEMPLATE)
+ *   OTP_PROVIDER=whatsapp  WhatsApp Cloud API "authentication" template (see whatsapp-cloud.ts;
+ *                          template name in WHATSAPP_OTP_TEMPLATE)
  *   OTP_PROVIDER=msg91     SMS via MSG91, DLT-approved template (MSG91_AUTH_KEY, MSG91_OTP_TEMPLATE_ID)
  * With no provider, the local demo and dev server show the code on screen instead; a live
  * site without one keeps the older sign-in (personal links), so nothing breaks.
@@ -39,25 +40,7 @@ type Send = (phone: string, code: string, lang: "ta" | "en") => Promise<void>
 
 const senders: Record<Exclude<Provider, "screen">, Send> = {
   async whatsapp(phone, code, lang) {
-    const id = process.env.WHATSAPP_OTP_PHONE_NUMBER_ID
-    const res = await fetch(`https://graph.facebook.com/v21.0/${id}/messages`, {
-      method: "POST",
-      headers: { authorization: `Bearer ${process.env.WHATSAPP_OTP_TOKEN}`, "content-type": "application/json" },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: phone.replace(/^\+/, ""),
-        type: "template",
-        template: {
-          name: process.env.WHATSAPP_OTP_TEMPLATE ?? "sign_in_code",
-          language: { code: lang === "ta" ? "ta" : "en" },
-          components: [
-            { type: "body", parameters: [{ type: "text", text: code }] },
-            { type: "button", sub_type: "url", index: "0", parameters: [{ type: "text", text: code }] },
-          ],
-        },
-      }),
-    })
-    if (!res.ok) throw new Error(`whatsapp ${res.status}`)
+    await sendTemplate(phone, { name: process.env.WHATSAPP_OTP_TEMPLATE ?? "sign_in_code", lang, body: [code], urlButton: code })
   },
   async msg91(phone, code) {
     const url = new URL("https://control.msg91.com/api/v5/otp")

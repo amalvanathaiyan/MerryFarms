@@ -6,6 +6,9 @@ import { tenantDb } from "@/lib/tenant-db"
 import { customerOrderNote, type Note } from "@/domain/notifications"
 import { orderCode } from "@/domain/orders"
 import { dayLabel } from "@/lib/i18n-helpers"
+import { formatRupees } from "@/domain/money"
+import type { Tenant } from "@/lib/tenant"
+import { cloudConfigured, sendTemplate } from "./whatsapp-cloud"
 
 export type { Note }
 
@@ -121,5 +124,22 @@ export async function saveSubscription(tenantId: string, owner: { customerId: st
     where: { tenantId_endpoint: { tenantId, endpoint: sub.endpoint } },
     update: data,
     create: { tenantId, ...data },
+  })
+}
+
+/**
+ * New web order: a WhatsApp message to the farm's own number, sent from FarmForYou's
+ * WhatsApp Business number. Does nothing until that account is set up.
+ */
+export async function alertFarmOnWhatsApp(tenant: Tenant, o: { code: string; customerName: string; totalPaise: number; items: string; needsCall: boolean }): Promise<void> {
+  await quietly(async () => {
+    if (!cloudConfigured() || !featuresOf(tenant).whatsappAlerts) return
+    const lang = tenant.defaultLanguage === "en" ? "en" : "ta"
+    const call = o.needsCall ? (lang === "ta" ? " · அழைக்க வேண்டும்" : " · call to confirm") : ""
+    await sendTemplate(tenant.whatsappNumber || tenant.phone, {
+      name: process.env.WHATSAPP_ALERT_TEMPLATE ?? "new_order_alert",
+      lang,
+      body: [o.code, o.customerName, `${formatRupees(o.totalPaise)}${call}`, o.items.slice(0, 500)],
+    })
   })
 }

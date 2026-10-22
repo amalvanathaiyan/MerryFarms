@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
-import { BadgeCheck, Minus, Phone, Plus, ShoppingBasket, X } from "lucide-react"
+import { BadgeCheck, MessageCircle, Minus, PackageSearch, Phone, Plus, ShoppingBasket, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { SignInFlow } from "@/components/shop/sign-in-flow"
 import { formatIndianMobile } from "@/domain/phone"
@@ -38,6 +38,8 @@ export interface ShopData {
     push: boolean
     /** Customers sign in with a one-time code to order. */
     otp: boolean
+    /** In-app messages to the farm are on. */
+    messages: boolean
   }
   me: { name: string; phone: string; address: { line: string; landmark: string; pincode: string; lat: number | null; lng: number | null } | null } | null
   initialCart: Record<string, number> | null
@@ -155,7 +157,8 @@ export function Shop({ data }: { data: ShopData }) {
   )
 
   if (view === "done" && placed) {
-    const waText = t("waOrderText", { code: placed.code, items: placed.lines, total: formatRupees(placed.totalPaise), name: form.name })
+    // The order is already with the farm (saved, and on staff phones); nothing to forward.
+    const tracked = placed.account === "connected"
     return (
       <div className="mx-auto min-h-dvh max-w-md">
         {header}
@@ -167,21 +170,23 @@ export function Shop({ data }: { data: ShopData }) {
             {"\n"}
             {t("toPay")}: {formatRupees(placed.totalPaise)}
           </pre>
-          {placed.account === "connected" && (
-            <p className="rounded-xl bg-accent p-3 text-sm">
-              {t("rememberedHere")}{" "}
-              <Link href="/my" className="font-semibold underline underline-offset-4">
-                {t("myOrders")} →
-              </Link>
-            </p>
-          )}
-          {placed.account === "connected" && data.farm.push && <EnablePush who="customer" />}
+          {tracked && !data.farm.otp && <p className="rounded-xl bg-accent p-3 text-sm">{t("rememberedHere")}</p>}
           {placed.account === "known" && <p className="rounded-xl bg-accent p-3 text-sm">{t("farmWillSendLink")}</p>}
-          <Button asChild size="lg" variant="outline" className="h-12 text-base">
-            <a href={waMeLink(data.farm.whatsappNumber, waText)} target="_blank" rel="noreferrer">
-              {t("placedWhatsApp")}
-            </a>
-          </Button>
+          {tracked && (
+            <Button asChild size="lg" className="h-12 text-base">
+              <Link href="/my">
+                <PackageSearch /> {t("trackOrder")}
+              </Link>
+            </Button>
+          )}
+          {tracked && data.farm.messages && (
+            <Button asChild size="lg" variant="outline" className="h-12 text-base">
+              <Link href="/my/messages">
+                <MessageCircle /> {t("messageFarm")}
+              </Link>
+            </Button>
+          )}
+          {tracked && data.farm.push && <EnablePush who="customer" />}
           <Button variant="outline" size="lg" className="h-12 text-base" onClick={() => setView("shop")}>
             {t("orderMore")}
           </Button>

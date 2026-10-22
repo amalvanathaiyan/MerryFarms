@@ -764,3 +764,43 @@ describe("sign-in codes", () => {
     expect(addresses.map((x) => x.line)).toEqual(["4, Temple Street"])
   })
 })
+
+describe("WhatsApp alert to the farm for new orders", () => {
+  let notify: typeof import("./notify")
+  let cloud: typeof import("./whatsapp-cloud")
+  const sent: { to: string; name: string; lang: string; body: string[] }[] = []
+  const order = { code: "MF-2001", customerName: "Priya", totalPaise: 19_800, items: "1 × முட்டை (12)", needsCall: true }
+  const farm = () => prisma.tenant.findUniqueOrThrow({ where: { id: merry.id } })
+  beforeAll(async () => {
+    notify = await import("./notify")
+    cloud = await import("./whatsapp-cloud")
+    cloud.setWhatsAppSenderForTests(async (to, t) => {
+      sent.push({ to, ...t })
+    })
+  })
+
+  it("does nothing until the platform's WhatsApp account is set up", async () => {
+    sent.length = 0
+    await notify.alertFarmOnWhatsApp((await farm()) as never, order)
+    expect(sent).toEqual([])
+  })
+
+  it("sends the order to the farm's WhatsApp number in Tamil, unless switched off", async () => {
+    process.env.WHATSAPP_API_TOKEN = "t"
+    process.env.WHATSAPP_PHONE_NUMBER_ID = "1"
+    try {
+      sent.length = 0
+      await notify.alertFarmOnWhatsApp((await farm()) as never, order)
+      expect(sent).toEqual([{ to: "+919000020001", name: "new_order_alert", lang: "ta", body: ["MF-2001", "Priya", "₹198 · அழைக்க வேண்டும்", "1 × முட்டை (12)"] }])
+
+      await prisma.tenant.update({ where: { id: merry.id }, data: { features: { whatsappAlerts: false } } })
+      sent.length = 0
+      await notify.alertFarmOnWhatsApp((await farm()) as never, order)
+      expect(sent).toEqual([])
+    } finally {
+      await prisma.tenant.update({ where: { id: merry.id }, data: { features: {} } })
+      delete process.env.WHATSAPP_API_TOKEN
+      delete process.env.WHATSAPP_PHONE_NUMBER_ID
+    }
+  })
+})

@@ -68,6 +68,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       accounts: features.customerAccounts,
       push: features.pushNotifications,
       otp: otpOn(tenant),
+      messages: features.messages,
     },
     me: me
       ? {
