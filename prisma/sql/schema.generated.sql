@@ -444,6 +444,20 @@ CREATE TABLE "product_images" (
     CONSTRAINT "product_images_pkey" PRIMARY KEY ("productId")
 );
 
+-- CreateTable
+CREATE TABLE "otp_codes" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "codeHash" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "attempts" INTEGER NOT NULL DEFAULT 0,
+    "usedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "otp_codes_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -542,6 +556,9 @@ CREATE UNIQUE INDEX "push_subscriptions_tenantId_endpoint_key" ON "push_subscrip
 
 -- CreateIndex
 CREATE INDEX "product_images_tenantId_idx" ON "product_images"("tenantId");
+
+-- CreateIndex
+CREATE INDEX "otp_codes_tenantId_phone_createdAt_idx" ON "otp_codes"("tenantId", "phone", "createdAt");
 
 -- AddForeignKey
 ALTER TABLE "tenant_settings" ADD CONSTRAINT "tenant_settings_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -711,3 +711,56 @@ describe("phone notifications", () => {
     await prisma.tenant.update({ where: { id: merry.id }, data: { features: {} } })
   })
 })
+
+describe("sign-in codes", () => {
+  let otp: typeof import("./otp")
+  const phone = "+919000060001"
+  const t0 = new Date("2026-10-22T10:00:00Z")
+  const at = (s: number) => new Date(t0.getTime() + s * 1000)
+  beforeAll(async () => {
+    otp = await import("./otp")
+  })
+
+  it("sends a code, accepts it once, and limits resends", async () => {
+    const r = await otp.requestCode(merry as never, phone, "ta", t0)
+    expect(r.ok && r.demoCode).toMatch(/^\d{6}$/)
+    const code = (r as { demoCode: string }).demoCode
+    expect(await otp.requestCode(merry as never, phone, "ta", at(10))).toEqual({ ok: false, error: "otp_wait", seconds: 20 })
+    expect(await otp.verifyCode(merry.id, phone, code, at(20))).toBe("ok")
+    expect(await otp.verifyCode(merry.id, phone, code, at(21))).toBe("no_code")
+  })
+
+  it("locks a code after 5 wrong tries, and a code never works on another farm", async () => {
+    const r = await otp.requestCode(merry as never, phone, "ta", at(100))
+    const code = (r as { demoCode: string }).demoCode
+    const wrong = code === "000000" ? "111111" : "000000"
+    expect(await otp.verifyCode(other.id, phone, code, at(101))).toBe("no_code")
+    for (let i = 0; i < 5; i++) expect(await otp.verifyCode(merry.id, phone, wrong, at(102))).toBe("wrong")
+    expect(await otp.verifyCode(merry.id, phone, code, at(103))).toBe("too_many_tries")
+  })
+
+  it("expires codes after 5 minutes", async () => {
+    const r = await otp.requestCode(merry as never, "+919000060002", "en", t0)
+    expect(await otp.verifyCode(merry.id, "+919000060002", (r as { demoCode: string }).demoCode, at(301))).toBe("expired")
+  })
+
+  it("stores only a hash, and the 'verified number' note is signed per farm and expires", async () => {
+    const rows = await tenantDb(merry.id).otpCode.findMany({ where: { phone } })
+    expect(rows.every((x) => /^[0-9a-f]{64}$/.test(x.codeHash))).toBe(true)
+    const note = otp.signVerified(merry.id, phone, t0)
+    expect(otp.readVerified(merry.id, note, at(60))).toBe(phone)
+    expect(otp.readVerified(other.id, note, at(60))).toBeNull()
+    expect(otp.readVerified(merry.id, note, at(21 * 60))).toBeNull()
+    expect(otp.readVerified(merry.id, note.replace(/.$/, (c) => (c === "A" ? "B" : "A")), at(60))).toBeNull()
+  })
+
+  it("registers a verified new number once, with its address", async () => {
+    const customers = await import("./customers")
+    const a = await customers.registerVerified(merry as never, { phone: "+919000060003", name: "Kavya", language: "ta", address: { line: "4, Temple Street", pincode: "600048" } })
+    const b = await customers.registerVerified(merry as never, { phone: "+919000060003", name: "Kavya again", language: "ta" })
+    expect(b.customerId).toBe(a.customerId)
+    expect(b.token).toBe(a.token)
+    const addresses = await tenantDb(merry.id).address.findMany({ where: { customerId: a.customerId } })
+    expect(addresses.map((x) => x.line)).toEqual(["4, Temple Street"])
+  })
+})

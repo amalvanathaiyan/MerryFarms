@@ -364,6 +364,10 @@
       "pushNotifications": {
         "title": "Phone notifications",
         "hint": "Staff hear about new orders and messages; customers hear about replies and order updates. Only on phones that allow it."
+      },
+      "otpLogin": {
+        "title": "Sign in with a code",
+        "hint": "Customers enter their mobile number and a one-time code (WhatsApp or SMS) before ordering. About ₹0.12–0.25 per code; needs a code sender set up for the platform."
       }
     },
     "orderForm": {
@@ -621,7 +625,17 @@
     "message_too_long": "The message is too long (up to 1000 characters).",
     "message_rate_limited": "Too many messages this hour. Please wait a little or call the farm.",
     "photo_type": "That photo couldn't be used. Please choose a JPG or PNG photo.",
-    "photo_too_big": "That photo is too large. Please choose another."
+    "photo_too_big": "That photo is too large. Please choose another.",
+    "otp_wait": "Please wait {seconds} seconds before asking for another code.",
+    "otp_too_many": "Too many codes asked for this number. Please try again later, or call the farm.",
+    "otp_unavailable": "Sign-in by code isn't available right now. Please call the farm.",
+    "otp_send_failed": "We couldn't send the code. Check the number and try again.",
+    "otp_wrong": "That code isn't right. Please check and try again.",
+    "otp_expired": "That code has expired. Please ask for a new one.",
+    "otp_too_many_tries": "Too many wrong tries. Please ask for a new code.",
+    "otp_no_code": "Please ask for a new code.",
+    "otp_verify_again": "Please verify your number again.",
+    "sign_in_needed": "Please verify your mobile number first."
   },
   "my": {
     "connectTitle": "Connect with the farm",
@@ -677,5 +691,26 @@
     "iosStep1": "Tap the Share button",
     "iosStep2": "Choose \"Add to Home Screen\"",
     "iosStep3": "Open the app from your Home Screen and tap this button again"
+  },
+  "signIn": {
+    "welcome": "Welcome!",
+    "welcomeHint": "Enter your mobile number to order from {farm}. We'll send a code; no password to remember.",
+    "phoneHint": "We'll send a 6-digit code to this number by WhatsApp or SMS.",
+    "sendCode": "Send code",
+    "codeSent": "We sent a code to {phone}.",
+    "changeNumber": "Change number",
+    "code": "6-digit code",
+    "verify": "Continue",
+    "resend": "Send the code again",
+    "resendIn": "Send again in {seconds}s",
+    "demoCode": "Demo only — your code:",
+    "registerTitle": "First time here?",
+    "registerHint": "Tell us your name. Add your address now, or when you order.",
+    "optional": "optional",
+    "pincode": "PIN code",
+    "register": "Save and continue",
+    "justBrowse": "Just see products and prices",
+    "verifyToOrder": "Verify your mobile number to order",
+    "verified": "Verified"
   }
 }

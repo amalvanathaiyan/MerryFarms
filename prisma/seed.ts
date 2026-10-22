@@ -36,7 +36,7 @@ const SLOTS = [
 
 async function main() {
   const slug = process.env.DEFAULT_TENANT_SLUG ?? "merryfarms"
-  const phone = process.env.SEED_FARM_PHONE ?? "+919000020001"
+  const phone = process.env.SEED_FARM_PHONE ?? "+919626043372"
 
   const tenant = await prisma.tenant.upsert({
     where: { slug },

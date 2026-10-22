@@ -3,7 +3,9 @@
 import { useMemo, useState, useTransition } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
-import { Minus, Phone, Plus, ShoppingBasket, X } from "lucide-react"
+import { BadgeCheck, Minus, Phone, Plus, ShoppingBasket, X } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { SignInFlow } from "@/components/shop/sign-in-flow"
 import { formatIndianMobile } from "@/domain/phone"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -34,6 +36,8 @@ export interface ShopData {
     accounts: boolean
     /** Phone notifications are on for this farm. */
     push: boolean
+    /** Customers sign in with a one-time code to order. */
+    otp: boolean
   }
   me: { name: string; phone: string; address: { line: string; landmark: string; pincode: string; lat: number | null; lng: number | null } | null } | null
   initialCart: Record<string, number> | null
@@ -58,6 +62,8 @@ type View = "shop" | "cart" | "done"
 
 export function Shop({ data }: { data: ShopData }) {
   const t = useTranslations("shop")
+  const ti = useTranslations("signIn")
+  const router = useRouter()
   const te = useTranslations("errors")
   const locale = useLocale()
   const [view, setView] = useState<View>(data.initialCart && Object.keys(data.initialCart).length ? "cart" : "shop")
@@ -72,6 +78,19 @@ export function Shop({ data }: { data: ShopData }) {
     slotKey: data.slots.find((s) => !s.full)?.key ?? "",
     paymentMethod: "upi_on_delivery" as "upi_on_delivery" | "cash_on_delivery",
   })
+  // Signing in on the cart page refreshes `data.me`: fill the form from it once.
+  const [filledFor, setFilledFor] = useState(data.me?.phone ?? null)
+  if (data.me && filledFor !== data.me.phone) {
+    setFilledFor(data.me.phone)
+    setForm((f) => ({
+      ...f,
+      name: data.me!.name,
+      phone: formatIndianMobile(data.me!.phone),
+      addressLine: f.addressLine || data.me!.address?.line || "",
+      landmark: f.landmark || data.me!.address?.landmark || "",
+      pincode: f.pincode || data.me!.address?.pincode || "",
+    }))
+  }
   const [error, setError] = useState<string | null>(null)
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
     data.me?.address?.lat != null && data.me.address.lng != null ? { lat: data.me.address.lat, lng: data.me.address.lng } : null
@@ -172,36 +191,66 @@ export function Shop({ data }: { data: ShopData }) {
   }
 
   if (view === "cart") {
+    const cartLines = (
+      <ul className="divide-y rounded-xl border bg-card">
+        {lines.map(({ product, qty }) => (
+          <li key={product.id} className="flex items-center justify-between gap-3 p-3">
+            <ProductPicture src={product.imageUrl} kind={product.art} alt="" className="size-12" />
+            <div className="min-w-0 flex-1">
+              <div className="font-medium">{product.name}</div>
+              <div className="text-sm text-muted-foreground">
+                {product.pack} · {formatRupees(product.pricePaise * qty)}
+              </div>
+            </div>
+            <Stepper qty={qty} max={maxQty(product)} onChange={(d) => change(product.id, d)} labels={{ add: t("addOne"), remove: t("removeOne") }} />
+          </li>
+        ))}
+      </ul>
+    )
+    const cartHeader = (
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/95 px-4 py-3 backdrop-blur">
+        <h1 className="text-xl font-semibold">{t("cartTitle")}</h1>
+        <Button variant="ghost" size="icon" aria-label={t("orderMore")} onClick={() => setView("shop")}>
+          <X />
+        </Button>
+      </header>
+    )
+    // Code sign-in: the number is verified before the order form appears; the cart is kept.
+    if (data.farm.otp && !data.me) {
+      return (
+        <div className="mx-auto min-h-dvh max-w-md pb-10">
+          {cartHeader}
+          <div className="flex flex-col gap-5 px-4 pt-4">
+            {cartLines}
+            <section className="flex flex-col gap-3 rounded-2xl border bg-card p-4">
+              <h2 className="text-lg font-semibold">{ti("verifyToOrder")}</h2>
+              <SignInFlow onDone={() => router.refresh()} />
+            </section>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="mx-auto min-h-dvh max-w-md pb-10">
-        <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/95 px-4 py-3 backdrop-blur">
-          <h1 className="text-xl font-semibold">{t("cartTitle")}</h1>
-          <Button variant="ghost" size="icon" aria-label={t("orderMore")} onClick={() => setView("shop")}>
-            <X />
-          </Button>
-        </header>
+        {cartHeader}
         <form onSubmit={submit} className="flex flex-col gap-5 px-4 pt-4">
-          <ul className="divide-y rounded-xl border bg-card">
-            {lines.map(({ product, qty }) => (
-              <li key={product.id} className="flex items-center justify-between gap-3 p-3">
-                <ProductPicture src={product.imageUrl} kind={product.art} alt="" className="size-12" />
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium">{product.name}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {product.pack} · {formatRupees(product.pricePaise * qty)}
-                  </div>
-                </div>
-                <Stepper qty={qty} max={maxQty(product)} onChange={(d) => change(product.id, d)} labels={{ add: t("addOne"), remove: t("removeOne") }} />
-              </li>
-            ))}
-          </ul>
+          {cartLines}
 
           <Field label={t("name")} id="name">
             <Input id="name" required autoComplete="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="h-12" />
           </Field>
-          <Field label={t("phone")} id="phone" hint={t("phoneHint")}>
-            <Input id="phone" required type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-12" />
-          </Field>
+          {data.farm.otp && data.me ? (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-sm font-semibold">{t("phone")}</span>
+              <p className="flex items-center gap-2 text-lg tabular-nums">
+                {formatIndianMobile(data.me.phone)} <BadgeCheck className="size-5 text-primary" aria-label={ti("verified")} />
+              </p>
+            </div>
+          ) : (
+            <Field label={t("phone")} id="phone" hint={t("phoneHint")}>
+              <Input id="phone" required type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-12" />
+            </Field>
+          )}
           <Field label={t("address")} id="address">
             <textarea
               id="address"

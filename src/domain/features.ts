@@ -23,6 +23,7 @@ export type FeatureKey =
   | "customerAccounts"
   | "messages"
   | "pushNotifications"
+  | "otpLogin"
   | "whatsappLite"
   | "upiPayments"
   | "subscriptions"
@@ -52,6 +53,7 @@ export const FEATURES: Record<FeatureKey, FeatureDef> = {
   customerAccounts: { defaultOn: true, minPlan: "free", requires: [], available: true },
   messages: { defaultOn: true, minPlan: "free", requires: ["customerAccounts"], available: true },
   pushNotifications: { defaultOn: true, minPlan: "free", requires: [], available: true },
+  otpLogin: { defaultOn: true, minPlan: "free", requires: ["customerAccounts"], available: true },
   whatsappLite: { defaultOn: true, minPlan: "free", requires: [], available: true },
   upiPayments: { defaultOn: true, minPlan: "free", requires: [], available: true },
   // Off by default: many small farms can't promise eggs every week.

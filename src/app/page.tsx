@@ -9,12 +9,14 @@ import { Shop, type ShopData } from "@/components/shop/shop"
 import { featuresOf } from "@/lib/features"
 import { getSessionCustomer } from "@/lib/customer-session"
 import { artKind } from "@/domain/product-art"
+import { otpOn } from "@/server/otp"
+import { SignInGate } from "@/components/shop/sign-in-gate"
 
 export const dynamic = "force-dynamic"
 
 /** The farm's customer shop: Tamil first, works without login. */
-export default async function ShopPage({ searchParams }: { searchParams: Promise<{ reorder?: string }> }) {
-  const { reorder } = await searchParams
+export default async function ShopPage({ searchParams }: { searchParams: Promise<{ reorder?: string; browse?: string }> }) {
+  const { reorder, browse } = await searchParams
   const tenant = await getTenant()
   if (!tenant) {
     return (
@@ -23,6 +25,11 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         <p className="mt-2 text-muted-foreground">No farm is set up at this address.</p>
       </main>
     )
+  }
+
+  // Code sign-in: ask for the mobile number first; "just look" is one tap away.
+  if (otpOn(tenant) && browse === undefined && !reorder && !(await getSessionCustomer())) {
+    return <SignInGate tenant={tenant} />
   }
 
   const locale = await getLocale()
@@ -60,6 +67,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       radiusKm: features.deliveryArea ? tenant.deliveryRadiusKm : null,
       accounts: features.customerAccounts,
       push: features.pushNotifications,
+      otp: otpOn(tenant),
     },
     me: me
       ? {
