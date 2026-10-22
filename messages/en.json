@@ -711,6 +711,7 @@
     "register": "Save and continue",
     "justBrowse": "Just see products and prices",
     "verifyToOrder": "Verify your mobile number to order",
-    "verified": "Verified"
+    "verified": "Verified",
+    "myHint": "Enter your mobile number to see your orders, bills and messages. We'll send a code; no password to remember."
   }
 }

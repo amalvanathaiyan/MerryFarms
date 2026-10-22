@@ -33,6 +33,12 @@ const env = {
   NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
 }
 
+// Fresh database client and dev build every run, so a schema change is never served from
+// an old cached build ("Cannot read properties of undefined (reading 'findMany')").
+const runQuiet = (cmd, args) => new Promise((resolve) => spawn(cmd, args, { env, stdio: "ignore", shell: true }).on("exit", resolve))
+await runQuiet("npx", ["prisma", "generate"])
+rmSync(".next/dev", { recursive: true, force: true })
+
 const run = (cmd, args) =>
   new Promise((resolve, reject) => {
     const p = spawn(cmd, args, { env, stdio: "inherit", shell: true })

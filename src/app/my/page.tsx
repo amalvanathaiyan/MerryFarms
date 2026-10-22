@@ -38,6 +38,8 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
   const tc = await getTranslations("common")
   const labels = { today: tc("today"), tomorrow: tc("tomorrow") }
   const me = await getSessionCustomer()
+  const otp = otpOn(tenant)
+  const tsi = await getTranslations("signIn")
   const farmName = pick(locale, tenant.nameTa, tenant.nameEn)
 
   const header = <FarmBanner name={farmName} initials={tenant.invoicePrefix} />
@@ -47,10 +49,10 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
       <div className="mx-auto min-h-dvh max-w-md">
         {header}
         <main className="flex flex-col gap-5 px-4 py-6">
-          <h1 className="text-2xl font-bold">{t("connectTitle")}</h1>
+          <h1 className="text-2xl font-bold">{otp ? tsi("welcome") : t("connectTitle")}</h1>
           {link === "expired" && <p className="rounded-lg bg-yolk p-3 text-sm text-yolk-foreground">{t("linkExpired")}</p>}
-          <p className="text-muted-foreground">{t("connectHint", { farm: farmName })}</p>
-          {otpOn(tenant) ? <SignInFlow /> : <ConnectForm farmPhone={tenant.phone} />}
+          <p className="text-muted-foreground">{otp ? tsi("myHint") : t("connectHint", { farm: farmName })}</p>
+          {otp ? <SignInFlow /> : <ConnectForm farmPhone={tenant.phone} />}
         </main>
       </div>
     )
