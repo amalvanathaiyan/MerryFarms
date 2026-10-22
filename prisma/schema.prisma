@@ -670,3 +670,16 @@ model OtpCode {
   @@index([tenantId, phone, createdAt])
   @@map("otp_codes")
 }
+
+/// A day (or one slot on a day) with no deliveries: festival, family event, rest day.
+model ClosedDay {
+  id        String   @id @default(uuid())
+  tenantId  String
+  date      String // IST "2026-01-15"
+  slotId    String? // null = the whole day
+  note      String? // shown to customers, e.g. "Pongal"
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, date])
+  @@map("closed_days")
+}

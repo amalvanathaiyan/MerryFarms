@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
-import { BadgeCheck, MessageCircle, Minus, PackageSearch, Phone, Plus, ShoppingBasket, X } from "lucide-react"
+import { BadgeCheck, CalendarOff, MessageCircle, Minus, PackageSearch, Phone, Plus, ShoppingBasket, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { SignInFlow } from "@/components/shop/sign-in-flow"
 import { formatIndianMobile } from "@/domain/phone"
@@ -63,6 +63,8 @@ export interface ShopData {
     art: ArtKind
   }[]
   slots: { key: string; label: string; full: boolean; left: number }[]
+  /** Whole days with no deliveries in the coming week, e.g. "Thu, 15 Jan (Pongal)". */
+  closures: string[]
   nextDelivery: { label: string; orderBy: string } | null
 }
 
@@ -368,6 +370,12 @@ export function Shop({ data }: { data: ShopData }) {
           </section>
         ) : (
           <p className="rounded-xl bg-yolk p-4 text-yolk-foreground">{t("noSlots")}</p>
+        )}
+
+        {data.closures.length > 0 && (
+          <p className="flex items-start gap-2 rounded-xl border border-dashed p-3 text-sm">
+            <CalendarOff className="mt-0.5 size-4 shrink-0" /> {t("noDeliveryOn", { days: data.closures.join(", ") })}
+          </p>
         )}
 
         {data.categories.length === 0 && <p className="py-10 text-center text-muted-foreground">{t("noProducts")}</p>}

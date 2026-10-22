@@ -73,7 +73,8 @@
     "trackOrder": "Track this order",
     "messageFarm": "Message the farm",
     "percentOff": "{pct}% off",
-    "offerUntil": "Offer till {day}"
+    "offerUntil": "Offer till {day}",
+    "noDeliveryOn": "No deliveries on {days}."
   },
   "farm": {
     "nav": {
@@ -215,7 +216,18 @@
       "closed": "Closed",
       "summary": "{days} · order {hours} h before · max {max}",
       "everyDay": "Every day",
-      "none": "No slots yet. Customers can't check out until you add one."
+      "none": "No slots yet. Customers can't check out until you add one.",
+      "closedDays": "Closed days",
+      "closedDaysHint": "Festivals, family events or rest days. No deliveries are offered; customers see a notice; plan orders skip the day.",
+      "noClosedDays": "No closed days coming up.",
+      "wholeDay": "Whole day",
+      "alreadyBooked": "{count} orders already booked: call and move them",
+      "reopen": "Open again",
+      "date": "Date",
+      "which": "Which delivery",
+      "closedNote": "Reason shown to customers (optional)",
+      "closedNotePlaceholder": "Pongal",
+      "addClosedDay": "Close this day"
     },
     "invoice": {
       "sendWhatsApp": "Send invoice on WhatsApp",
@@ -616,7 +628,7 @@
     "slot_bad_day": "Some details are missing or wrong. Check and try again.",
     "slot_bad_cutoff": "Cut-off must be between 0 and 168 hours.",
     "slot_bad_capacity": "Max orders must be at least 1.",
-    "slot_not_found": "Slot not found.",
+    "slot_not_found": "That delivery time no longer exists.",
     "use_deliver": "To deliver, choose how the order was paid.",
     "bad_amount": "Enter a valid amount.",
     "customer_not_found": "Customer not found.",
@@ -664,7 +676,8 @@
     "sign_in_needed": "Please verify your mobile number first.",
     "offer_not_lower": "The offer price must be lower than the usual price.",
     "category_not_empty": "Move or delete the products in this category first.",
-    "price_invalid": "That price isn't allowed: it must be at least ₹1 and not above the usual price."
+    "price_invalid": "That price isn't allowed: it must be at least ₹1 and not above the usual price.",
+    "date_past": "Choose today or a later date."
   },
   "my": {
     "connectTitle": "Connect with the farm",

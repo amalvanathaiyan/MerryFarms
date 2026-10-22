@@ -57,7 +57,8 @@ export async function bookedCounts(tenantId: string, now = new Date(), days = 10
 export async function openSlotOptions(tenantId: string, now = new Date(), opts: { forStaff?: boolean } = {}) {
   const db = tenantDb(tenantId)
   const slots = await db.deliverySlot.findMany({ where: { isActive: true } })
-  const options = upcomingSlots(slots, await bookedCounts(tenantId, now), now, opts.forStaff ? { ignoreCutoff: true, daysAhead: 7, wantOpen: 100 } : {})
+  const closed = await db.closedDay.findMany({ where: { date: { gte: istDate(now), lte: addDays(istDate(now), 14) } }, select: { date: true, slotId: true } })
+  const options = upcomingSlots(slots, await bookedCounts(tenantId, now), now, opts.forStaff ? { ignoreCutoff: true, daysAhead: 7, wantOpen: 100, closed } : { closed })
   return options.map((o) => ({ ...o, slot: slots.find((s) => s.id === o.slotId)! }))
 }
 

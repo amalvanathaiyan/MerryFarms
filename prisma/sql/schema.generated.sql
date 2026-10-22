@@ -461,6 +461,18 @@ CREATE TABLE "otp_codes" (
     CONSTRAINT "otp_codes_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "closed_days" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "slotId" TEXT,
+    "note" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "closed_days_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -562,6 +574,9 @@ CREATE INDEX "product_images_tenantId_idx" ON "product_images"("tenantId");
 
 -- CreateIndex
 CREATE INDEX "otp_codes_tenantId_phone_createdAt_idx" ON "otp_codes"("tenantId", "phone", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "closed_days_tenantId_date_idx" ON "closed_days"("tenantId", "date");
 
 -- AddForeignKey
 ALTER TABLE "tenant_settings" ADD CONSTRAINT "tenant_settings_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;

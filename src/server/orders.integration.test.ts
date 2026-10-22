@@ -843,3 +843,28 @@ describe("offer prices and staff discounts", () => {
     expect((await db().orderItem.findFirst({ where: { orderId: o.id } }))!.unitPricePaise).toBe(34_000)
   })
 })
+
+describe("closed days", () => {
+  const db = () => tenantDb(merry.id)
+  afterAll(async () => {
+    await db().closedDay.deleteMany({})
+  })
+
+  it("removes a closed day from the slots customers and staff can book", async () => {
+    const before = await svc.openSlotOptions(merry.id, NOW)
+    expect(before.some((o) => o.date === "2026-10-27")).toBe(true)
+    await db().closedDay.create({ data: { tenantId: merry.id, date: "2026-10-27", slotId: null, note: "Deepavali" } })
+    expect((await svc.openSlotOptions(merry.id, NOW)).some((o) => o.date === "2026-10-27")).toBe(false)
+    expect((await svc.openSlotOptions(merry.id, NOW, { forStaff: true })).some((o) => o.date === "2026-10-27")).toBe(false)
+    await expect(svc.placeOrder(merry, order({ slotKey: "2026-10-27|slot-am" }), NOW)).rejects.toThrow("slot_closed")
+    await expect(
+      svc.placeOrder(merry, order({ channel: "phone", slotKey: "2026-10-27|slot-am", byStaffId: "staff-1", staffOverride: true }), NOW)
+    ).rejects.toThrow("slot_closed")
+  })
+
+  it("can close just one delivery time on a day, and is per farm", async () => {
+    await db().closedDay.create({ data: { tenantId: merry.id, date: "2026-10-26", slotId: "slot-am", note: null } })
+    expect((await svc.openSlotOptions(merry.id, NOW, { forStaff: true })).some((o) => o.key === "2026-10-26|slot-am")).toBe(false)
+    expect((await svc.openSlotOptions(other.id, NOW, { forStaff: true })).some((o) => o.date === "2026-10-26")).toBe(true)
+  })
+})
