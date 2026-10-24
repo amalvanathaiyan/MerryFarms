@@ -962,3 +962,30 @@ describe("download all my data", () => {
     for (const o of otherOrders) expect(text).not.toContain(o.id)
   })
 })
+
+describe("production records for any farm", () => {
+  const db = () => tenantDb(other.id)
+  const stock = async () => (await db().product.findFirst({ where: { id: "p-other" } }))!.stockQty
+
+  it("adds the good quantity to stock, and only the difference when a day is saved again", async () => {
+    const { saveProduction } = await import("./production")
+    await db().product.updateMany({ where: { id: "p-other" }, data: { stockQty: 10 } })
+    await saveProduction(other.id, null, "2026-10-21", [{ productId: "p-other", made: 20, wasted: 2 }], true)
+    expect(await stock()).toBe(28)
+    await saveProduction(other.id, null, "2026-10-21", [{ productId: "p-other", made: 25, wasted: 2 }], true)
+    expect(await stock()).toBe(33)
+    expect(await db().productionEntry.count({ where: { date: "2026-10-21" } })).toBe(1)
+    // Clearing the day takes it back out of stock and removes the entry.
+    await saveProduction(other.id, null, "2026-10-21", [{ productId: "p-other", made: 0, wasted: 0 }], true)
+    expect(await stock()).toBe(10)
+    expect(await db().productionEntry.count({ where: { date: "2026-10-21" } })).toBe(0)
+  })
+
+  it("leaves stock alone for farms that don't track it, and refuses other farms' products", async () => {
+    const { saveProduction } = await import("./production")
+    await saveProduction(other.id, null, "2026-10-20", [{ productId: "p-other", made: 18.5, wasted: 0.5 }], false)
+    expect(await stock()).toBe(10)
+    await expect(saveProduction(other.id, null, "2026-10-20", [{ productId: "p-eggs", made: 5, wasted: 0 }], true)).rejects.toThrow("product_not_found")
+    await expect(saveProduction(other.id, null, "2026-10-20", [{ productId: "p-other", made: 2, wasted: 3 }], true)).rejects.toThrow("wasted_more_than_made")
+  })
+})
