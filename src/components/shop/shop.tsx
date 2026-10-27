@@ -15,7 +15,7 @@ import { deliveryFee } from "@/domain/pricing"
 import { orderCode } from "@/domain/orders"
 import { waMeLink } from "@/domain/whatsapp-lite"
 import { cn } from "@/lib/utils"
-import { AreaCheck, type AreaResult } from "./area-check"
+import { AreaCheck, type AreaResult, type Spot } from "./area-check"
 import { EnablePush } from "@/components/push/enable-push"
 import { ProductPicture } from "@/components/product-picture"
 import type { ArtKind } from "@/domain/product-art"
@@ -43,7 +43,11 @@ export interface ShopData {
     /** In-app messages to the farm are on. */
     messages: boolean
   }
-  me: { name: string; phone: string; address: { line: string; landmark: string; pincode: string; lat: number | null; lng: number | null } | null } | null
+  me: {
+    name: string
+    phone: string
+    address: { line: string; landmark: string; pincode: string; lat: number | null; lng: number | null; locationSource: "gps" | "map" | "link" } | null
+  } | null
   initialCart: Record<string, number> | null
   /** Set when the customer is changing an earlier order: placing this one replaces it. */
   changing: { id: string; code: string; slotKey: string | null } | null
@@ -78,6 +82,7 @@ type View = "shop" | "cart" | "done"
 export function Shop({ data }: { data: ShopData }) {
   const t = useTranslations("shop")
   const ti = useTranslations("signIn")
+  const ta = useTranslations("shop.area")
   const router = useRouter()
   const te = useTranslations("errors")
   const locale = useLocale()
@@ -107,9 +112,12 @@ export function Shop({ data }: { data: ShopData }) {
     }))
   }
   const [error, setError] = useState<string | null>(null)
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
-    data.me?.address?.lat != null && data.me.address.lng != null ? { lat: data.me.address.lat, lng: data.me.address.lng } : null
+  const [location, setLocation] = useState<Spot>(
+    data.me?.address?.lat != null && data.me.address.lng != null ? { lat: data.me.address.lat, lng: data.me.address.lng, source: data.me.address.locationSource } : null
   )
+  // Delivering to someone else (family in another town): who receives it, and their phone.
+  const [forSomeoneElse, setForSomeoneElse] = useState(false)
+  const [receiver, setReceiver] = useState({ name: "", phone: "" })
   const [area, setArea] = useState<AreaResult | null>(null)
   const [placed, setPlaced] = useState<{ code: string; totalPaise: number; needsCall: boolean; lines: string; account: "connected" | "known" | "off" } | null>(null)
   const [pending, start] = useTransition()
@@ -142,6 +150,9 @@ export function Shop({ data }: { data: ShopData }) {
         note: form.note || undefined,
         lat: location?.lat,
         lng: location?.lng,
+        locationSource: location?.source,
+        receiverName: forSomeoneElse ? receiver.name : undefined,
+        receiverPhone: forSomeoneElse ? receiver.phone : undefined,
         language: locale === "en" ? "en" : "ta",
         items: lines.map((l) => ({ productId: l.product.id, qty: l.qty })),
         replaces: data.changing?.id,
@@ -286,6 +297,25 @@ export function Shop({ data }: { data: ShopData }) {
           <Field label={t("landmark")} id="landmark">
             <Input id="landmark" value={form.landmark} onChange={(e) => setForm({ ...form, landmark: e.target.value })} className="h-12" />
           </Field>
+          <div className="flex flex-col gap-3 rounded-2xl border bg-card p-3">
+            <label className="flex items-start gap-3">
+              <input type="checkbox" checked={forSomeoneElse} onChange={(e) => setForSomeoneElse(e.target.checked)} className="mt-1 size-5 accent-primary" />
+              <span className="flex flex-col">
+                <span className="font-semibold">{ta("forSomeoneElse")}</span>
+                <span className="text-sm text-muted-foreground">{ta("forSomeoneElseHint")}</span>
+              </span>
+            </label>
+            {forSomeoneElse && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label={ta("receiverName")} id="receiver-name">
+                  <Input id="receiver-name" required autoComplete="off" value={receiver.name} onChange={(e) => setReceiver({ ...receiver, name: e.target.value })} className="h-12" />
+                </Field>
+                <Field label={ta("receiverPhone")} id="receiver-phone">
+                  <Input id="receiver-phone" required type="tel" inputMode="tel" autoComplete="off" value={receiver.phone} onChange={(e) => setReceiver({ ...receiver, phone: e.target.value })} className="h-12" />
+                </Field>
+              </div>
+            )}
+          </div>
           <AreaCheck
             pincode={form.pincode}
             onPincode={(pincode) => setForm((f) => ({ ...f, pincode }))}

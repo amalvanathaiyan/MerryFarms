@@ -79,7 +79,16 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       ? {
           name: me.name,
           phone: me.phone,
-          address: latest ? { line: latest.line, landmark: latest.landmark ?? "", pincode: latest.pincode ?? "", lat: latest.lat, lng: latest.lng } : null,
+          address: latest
+            ? {
+                line: latest.line,
+                landmark: latest.landmark ?? "",
+                pincode: latest.pincode ?? "",
+                lat: latest.lat,
+                lng: latest.lng,
+                locationSource: latest.locationSource === "map" || latest.locationSource === "link" ? latest.locationSource : "gps",
+              }
+            : null,
         }
       : null,
     // Only items still on sale, never more than in stock.

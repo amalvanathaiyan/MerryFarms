@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { checkArea, directionsLink, distanceKm, parseLocation, parsePincodes, type DeliveryArea } from "./delivery-area"
+import { checkArea, comparePincodes, directionsLink, distanceKm, isShortMapsLink, parseLocation, parsePincodes, placeLabel, type DeliveryArea } from "./delivery-area"
 
 // Chennai Central and Tambaram railway stations: about 24.7 km apart in a straight line.
 const central = { lat: 13.0827, lng: 80.2757 }
@@ -57,6 +57,19 @@ describe("reading a pasted location", () => {
     expect(parseLocation("https://maps.app.goo.gl/abc123")).toBeNull() // short links hide the coordinates
     expect(parseLocation("95.1, 80.1")).toBeNull()
   })
+  it("understands WhatsApp, OpenStreetMap and Android location shares", () => {
+    expect(parseLocation("https://maps.google.com/maps?q=loc:12.9516+80.1462")).toEqual({ lat: 12.9516, lng: 80.1462 })
+    expect(parseLocation("https://www.openstreetmap.org/#map=17/12.9516/80.1462")).toEqual({ lat: 12.9516, lng: 80.1462 })
+    expect(parseLocation("https://www.openstreetmap.org/?mlat=12.9516&mlon=80.1462")).toEqual({ lat: 12.9516, lng: 80.1462 })
+    expect(parseLocation("geo:12.9516,80.1462?z=17")).toEqual({ lat: 12.9516, lng: 80.1462 })
+  })
+  it("spots short share links that need following, and nothing else", () => {
+    expect(isShortMapsLink("https://maps.app.goo.gl/abc123")).toBe(true)
+    expect(isShortMapsLink("https://goo.gl/maps/abc123")).toBe(true)
+    expect(isShortMapsLink("http://maps.app.goo.gl/abc123")).toBe(false)
+    expect(isShortMapsLink("https://evil.example/maps.app.goo.gl")).toBe(false)
+    expect(isShortMapsLink("not a link")).toBe(false)
+  })
   it("builds a directions link", () => {
     expect(directionsLink(near)).toBe("https://www.google.com/maps/dir/?api=1&destination=12.960000,80.150000")
   })
@@ -65,5 +78,22 @@ describe("reading a pasted location", () => {
 describe("PIN codes", () => {
   it("reads a typed list and flags mistakes", () => {
     expect(parsePincodes("600043, 600042\n600042; 12345 0600001")).toEqual({ valid: ["600042", "600043"], invalid: ["12345", "0600001"] })
+  })
+})
+
+describe("checking the address against the spot", () => {
+  it("compares the PIN typed with the PIN at the spot", () => {
+    expect(comparePincodes("600042", "600042")).toBe("match")
+    expect(comparePincodes("600042", "600 042")).toBe("match")
+    expect(comparePincodes("600042", "600091")).toBe("near") // same sorting district: a border, not a mistake
+    expect(comparePincodes("600042", "641001")).toBe("mismatch") // Chennai address, pin in Coimbatore
+    expect(comparePincodes("600042", undefined)).toBe("unknown")
+    expect(comparePincodes("", "600042")).toBe("unknown")
+  })
+  it("names the place briefly", () => {
+    expect(placeLabel({ suburb: "Velachery", city: "Chennai", state: "Tamil Nadu", postcode: "600042" })).toBe("Velachery, Chennai 600042")
+    expect(placeLabel({ village: "Pallipalayam", county: "Namakkal", postcode: "638006" })).toBe("Pallipalayam, Namakkal 638006")
+    expect(placeLabel({ city: "Erode", town: "Erode" })).toBe("Erode")
+    expect(placeLabel({})).toBe("")
   })
 })

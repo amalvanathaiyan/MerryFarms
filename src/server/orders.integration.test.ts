@@ -989,3 +989,34 @@ describe("production records for any farm", () => {
     await expect(saveProduction(other.id, null, "2026-10-20", [{ productId: "p-other", made: 2, wasted: 3 }], true)).rejects.toThrow("wasted_more_than_made")
   })
 })
+
+describe("delivery spot and receiver", () => {
+  const spotOrder = (over: Partial<import("./orders").PlaceOrderInput> = {}) =>
+    order({ channel: "phone", staffOverride: true, items: [{ productId: "p-other", qty: 1 }], slotKey: "2026-10-22|slot-am-2", ...over })
+
+  it("saves how the spot was given, the place there, and who receives the order", async () => {
+    const { order: o } = await svc.placeOrder(
+      other,
+      spotOrder({
+        customer: { phone: "+919000040001", name: "Karthik", language: "en" },
+        address: { line: "4, Temple Street", pincode: "638006", lat: 11.37, lng: 77.73, locationSource: "map", placeName: "Pallipalayam, Namakkal 638006", receiverName: "Amma", receiverPhone: "+919000040002" },
+        pinCheck: "match",
+      }),
+      NOW
+    )
+    const a = await tenantDb(other.id).address.findFirst({ where: { id: o.addressId! } })
+    expect(a).toMatchObject({ locationSource: "map", placeName: "Pallipalayam, Namakkal 638006", receiverName: "Amma", receiverPhone: "+919000040002" })
+    expect(o.pinCheck).toBe("match")
+    expect(o.needsCall).toBe(false) // taken by phone, spot agrees with the address
+  })
+
+  it("asks for a confirmation call when the spot is in another PIN district than the address", async () => {
+    const { order: o, decision } = await svc.placeOrder(
+      other,
+      spotOrder({ customer: { phone: "+919000040003", name: "Selvi", language: "ta" }, address: { line: "9, Main Road", pincode: "600042", lat: 11.0, lng: 76.9, locationSource: "link" }, pinCheck: "mismatch" }),
+      NOW
+    )
+    expect(decision).toEqual({ needsCall: true, reason: "location_mismatch" })
+    expect(o).toMatchObject({ status: "to_confirm", pinCheck: "mismatch" })
+  })
+})

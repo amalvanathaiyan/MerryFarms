@@ -7,7 +7,7 @@ import { orderTotals } from "@/domain/pricing"
 import { slotKey, slotRangeLabel, upcomingSlots } from "@/domain/slots"
 import { addDays, istDate } from "@/domain/ist"
 import { planUnitPrice } from "@/domain/plans"
-import { areaConfigured, checkArea, type DeliveryArea } from "@/domain/delivery-area"
+import { areaConfigured, checkArea, type DeliveryArea, type LocationSource, type PinCheck } from "@/domain/delivery-area"
 
 /** The farm's delivery area as the rules need it. */
 export function areaOf(t: { farmLat: number | null; farmLng: number | null; deliveryRadiusKm: number | null; servedPincodes: string[] }): DeliveryArea {
@@ -66,7 +66,20 @@ export interface PlaceOrderInput {
   channel: "web" | "whatsapp" | "phone" | "walk_in"
   customer: { phone: string; name: string; language: "ta" | "en" }
   /** An existing address of this customer (`id`), a new one (`line`), or none for walk-ins. */
-  address: { id?: string; line?: string; landmark?: string; pincode?: string; lat?: number; lng?: number } | null
+  address: {
+    id?: string
+    line?: string
+    landmark?: string
+    pincode?: string
+    lat?: number
+    lng?: number
+    locationSource?: LocationSource
+    placeName?: string
+    receiverName?: string
+    receiverPhone?: string
+  } | null
+  /** PIN typed vs PIN at the location (web checkout). A mismatch always gets a confirmation call. */
+  pinCheck?: PinCheck
   items: { productId: string; qty: number }[]
   /** `${date}|${slotId}`; null only for walk-in sales at the farm. */
   slotKey: string | null
@@ -166,6 +179,8 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
           const same = await tx.address.findFirst({
             where: { customerId: customer.id, line: { equals: input.address.line.trim(), mode: "insensitive" }, pincode: input.address.pincode || null },
           })
+          // A new location replaces the old one together with how it was given and the place found there.
+          const located = input.address.lat != null && input.address.lng != null
           address = same
             ? await tx.address.update({
                 where: { id: same.id },
@@ -173,6 +188,9 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
                   landmark: input.address.landmark || same.landmark,
                   lat: input.address.lat ?? same.lat,
                   lng: input.address.lng ?? same.lng,
+                  ...(located && { locationSource: input.address.locationSource ?? null, placeName: input.address.placeName ?? null }),
+                  receiverName: input.address.receiverName ?? null,
+                  receiverPhone: input.address.receiverPhone ?? null,
                 },
               })
             : await tx.address.create({
@@ -184,6 +202,10 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
                   pincode: input.address.pincode || null,
                   lat: input.address.lat ?? null,
                   lng: input.address.lng ?? null,
+                  locationSource: located ? (input.address.locationSource ?? null) : null,
+                  placeName: located ? (input.address.placeName ?? null) : null,
+                  receiverName: input.address.receiverName ?? null,
+                  receiverPhone: input.address.receiverPhone ?? null,
                 },
               })
         }
@@ -201,7 +223,7 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
           take: 10,
         })
         const sorted = history.map((h) => h.totalPaise).sort((a, b) => a - b)
-        const decision = !features.callConfirmation
+        const rulesDecision = !features.callConfirmation
           ? ({ needsCall: false, reason: "calls_off" } as const)
           : decideCall(rules, {
               channel: input.channel,
@@ -214,6 +236,9 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
                 usualOrderPaise: sorted.length ? sorted[Math.floor(sorted.length / 2)] : null,
               },
             })
+        // The address says one PIN and the spot on the map is in another district: someone checks it by phone.
+        const decision =
+          features.callConfirmation && input.pinCheck === "mismatch" && !rulesDecision.needsCall ? ({ needsCall: true, reason: "location_mismatch" } as const) : rulesDecision
 
         const last = await tx.order.aggregate({ _max: { number: true } })
         const number = (last._max.number ?? 1000) + 1
@@ -237,6 +262,7 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
             subscriptionId: input.subscriptionId ?? null,
             areaCheck: check?.result ?? null,
             distanceKm: check?.distanceKm ?? null,
+            pinCheck: input.pinCheck ?? null,
             items: { create: lines.map((l) => ({ ...l, tenantId: tenant.id })) },
             events: {
               create: { tenantId: tenant.id, toStatus: status, byStaffId: input.byStaffId ?? null, note: decision.reason },

@@ -65,7 +65,18 @@ export function checkArea(area: DeliveryArea, customer: { location?: LatLng | nu
  */
 export function parseLocation(input: string): LatLng | null {
   const s = input.trim()
-  const patterns = [/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/, /[?&](?:q|query|ll|destination)=(-?\d{1,3}\.\d+)(?:,|%2C)\s*(-?\d{1,3}\.\d+)/i, /!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/, /^(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)$/]
+  const patterns = [
+    /@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+    // WhatsApp and Google Maps shares: "?q=13.08,80.27", "?q=loc:13.08+80.27", "&ll=…", "destination=…"
+    /[?&](?:q|query|ll|destination|center)=(?:loc:)?(-?\d{1,3}\.\d+)(?:,|%2C|\+|\s)\s*(-?\d{1,3}\.\d+)/i,
+    /!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/,
+    // OpenStreetMap: "#map=16/13.08/80.27" or "?mlat=13.08&mlon=80.27"
+    /#map=\d+\/(-?\d{1,3}\.\d+)\/(-?\d{1,3}\.\d+)/,
+    /[?&]mlat=(-?\d{1,3}\.\d+)&mlon=(-?\d{1,3}\.\d+)/,
+    // Android "geo:13.08,80.27" and plain "13.0827, 80.2707"
+    /^geo:(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/i,
+    /^(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)$/,
+  ]
   for (const p of patterns) {
     const m = s.match(p)
     if (m) {
@@ -75,6 +86,60 @@ export function parseLocation(input: string): LatLng | null {
     }
   }
   return null
+}
+
+/** Short share links ("maps.app.goo.gl/…") hide the coordinates behind a redirect the server follows. */
+export function isShortMapsLink(input: string): boolean {
+  try {
+    const u = new URL(input.trim())
+    return u.protocol === "https:" && (u.hostname === "maps.app.goo.gl" || (u.hostname === "goo.gl" && u.pathname.startsWith("/maps")))
+  } catch {
+    return false
+  }
+}
+
+/** How a customer gave the delivery spot. "gps" is where their phone was, which is wrong when ordering for someone else. */
+export type LocationSource = "gps" | "map" | "link"
+
+/**
+ * The PIN code typed vs the PIN code found at the chosen spot.
+ * "near": same first three digits (the same sorting district), common at PIN borders and not worth stopping for.
+ * "mismatch": a different district: the address and the spot disagree, so the confirmation call checks it.
+ * "unknown": no PIN could be found at the spot.
+ */
+export type PinCheck = "match" | "near" | "mismatch" | "unknown"
+
+export function comparePincodes(typed: string | null | undefined, atSpot: string | null | undefined): PinCheck {
+  const a = typed?.trim() ?? ""
+  const b = atSpot?.replace(/\s/g, "") ?? ""
+  if (!isPincode(a) || !isPincode(b)) return "unknown"
+  if (a === b) return "match"
+  return a.slice(0, 3) === b.slice(0, 3) ? "near" : "mismatch"
+}
+
+/** The parts of an OpenStreetMap (Nominatim) address this app reads. */
+export interface GeoAddress {
+  house_number?: string
+  road?: string
+  neighbourhood?: string
+  suburb?: string
+  hamlet?: string
+  village?: string
+  town?: string
+  city?: string
+  city_district?: string
+  county?: string
+  state_district?: string
+  state?: string
+  postcode?: string
+}
+
+/** "Velachery, Chennai 600042": the locality, the town, and the PIN, short enough for a phone screen. */
+export function placeLabel(a: GeoAddress): string {
+  const locality = a.suburb ?? a.neighbourhood ?? a.village ?? a.hamlet ?? a.road ?? a.city_district
+  const town = a.city ?? a.town ?? a.county ?? a.state_district ?? a.state
+  const pin = a.postcode?.replace(/\s/g, "")
+  return [[locality, town].filter((v, i, all) => v && all.indexOf(v) === i).join(", "), pin].filter(Boolean).join(" ")
 }
 
 /** Directions link for the delivery person (opens Google Maps on any phone). */

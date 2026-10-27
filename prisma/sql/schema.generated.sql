@@ -214,6 +214,10 @@ CREATE TABLE "addresses" (
     "pincode" TEXT,
     "lat" DOUBLE PRECISION,
     "lng" DOUBLE PRECISION,
+    "locationSource" TEXT,
+    "placeName" TEXT,
+    "receiverName" TEXT,
+    "receiverPhone" TEXT,
     "isDefault" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -243,6 +247,7 @@ CREATE TABLE "orders" (
     "subscriptionId" TEXT,
     "areaCheck" TEXT,
     "distanceKm" DOUBLE PRECISION,
+    "pinCheck" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
