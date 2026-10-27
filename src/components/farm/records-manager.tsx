@@ -16,8 +16,22 @@ type ExpenseRow = { id: string; dayText: string; kind: string; amountPaise: numb
 const num = (v: string) => (v.trim() === "" ? null : Number(v))
 const str = (v: number | null | undefined) => (v == null ? "" : String(v))
 
-/** Daily flock figures (owner or packing) and farm expenses (owner). */
-export function RecordsManager({ today, records, expenses, canSpend }: { today: string; records: Row[]; expenses: ExpenseRow[]; canSpend: boolean }) {
+/** Production (any farm), flock figures (poultry farms only) and expenses (owner). */
+export function RecordsManager({
+  today,
+  records,
+  expenses,
+  canSpend,
+  poultry,
+  production,
+}: {
+  today: string
+  records: Row[]
+  expenses: ExpenseRow[]
+  canSpend: boolean
+  poultry: boolean
+  production: React.ReactNode
+}) {
   const t = useTranslations("farm.records")
   const te = useTranslations("errors")
   const [pending, start] = useTransition()
@@ -67,6 +81,9 @@ export function RecordsManager({ today, records, expenses, canSpend }: { today: 
         </p>
       )}
 
+      {production}
+
+      {poultry && (
       <form
         className="flex flex-col gap-3 rounded-2xl border bg-card p-4"
         onSubmit={(e) => {
@@ -105,8 +122,9 @@ export function RecordsManager({ today, records, expenses, canSpend }: { today: 
           {saved ? `✓ ${t("saved")}` : t("save")}
         </Button>
       </form>
+      )}
 
-      {records.length > 0 && (
+      {poultry && records.length > 0 && (
         <section className="rounded-2xl border bg-card p-4">
           <h2 className="mb-2 font-semibold">{t("recent")}</h2>
           <div className="overflow-x-auto">

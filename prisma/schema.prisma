@@ -236,6 +236,8 @@ model Category {
   nameEn         String
   sortOrder      Int     @default(0)
   showOnWhatsApp Boolean @default(true)
+  /// What it holds (egg, milk, oil, vegetables, pickles…; see domain/product-art). Picks the drawing.
+  kind           String?
   deletedAt      DateTime? // removed by the farm; kept so old products and orders stay readable
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -715,4 +717,20 @@ model Expense {
 
   @@index([tenantId, date])
   @@map("expenses")
+}
+
+/// How much of a product the farm made or collected on a day (bottles of oil, litres of
+/// milk, packs of eggs), and how much spoiled. Good quantity can go into stock.
+model ProductionEntry {
+  id        String   @id @default(uuid())
+  tenantId  String
+  date      String // IST
+  productId String
+  made      Float // in the product's own unit (stockUnit)
+  wasted    Float    @default(0)
+  byStaffId String?
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, date, productId])
+  @@map("production_entries")
 }

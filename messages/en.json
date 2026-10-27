@@ -103,7 +103,7 @@
       "planHeld": "{name}'s order for {date} was held",
       "unreadMessages": "{count, plural, one {# new message} other {# new messages}}",
       "recordToday": "Enter today's farm record",
-      "recordTodayHint": "Eggs collected, birds and feed: takes 30 seconds."
+      "recordTodayHint": "What you made or collected today: takes 30 seconds."
     },
     "orders": {
       "tab_to_confirm": "To call",
@@ -160,7 +160,7 @@
       "addCategory": "+ Add category",
       "categoryNameTa": "Category name (Tamil)",
       "categoryNameEn": "Category name (English)",
-      "noCategories": "Add a category first (for example: Eggs).",
+      "noCategories": "Add a category first: tap + Add category and pick one, e.g. Eggs, Milk or Cold-pressed oils.",
       "noProducts": "No products in this category yet.",
       "category": "Category",
       "nameTa": "Name (Tamil)",
@@ -180,7 +180,7 @@
       "left": "{count} {unit} left",
       "addTitle": "New product",
       "editTitle": "Edit product",
-      "gstHint": "Fresh eggs and fresh chicken are generally GST-exempt (0%). Confirm with your CA.",
+      "gstHint": "Fresh produce (eggs, milk, vegetables, fruit) is usually GST-exempt (0%). Packed or processed items (ghee, oils, pickles, flour) often carry 5% or 12%. Confirm with your CA.",
       "addPhoto": "Add photo",
       "changePhoto": "Change",
       "removePhoto": "Remove photo",
@@ -200,7 +200,23 @@
       "deleteCategory": "Delete category",
       "raise": "Raise by",
       "lower": "Lower by",
-      "applyPrices": "Apply new prices"
+      "applyPrices": "Apply new prices",
+      "quickCategories": "Quick add",
+      "categoryType": "What it holds (picks the picture)",
+      "art_egg": "Eggs",
+      "art_chicken": "Poultry & meat",
+      "art_milk": "Milk",
+      "art_dairy": "Ghee & dairy",
+      "art_oil": "Oils",
+      "art_vegetables": "Vegetables",
+      "art_greens": "Greens",
+      "art_fruits": "Fruits",
+      "art_grains": "Rice & grains",
+      "art_honey": "Honey",
+      "art_spices": "Spices",
+      "art_pickles": "Pickles & homemade",
+      "art_plants": "Plants & seeds",
+      "art_basket": "Other"
     },
     "slots": {
       "title": "Delivery slots",
@@ -328,7 +344,13 @@
       "litres": "litres",
       "pieces": "pieces",
       "boxes": "boxes",
-      "jars": "jars"
+      "jars": "jars",
+      "grams": "grams",
+      "ml": "ml",
+      "bottles": "bottles",
+      "dozen": "dozen",
+      "bunches": "bunches",
+      "bags": "bags"
     },
     "features": {
       "title": "Features",
@@ -366,7 +388,7 @@
       },
       "subscriptions": {
         "title": "Weekly / daily plans",
-        "hint": "Repeat orders such as eggs every week or milk every day. Turn on only if your supply is steady."
+        "hint": "Repeat orders such as milk every day or eggs every week. Turn on only if your supply is steady."
       },
       "broadcasts": {
         "title": "WhatsApp broadcasts",
@@ -410,7 +432,7 @@
       },
       "farmRecords": {
         "title": "Farm records and profit",
-        "hint": "Daily eggs, birds and feed, expenses, and profit in Reports."
+        "hint": "What you make or collect each day, expenses, and profit in Reports (plus flock figures for poultry)."
       }
     },
     "orderForm": {
@@ -483,7 +505,7 @@
       "shareHint": "Send it to a customer, a group or your Status.",
       "printQr": "Print QR",
       "qrTitle": "Shop QR code",
-      "qrHint": "Stick it on egg trays, bags and bills. Scanning it opens your shop.",
+      "qrHint": "Stick it on trays, bottles, bags and bills. Scanning it opens your shop.",
       "qrScan": "Scan to order",
       "templatesTitle": "Message wording",
       "templatesHint": "Change any message you send to customers into your own words.",
@@ -592,7 +614,9 @@
       "costPerEgg": "All costs per egg",
       "birdsLost": "Birds lost",
       "birdsNow": "{count} now",
-      "noRecords": "Enter daily records and expenses to see production and profit here."
+      "noRecords": "Enter daily records and expenses to see production and profit here.",
+      "madeTitle": "Made / collected",
+      "spoiledCount": "{count} spoiled"
     },
     "area": {
       "title": "Delivery area",
@@ -647,8 +671,8 @@
     },
     "records": {
       "title": "Farm records",
-      "hint": "Eggs, birds and feed each day, and what the farm spends. Reports turn this into profit.",
-      "dayTitle": "Day's record",
+      "hint": "What you made or collected each day, and what the farm spends. Reports turn this into profit.",
+      "dayTitle": "Flock (poultry)",
       "eggsCollected": "Eggs collected",
       "eggsBroken": "Broken / cracked",
       "birds": "Birds in the flock",
@@ -668,18 +692,28 @@
       "expenses": "Expenses",
       "thisMonth": "This month",
       "amount": "Amount (₹)",
-      "expenseNote": "Note (optional), e.g. 2 bags layer feed",
+      "expenseNote": "Note (optional), e.g. 50 kg groundnuts",
       "addExpense": "Add expense",
       "noExpenses": "No expenses this month yet.",
       "deleteExpense": "Delete expense",
-      "kind_feed": "Feed",
-      "kind_medicine": "Medicine",
-      "kind_chicks": "Chicks / birds",
+      "kind_feed": "Animal feed",
+      "kind_medicine": "Medicine / vet",
+      "kind_chicks": "Animals bought",
       "kind_labour": "Labour",
       "kind_transport": "Transport",
       "kind_electricity": "Electricity / water",
       "kind_packing": "Trays & packing",
-      "kind_other": "Other"
+      "kind_other": "Other",
+      "productionTitle": "Made / collected",
+      "productionHint": "How much of each product you made or collected that day. Leave blank what you didn't make.",
+      "productionHintStock": "How much of each product you made or collected that day. The good quantity is added to stock.",
+      "made": "Made",
+      "spoiled": "Spoiled",
+      "saveProduction": "Save the day's production",
+      "kind_raw_materials": "Raw materials",
+      "kind_seeds": "Seeds & fertiliser",
+      "kind_rent": "Rent",
+      "kind_repairs": "Repairs & machines"
     }
   },
   "login": {
@@ -778,7 +812,8 @@
     "record_invalid": "Check the numbers: whole numbers, not below zero.",
     "broken_more_than_collected": "Broken eggs can't be more than eggs collected.",
     "record_future": "Choose today or an earlier date.",
-    "feature_off": "This is switched off in Settings."
+    "feature_off": "This is switched off in Settings.",
+    "wasted_more_than_made": "Spoiled can't be more than made."
   },
   "my": {
     "connectTitle": "Connect with the farm",

@@ -7,6 +7,8 @@ import { featuresOf } from "@/lib/features"
 import { istDate } from "@/domain/ist"
 import { rupeesToPaise } from "@/domain/money"
 import { checkDayRecord, EXPENSE_KINDS } from "@/domain/records"
+import { saveProduction } from "@/server/production"
+import { OrderError } from "@/server/orders"
 
 type Result = { ok: true } | { ok: false; error: string }
 const ymd = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -49,6 +51,29 @@ export async function addExpense(raw: unknown): Promise<Result> {
 export async function deleteExpense(id: string): Promise<Result> {
   const { db } = await requireStaff(OWNER_ONLY)
   await db.expense.deleteMany({ where: { id } })
+  revalidatePath("/farm", "layout")
+  return { ok: true }
+}
+
+/** What was made or collected today, per product; good quantity can go into stock. */
+export async function saveProductionAction(raw: unknown): Promise<Result> {
+  const parsed = z
+    .object({
+      date: ymd,
+      entries: z.array(z.object({ productId: z.string().min(1), made: z.number().min(0).max(10_000_000), wasted: z.number().min(0).max(10_000_000) })).min(1).max(200),
+    })
+    .safeParse(raw)
+  if (!parsed.success) return { ok: false, error: "record_invalid" }
+  const { tenant, staff } = await requireStaff(["owner", "packing"])
+  const features = featuresOf(tenant)
+  if (!features.farmRecords) return { ok: false, error: "feature_off" }
+  if (parsed.data.date > istDate(new Date())) return { ok: false, error: "record_future" }
+  try {
+    await saveProduction(tenant.id, staff.id, parsed.data.date, parsed.data.entries, features.stockTracking)
+  } catch (e) {
+    if (e instanceof OrderError) return { ok: false, error: e.code }
+    throw e
+  }
   revalidatePath("/farm", "layout")
   return { ok: true }
 }

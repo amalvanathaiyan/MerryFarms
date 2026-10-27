@@ -27,6 +27,7 @@ const TENANT_MODELS = new Set([
   "ClosedDay",
   "DailyRecord",
   "Expense",
+  "ProductionEntry",
 ])
 
 const WHERE_OPS = new Set([

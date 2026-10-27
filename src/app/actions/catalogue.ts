@@ -6,6 +6,7 @@ import { OWNER_ONLY, requireStaff } from "@/lib/auth"
 import { rupeesToPaise } from "@/domain/money"
 import { MAX_PHOTO_BYTES, sniffImage } from "@/domain/product-art"
 import { adjustPrice } from "@/domain/offers"
+import { ART_KINDS } from "@/domain/product-art"
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
 
@@ -18,6 +19,7 @@ const done = (): ActionResult => {
 const categorySchema = z.object({
   nameTa: z.string().trim().min(1).max(60),
   nameEn: z.string().trim().min(1).max(60),
+  kind: z.enum(ART_KINDS).optional(),
 })
 
 export async function addCategory(raw: unknown): Promise<ActionResult> {

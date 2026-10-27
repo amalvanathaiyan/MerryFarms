@@ -17,8 +17,8 @@ const prisma = new PrismaClient({ adapter: new PrismaPg(new Pool({ connectionStr
 const demo = process.argv.includes("--demo")
 
 const CATEGORIES = [
-  { key: "eggs", nameTa: "முட்டை", nameEn: "Eggs" },
-  { key: "chicken", nameTa: "நாட்டுக் கோழி", nameEn: "Country chicken" },
+  { key: "eggs", nameTa: "முட்டை", nameEn: "Eggs", kind: "egg" },
+  { key: "chicken", nameTa: "நாட்டுக் கோழி", nameEn: "Country chicken", kind: "chicken" },
 ]
 
 // Prices are placeholders: set real ones in the farm app (Products).
@@ -60,7 +60,7 @@ async function main() {
   const catIds: Record<string, string> = {}
   for (const [i, c] of CATEGORIES.entries()) {
     const found = await prisma.category.findFirst({ where: { tenantId: tenant.id, nameEn: c.nameEn } })
-    const row = found ?? (await prisma.category.create({ data: { tenantId: tenant.id, nameTa: c.nameTa, nameEn: c.nameEn, sortOrder: i } }))
+    const row = found ?? (await prisma.category.create({ data: { tenantId: tenant.id, nameTa: c.nameTa, nameEn: c.nameEn, kind: c.kind, sortOrder: i } }))
     catIds[c.key] = row.id
   }
 

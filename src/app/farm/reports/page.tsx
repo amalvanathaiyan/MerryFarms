@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { DailySalesChart } from "@/components/farm/daily-sales-chart"
 import { cn } from "@/lib/utils"
 import { tenantDb } from "@/lib/tenant-db"
-import { costs, production, profit } from "@/domain/records"
+import { costs, production, productionTotals, profit } from "@/domain/records"
 
 const PRESETS = ["today", "week", "month"] as const
 
@@ -28,6 +28,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const to = await getTranslations("farm.orders")
   const tc = await getTranslations("common")
   const tr = await getTranslations("farm.records")
+  const tu = await getTranslations("farm.units")
   const labels = { today: tc("today"), tomorrow: tc("tomorrow") }
 
   const now = new Date()
@@ -43,6 +44,8 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     features.farmRecords ? db.dailyRecord.findMany({ where: inRange }) : Promise.resolve([]),
     features.farmRecords ? db.expense.findMany({ where: inRange }) : Promise.resolve([]),
   ])
+  const made = features.farmRecords ? productionTotals(await db.productionEntry.findMany({ where: inRange })) : []
+  const madeProducts = made.length ? await db.product.findMany({ where: { id: { in: made.map((m) => m.productId) } } }) : []
   const prod = production(dayRows)
   const spent = costs(spendRows, prod)
   const { summary: s, calls } = report
@@ -248,12 +251,38 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                   {cell(t("netSales"), formatRupees(s.netPaise))}
                   {cell(t("spent"), formatRupees(spent.totalPaise))}
                   {cell(t("profit"), `${p.profitPaise < 0 ? "−" : ""}${formatRupees(Math.abs(p.profitPaise))}${p.marginPct != null ? ` · ${p.marginPct}%` : ""}`, true)}
-                  {cell(t("eggsCollected"), prod.daysRecorded ? `${prod.eggsCollected - prod.eggsBroken} · ${t("perDay", { count: prod.eggsPerDay })}` : "—")}
-                  {cell(t("layingRate"), prod.layingRatePct != null ? `${prod.layingRatePct}%` : "—")}
-                  {cell(t("feedPerEgg"), spent.feedPerEggPaise != null ? formatRupees(spent.feedPerEggPaise) : "—")}
-                  {cell(t("costPerEgg"), spent.costPerEggPaise != null ? formatRupees(spent.costPerEggPaise) : "—")}
-                  {cell(t("birdsLost"), prod.daysRecorded ? `${prod.birdsLost}${prod.birdsNow != null ? ` · ${t("birdsNow", { count: prod.birdsNow })}` : ""}` : "—")}
+                  {prod.daysRecorded > 0 && (
+                    <>
+                      {cell(t("eggsCollected"), `${prod.eggsCollected - prod.eggsBroken} · ${t("perDay", { count: prod.eggsPerDay })}`)}
+                      {cell(t("layingRate"), prod.layingRatePct != null ? `${prod.layingRatePct}%` : "—")}
+                      {cell(t("feedPerEgg"), spent.feedPerEggPaise != null ? formatRupees(spent.feedPerEggPaise) : "—")}
+                      {cell(t("costPerEgg"), spent.costPerEggPaise != null ? formatRupees(spent.costPerEggPaise) : "—")}
+                      {cell(t("birdsLost"), `${prod.birdsLost}${prod.birdsNow != null ? ` · ${t("birdsNow", { count: prod.birdsNow })}` : ""}`)}
+                    </>
+                  )}
                 </div>
+                {made.length > 0 && (
+                  <div className="flex flex-col gap-1">
+                    <h3 className="text-sm font-semibold">{t("madeTitle")}</h3>
+                    <ul className="divide-y text-sm">
+                      {made.map((m) => {
+                        const p = madeProducts.find((x) => x.id === m.productId)
+                        const unit = p ? (tu.has(p.stockUnit) ? tu(p.stockUnit) : p.stockUnit) : ""
+                        return (
+                          <li key={m.productId} className="flex justify-between gap-3 py-1.5 tabular-nums">
+                            <span className="min-w-0 truncate">{p ? `${pick(locale, p.nameTa, p.nameEn)} · ${pick(locale, p.packTa, p.packEn)}` : "—"}</span>
+                            <span className="shrink-0">
+                              <b>
+                                {m.made} {unit}
+                              </b>
+                              {m.wasted > 0 && <span className="text-muted-foreground"> · {t("spoiledCount", { count: m.wasted })}</span>}
+                            </span>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                )}
                 {spent.byKind.length > 0 && (
                   <ul className="divide-y text-sm">
                     {spent.byKind.map((k) => (
@@ -264,7 +293,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                     ))}
                   </ul>
                 )}
-                {prod.daysRecorded === 0 && spendRows.length === 0 && <p className="text-sm text-muted-foreground">{t("noRecords")}</p>}
+                {prod.daysRecorded === 0 && spendRows.length === 0 && made.length === 0 && <p className="text-sm text-muted-foreground">{t("noRecords")}</p>}
               </>
             )
           })()}
