@@ -13,7 +13,8 @@
     "tomorrow": "Tomorrow",
     "saved": "Saved",
     "settings": "Settings",
-    "reports": "Reports"
+    "reports": "Reports",
+    "backShort": "Back"
   },
   "shop": {
     "hello": "Hello!",
@@ -101,7 +102,8 @@
       "forSomeoneElse": "Deliver to someone else",
       "forSomeoneElseHint": "Ordering for family or friends? The delivery person will call them.",
       "receiverName": "Receiver's name",
-      "receiverPhone": "Receiver's mobile number"
+      "receiverPhone": "Receiver's mobile number",
+      "pincodeHint": "Your area's 6-digit postal code, e.g. 600042"
     },
     "myOrders": "My orders",
     "rememberedHere": "This phone will remember you; next time your details are filled in.",
@@ -111,7 +113,14 @@
     "percentOff": "{pct}% off",
     "offerUntil": "Offer till {day}",
     "noDeliveryOn": "No deliveries on {days}.",
-    "changingOrder": "Changing order {code}: placing this replaces it."
+    "changingOrder": "Changing order {code}: placing this replaces it.",
+    "ordersShort": "Orders",
+    "backToShop": "Back to shop",
+    "landmarkHint": "e.g. near the temple, opposite the school",
+    "slotHint": "When the order reaches your home",
+    "payHint_upi_on_delivery": "Pay with GPay, PhonePe or Paytm when it arrives",
+    "payHint_cash_on_delivery": "Pay in cash when it arrives",
+    "payNothingNow": "Nothing to pay now."
   },
   "farm": {
     "nav": {
@@ -943,5 +952,29 @@
     "verifyToOrder": "Verify your mobile number to order",
     "verified": "Verified",
     "myHint": "Enter your mobile number to see your orders, bills and messages. We'll send a code; no password to remember."
+  },
+  "help": {
+    "button": "Help",
+    "title": "Need help?",
+    "call": "Call the farm",
+    "callHint": "Order or ask anything by phone",
+    "whatsapp": "Order on WhatsApp",
+    "whatsappWithCart": "Sends what's in your basket to the farm",
+    "whatsappHint": "Write to the farm on WhatsApp",
+    "waWithCart": "Hello! I'd like to order:\n{items}",
+    "waEmpty": "Hello! I'd like to place an order.",
+    "howTo": "How to order",
+    "close": "Close"
+  },
+  "howTo": {
+    "title": "Order in 3 easy steps",
+    "step1Title": "Choose what you want",
+    "step1": "Tap \"{add}\" on what you need.",
+    "step2Title": "Open your basket",
+    "step2": "Tap the green bar at the bottom, then give your address and delivery time.",
+    "step3Title": "We bring it home",
+    "step3Call": "The farm calls you to confirm. Pay when it arrives.",
+    "step3NoCall": "It reaches your home at the time you chose. Pay when it arrives.",
+    "gotIt": "Got it"
   }
 }

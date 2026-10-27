@@ -105,6 +105,7 @@ export function AreaCheck({
           onChange={(e) => onPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
           className="h-12 w-40 rounded-md border border-input bg-transparent px-3 tabular-nums"
         />
+        <p className="text-sm text-muted-foreground">{t("pincodeHint")}</p>
       </div>
 
       <fieldset className="flex flex-col gap-2 rounded-2xl border bg-card p-3">

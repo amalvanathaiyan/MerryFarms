@@ -119,8 +119,8 @@ export function LocationPicker({
           <h2 id="picker-title" className="flex-1 text-lg font-bold">
             {t("mapTitle")}
           </h2>
-          <Button type="button" variant="ghost" size="icon" aria-label={t("close")} onClick={onClose}>
-            <X />
+          <Button type="button" variant="ghost" onClick={onClose}>
+            <X /> {t("close")}
           </Button>
         </header>
 

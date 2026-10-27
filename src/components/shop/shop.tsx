@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
-import { BadgeCheck, CalendarOff, MessageCircle, Minus, PackageSearch, Phone, Plus, ShoppingBasket, X } from "lucide-react"
+import { ArrowLeft, BadgeCheck, CalendarOff, MessageCircle, Minus, PackageSearch, Phone, Plus, ShoppingBasket } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { SignInFlow } from "@/components/shop/sign-in-flow"
 import { formatIndianMobile } from "@/domain/phone"
@@ -21,6 +21,8 @@ import { ProductPicture } from "@/components/product-picture"
 import type { ArtKind } from "@/domain/product-art"
 import { FarmBanner } from "@/components/farm-banner"
 import { CartArt } from "@/components/art/cart-art"
+import { HelpButton } from "./help-button"
+import { HowTo } from "./how-to"
 import { KindDrawing } from "@/components/art/kind-drawing"
 
 export interface ShopData {
@@ -42,6 +44,8 @@ export interface ShopData {
     otp: boolean
     /** In-app messages to the farm are on. */
     messages: boolean
+    /** New orders get a confirmation call (told to first-time customers in "How to order"). */
+    calls: boolean
   }
   me: {
     name: string
@@ -173,11 +177,15 @@ export function Shop({ data }: { data: ShopData }) {
     })
   }
 
+  // The basket written out, for "Order on WhatsApp" in the help button.
+  const basketText = lines.map((l) => `${l.qty} × ${l.product.name} (${l.product.pack})`)
+  const help = { phone: data.farm.phone, whatsappNumber: data.farm.whatsappNumber, basket: basketText }
   const header = (
     <FarmBanner
       name={data.farm.name}
       initials={data.farm.orderPrefix}
-      myOrders={data.farm.accounts ? { href: "/my", label: t("myOrders") } : undefined}
+      myOrders={data.farm.accounts ? { href: "/my", label: t("myOrders"), shortLabel: t("ordersShort") } : undefined}
+      help={{ ...help, raised: view === "shop" && count > 0 }}
     />
   )
 
@@ -241,16 +249,18 @@ export function Shop({ data }: { data: ShopData }) {
     const cartHeader = (
       <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/95 px-4 py-3 backdrop-blur">
         <h1 className="text-xl font-semibold">{t("cartTitle")}</h1>
-        <Button variant="ghost" size="icon" aria-label={t("orderMore")} onClick={() => setView("shop")}>
-          <X />
+        <Button variant="outline" onClick={() => setView("shop")}>
+          <ArrowLeft /> {t("backToShop")}
         </Button>
       </header>
     )
+    const cartHelp = <HelpButton {...help} />
     // Code sign-in: the number is verified before the order form appears; the cart is kept.
     if (data.farm.otp && !data.me) {
       return (
         <div className="mx-auto min-h-dvh w-full max-w-xl pb-10">
           {cartHeader}
+          {cartHelp}
           <div className="flex flex-col gap-5 px-4 pt-4">
             {cartLines}
             <section className="flex flex-col gap-3 rounded-2xl border bg-card p-4">
@@ -264,6 +274,7 @@ export function Shop({ data }: { data: ShopData }) {
     return (
       <div className="mx-auto min-h-dvh w-full max-w-xl pb-10">
         {cartHeader}
+        {cartHelp}
         <form onSubmit={submit} className="flex flex-col gap-5 px-4 pt-4">
           {data.changing && <p className="rounded-xl bg-yolk p-3 text-sm font-medium text-yolk-foreground">{t("changingOrder", { code: data.changing.code })}</p>}
           {cartLines}
@@ -294,7 +305,7 @@ export function Shop({ data }: { data: ShopData }) {
               className="w-full rounded-md border border-input bg-transparent px-3 py-2"
             />
           </Field>
-          <Field label={t("landmark")} id="landmark">
+          <Field label={t("landmark")} id="landmark" hint={t("landmarkHint")}>
             <Input id="landmark" value={form.landmark} onChange={(e) => setForm({ ...form, landmark: e.target.value })} className="h-12" />
           </Field>
           <div className="flex flex-col gap-3 rounded-2xl border bg-card p-3">
@@ -326,7 +337,8 @@ export function Shop({ data }: { data: ShopData }) {
           />
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-2 text-sm font-semibold">{t("slot")}</legend>
+            <legend className="text-sm font-semibold">{t("slot")}</legend>
+            <p className="-mt-1 text-sm text-muted-foreground">{t("slotHint")}</p>
             <div className="flex flex-wrap gap-2">
               {data.slots.map((s) => (
                 <Choice key={s.key} selected={form.slotKey === s.key} disabled={s.full} onClick={() => setForm({ ...form, slotKey: s.key })}>
@@ -338,7 +350,7 @@ export function Shop({ data }: { data: ShopData }) {
           </fieldset>
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-2 text-sm font-semibold">{t("payment")}</legend>
+            <legend className="text-sm font-semibold">{t("payment")}</legend>
             <div className="flex flex-wrap gap-2">
               {(["upi_on_delivery", "cash_on_delivery"] as const).map((m) => (
                 <Choice key={m} selected={form.paymentMethod === m} onClick={() => setForm({ ...form, paymentMethod: m })}>
@@ -346,6 +358,10 @@ export function Shop({ data }: { data: ShopData }) {
                 </Choice>
               ))}
             </div>
+            {/* Plain words for first-time users: what UPI means here, and that nothing is paid now. */}
+            <p className="text-sm text-muted-foreground">
+              {t(`payHint_${form.paymentMethod}`)} {t("payNothingNow")}
+            </p>
           </fieldset>
 
           <Field label={t("note")} id="note">
@@ -399,6 +415,8 @@ export function Shop({ data }: { data: ShopData }) {
             )}
           </div>
         </section>
+
+        {data.farm.webOrdering && !data.farm.paused && <HowTo calls={data.farm.calls} addLabel={t("add")} />}
 
         {!data.farm.webOrdering && !data.farm.paused && (
           <section className="flex flex-col gap-3 rounded-2xl border-2 border-primary bg-accent p-4">
@@ -497,13 +515,13 @@ export function Shop({ data }: { data: ShopData }) {
           <button
             type="button"
             onClick={() => setView("cart")}
-            className="group flex w-full flex-wrap items-center justify-between gap-2 rounded-full bg-primary py-2 pr-2 pl-5 text-lg font-semibold text-primary-foreground shadow-lg hover:-translate-y-0.5 hover:shadow-xl"
+            className="group flex w-full flex-col items-stretch gap-2 rounded-3xl bg-primary p-2 text-lg font-semibold text-primary-foreground shadow-lg hover:-translate-y-0.5 hover:shadow-xl sm:flex-row sm:items-center sm:justify-between sm:rounded-full sm:pl-5"
           >
-            <span className="flex items-center gap-2 tabular-nums">
+            <span className="flex items-center justify-center gap-2 tabular-nums sm:justify-start">
               <ShoppingBasket className="size-5" />
               {t("cartBar", { count, total: formatRupees(total) })}
             </span>
-            <span className="rounded-full bg-sun px-4 py-2 text-base font-bold text-sun-foreground transition-colors group-hover:bg-[hsl(45_100%_56%)]">{t("viewCart")} →</span>
+            <span className="rounded-full bg-sun px-4 py-2.5 text-center text-base font-bold text-sun-foreground transition-colors group-hover:bg-[hsl(45_100%_56%)]">{t("viewCart")} →</span>
           </button>
         </div>
       )}

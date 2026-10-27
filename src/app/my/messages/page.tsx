@@ -29,7 +29,7 @@ export default async function MyMessagesPage() {
 
   return (
     <div className="min-h-dvh pb-28">
-      <FarmBanner name={pick(locale, tenant.nameTa, tenant.nameEn)} initials={tenant.invoicePrefix} href="/my" back={t("back")} />
+      <FarmBanner name={pick(locale, tenant.nameTa, tenant.nameEn)} initials={tenant.invoicePrefix} href="/my" back={t("back")} help={{ phone: tenant.phone, whatsappNumber: tenant.whatsappNumber ?? tenant.phone }} />
       <main className="mx-auto flex w-full max-w-2xl flex-col gap-3 px-4 pt-4 sm:px-6">
         <p className="rounded-xl bg-accent p-3 text-sm">{t("customerHint")}</p>
         <ChatThread
