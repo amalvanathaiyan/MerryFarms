@@ -11,7 +11,9 @@ import { WheelMark } from "@/components/art/wheel-mark"
 
 export const dynamic = "force-dynamic"
 
-const ICON_LINK = "grid size-10 place-items-center rounded-full opacity-80 hover:bg-accent hover:opacity-100"
+// Header actions: an icon with its word under it, so staff new to apps can tell them apart.
+const ICON_LINK =
+  "flex h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-xl px-1.5 text-[11px] leading-none max-xs:min-w-11 max-xs:px-1 max-xs:text-[10px] font-medium text-header-foreground/85 hover:bg-accent hover:text-primary"
 
 export default async function FarmLayout({ children }: { children: React.ReactNode }) {
   const { tenant, staff, db } = await requireStaff()
@@ -33,28 +35,31 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
               <div className="truncate text-xs opacity-80">{staff.name}</div>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <LanguageToggle compact />
+          {/* Language sits beside the name; the labelled actions take their own row on phones. */}
+          <LanguageToggle compact />
+          <div className="flex flex-wrap items-center gap-0.5 max-sm:w-full">
             {featuresOf(tenant).whatsappLite && (
-              <Link href="/farm/whatsapp" aria-label="WhatsApp" className={ICON_LINK}>
-                <MessageCircle className="size-5" />
+              <Link href="/farm/whatsapp" className={ICON_LINK}>
+                <MessageCircle className="size-5" aria-hidden />
+                WhatsApp
               </Link>
             )}
             {staff.roles.includes("owner") && featuresOf(tenant).reports && (
-              <Link href="/farm/reports" aria-label={t("reports")} className={ICON_LINK}>
-                <BarChart3 className="size-5" />
+              <Link href="/farm/reports" className={ICON_LINK}>
+                <BarChart3 className="size-5" aria-hidden />
+                {t("reports")}
               </Link>
             )}
             {staff.roles.includes("owner") && (
-              <Link href="/farm/settings" aria-label={t("settings")} className={ICON_LINK}>
-                <Settings className="size-5" />
+              <Link href="/farm/settings" className={ICON_LINK}>
+                <Settings className="size-5" aria-hidden />
+                {t("settings")}
               </Link>
             )}
             <form action={signOut}>
-              {/* Phones: an icon (the label stays for screen readers). Wider screens: the word. */}
-              <button type="submit" className="grid h-10 min-w-10 place-items-center rounded-full px-2 text-sm opacity-80 underline-offset-4 hover:underline hover:opacity-100" title={t("signOut")}>
-                <LogOut className="size-5 sm:hidden" aria-hidden />
-                <span className="max-sm:sr-only">{t("signOut")}</span>
+              <button type="submit" className={ICON_LINK}>
+                <LogOut className="size-5" aria-hidden />
+                {t("signOut")}
               </button>
             </form>
           </div>

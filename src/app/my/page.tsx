@@ -45,7 +45,7 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
   const tsi = await getTranslations("signIn")
   const farmName = pick(locale, tenant.nameTa, tenant.nameEn)
 
-  const header = <FarmBanner name={farmName} initials={tenant.invoicePrefix} />
+  const header = <FarmBanner name={farmName} initials={tenant.invoicePrefix} help={{ phone: tenant.phone, whatsappNumber: tenant.whatsappNumber ?? tenant.phone }} />
 
   if (!me) {
     return (

@@ -6,7 +6,9 @@ import { requireTenant } from "@/lib/tenant"
 import { normaliseIndianMobile } from "@/domain/phone"
 import { cancelByCustomer, changeableOrder, OrderError, placeOrder } from "@/server/orders"
 import { featuresOf } from "@/lib/features"
-import { areaConfigured, checkArea } from "@/domain/delivery-area"
+import { areaConfigured, checkArea, comparePincodes, type LatLng, type PinCheck } from "@/domain/delivery-area"
+import { findPlaces, locationFromLink, pincodeCentre, placeAt, type PlaceMatch } from "@/server/geo"
+import { getLocale } from "next-intl/server"
 import { areaOf } from "@/server/orders"
 import { tenantDb } from "@/lib/tenant-db"
 import { forgetCustomer, getSessionCustomer, rememberCustomer } from "@/lib/customer-session"
@@ -24,6 +26,10 @@ const schema = z.object({
   pincode: z.string().trim().regex(/^[1-9]\d{5}$/),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
+  locationSource: z.enum(["gps", "map", "link"]).optional(),
+  /** Delivering to someone else: who receives it, and their phone (the delivery person calls them). */
+  receiverName: z.string().trim().min(1).max(80).optional(),
+  receiverPhone: z.string().trim().min(10).max(20).optional(),
   slotKey: z.string().regex(/^\d{4}-\d{2}-\d{2}\|[\w-]+$/),
   paymentMethod: z.enum(["upi_on_delivery", "cash_on_delivery"]),
   language: z.enum(["ta", "en"]),
@@ -56,6 +62,9 @@ export async function placeWebOrder(raw: unknown): Promise<PlaceWebOrderResult> 
 
   const typed = normaliseIndianMobile(input.phone)
   if (!typed) return { ok: false, error: "phone_invalid" }
+  const receiverPhone = input.receiverPhone ? normaliseIndianMobile(input.receiverPhone) : null
+  if (input.receiverPhone && !receiverPhone) return { ok: false, error: "receiver_phone_invalid" }
+  if (!!input.receiverName !== !!input.receiverPhone) return { ok: false, error: "receiver_incomplete" }
 
   const tenant = await requireTenant()
   if (tenant.status === "suspended") return { ok: false, error: "shop_paused" }
@@ -81,11 +90,26 @@ export async function placeWebOrder(raw: unknown): Promise<PlaceWebOrderResult> 
   }
   const known = accounts && !session ? await tenantDb(tenant.id).customer.findFirst({ where: { phone }, select: { id: true } }) : null
 
+  // The spot is named and its PIN compared here on the server; what the browser said isn't trusted.
+  const spot = input.lat != null && input.lng != null ? { lat: input.lat, lng: input.lng } : null
+  const place = spot ? await placeAt(spot, input.language) : null
+
   try {
     const { order, decision, customer } = await placeOrder(tenant, {
       channel: "web",
       customer: { phone, name: input.name, language: input.language },
-      address: { line: input.addressLine, landmark: input.landmark, pincode: input.pincode, lat: input.lat, lng: input.lng },
+      address: {
+        line: input.addressLine,
+        landmark: input.landmark,
+        pincode: input.pincode,
+        lat: input.lat,
+        lng: input.lng,
+        locationSource: spot ? (input.locationSource ?? "gps") : undefined,
+        placeName: place?.label || undefined,
+        receiverName: input.receiverName,
+        receiverPhone: receiverPhone ?? undefined,
+      },
+      pinCheck: spot ? comparePincodes(input.pincode, place?.pincode) : undefined,
       items: input.items,
       slotKey: input.slotKey,
       paymentMethod: input.paymentMethod,
@@ -117,18 +141,60 @@ const areaSchema = z.object({
   lng: z.number().min(-180).max(180).optional(),
 })
 
+export interface AreaAnswer {
+  result: "inside" | "outside" | "unknown" | "not_set"
+  /** The place at the chosen spot, for the customer to confirm: "Velachery, Chennai 600042". */
+  place?: string
+  /** The PIN code at the spot, and how it compares with the one typed. */
+  spotPincode?: string
+  pinCheck?: PinCheck
+}
+
 /**
- * "Do you deliver to me?" for the checkout. Answers inside / outside / unknown only,
- * so the farm's exact location never leaves the server.
+ * "Do you deliver to me?" for the checkout, and "is this the right spot?": names the place at the location
+ * and compares its PIN with the one typed. Answers inside / outside / unknown only, so the farm's exact
+ * location never leaves the server.
  */
-export async function checkMyArea(raw: unknown): Promise<{ result: "inside" | "outside" | "unknown" | "not_set" }> {
+export async function checkMyArea(raw: unknown): Promise<AreaAnswer> {
   const parsed = areaSchema.safeParse(raw)
   if (!parsed.success) return { result: "unknown" }
   const tenant = await requireTenant()
-  const area = areaOf(tenant)
-  if (!featuresOf(tenant).deliveryArea || !areaConfigured(area)) return { result: "not_set" }
   const { pincode, lat, lng } = parsed.data
-  return { result: checkArea(area, { pincode, location: lat != null && lng != null ? { lat, lng } : null }).result }
+  const location = lat != null && lng != null ? { lat, lng } : null
+  const area = areaOf(tenant)
+  const result = !featuresOf(tenant).deliveryArea || !areaConfigured(area) ? "not_set" : checkArea(area, { pincode, location }).result
+  if (!location) return { result }
+  const place = await placeAt(location, (await getLocale()) === "ta" ? "ta" : "en")
+  return { result, place: place?.label || undefined, spotPincode: place?.pincode ?? undefined, pinCheck: comparePincodes(pincode, place?.pincode) }
+}
+
+/** Where the checkout map opens: the PIN code's area, else roughly the farm's area (never its exact spot), else Tamil Nadu. */
+export async function mapStart(raw: unknown): Promise<LatLng & { zoom: number }> {
+  const pincode = z.string().trim().optional().safeParse(raw).data
+  const centre = pincode ? await pincodeCentre(pincode) : null
+  if (centre) return { ...centre, zoom: 15 }
+  const tenant = await requireTenant()
+  if (tenant.farmLat != null && tenant.farmLng != null) {
+    const rough = (v: number) => Math.round(v * 20) / 20 // ~5 km grid
+    return { lat: rough(tenant.farmLat), lng: rough(tenant.farmLng), zoom: 12 }
+  }
+  return { lat: 11.1, lng: 78.6, zoom: 7 }
+}
+
+/** Place search for the checkout map ("Velachery bus stand"), nearest the delivery area first. */
+export async function searchPlaces(raw: unknown): Promise<PlaceMatch[]> {
+  const parsed = z.object({ query: z.string().trim().min(3).max(120), near: z.object({ lat: z.number(), lng: z.number() }).optional() }).safeParse(raw)
+  if (!parsed.success) return []
+  await requireTenant()
+  return findPlaces(parsed.data.query, parsed.data.near ?? null, (await getLocale()) === "ta" ? "ta" : "en")
+}
+
+/** A pasted maps link (WhatsApp location, Google Maps, OpenStreetMap, short share links) → its spot. */
+export async function readLocationLink(raw: unknown): Promise<LatLng | null> {
+  const link = z.string().trim().min(5).max(2000).safeParse(raw)
+  if (!link.success) return null
+  await requireTenant()
+  return locationFromLink(link.data)
 }
 
 const connectSchema = z.object({

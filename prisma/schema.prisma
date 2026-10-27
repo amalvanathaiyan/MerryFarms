@@ -344,6 +344,13 @@ model Address {
   pincode    String?
   lat        Float?
   lng        Float?
+  /// How the location was given: "gps" (where the phone was), "map" (pin placed on the map), "link" (a maps link pasted).
+  locationSource String?
+  /// The place at the location, looked up when it was given: "Velachery, Chennai 600042".
+  placeName      String?
+  /// Delivery to someone else (e.g. ordering for parents): who receives it, and their phone.
+  receiverName   String?
+  receiverPhone  String?
   isDefault  Boolean  @default(true)
   createdAt  DateTime @default(now())
 
@@ -380,6 +387,7 @@ model Order {
   subscriptionId   String? // set when a weekly/daily plan created this order
   areaCheck        String? // "inside" | "outside" | "unknown"; null when the farm has no area set
   distanceKm       Float? // from the farm, when the customer shared their location
+  pinCheck         String? // PIN typed vs PIN at the location: "match" | "near" | "mismatch" | "unknown"; null without a location
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 

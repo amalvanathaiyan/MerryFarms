@@ -13,7 +13,7 @@ export async function SignInGate({ tenant }: { tenant: Tenant }) {
   const name = pick(locale, tenant.nameTa, tenant.nameEn)
   return (
     <div className="min-h-dvh">
-      <FarmBanner name={name} initials={tenant.invoicePrefix} />
+      <FarmBanner name={name} initials={tenant.invoicePrefix} help={{ phone: tenant.phone, whatsappNumber: tenant.whatsappNumber ?? tenant.phone }} />
       <main className="mx-auto flex w-full max-w-md flex-col gap-5 px-4 py-6">
         <CartArt variant="scene" priority className="rounded-3xl border" />
         <div>

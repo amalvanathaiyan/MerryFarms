@@ -151,10 +151,22 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                         📍 {t("directions")}
                         {o.distanceKm != null && ` (${o.distanceKm} km)`}
                       </a>
+                      {/* How the spot was given matters: a phone's location may not be the delivery address. */}
+                      {o.address.locationSource && ` · ${t(`spot_${o.address.locationSource as "gps" | "map" | "link"}`)}`}
+                      {o.address.placeName && <span className="block">{o.address.placeName}</span>}
                     </>
                   )}
                 </div>
               )}
+              {o.address?.receiverName && o.address.receiverPhone && (
+                <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm">
+                  <span className="font-medium">{t("receiver", { name: o.address.receiverName })}</span>
+                  <a href={`tel:${o.address.receiverPhone}`} className="font-medium text-primary tabular-nums underline-offset-4 hover:underline">
+                    {formatIndianMobile(o.address.receiverPhone)} · {t("callReceiver")}
+                  </a>
+                </p>
+              )}
+              {o.pinCheck === "mismatch" && isOpen(o.status) && <p className="text-sm font-semibold text-yolk-foreground">{t("pinMismatch")}</p>}
               {o.areaCheck === "outside" && <p className="text-sm font-semibold text-destructive">{t("outsideArea")}</p>}
               {o.areaCheck === "unknown" && isOpen(o.status) && <p className="text-sm font-medium text-yolk-foreground">{t("areaUnchecked")}</p>}
             </div>
