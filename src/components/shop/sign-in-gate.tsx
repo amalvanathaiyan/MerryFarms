@@ -4,6 +4,7 @@ import type { Tenant } from "@/lib/tenant"
 import { pick } from "@/lib/i18n-helpers"
 import { FarmBanner } from "@/components/farm-banner"
 import { SignInFlow } from "@/components/shop/sign-in-flow"
+import { CartArt } from "@/components/art/cart-art"
 
 /** The first screen for someone this phone doesn't know yet: mobile number, then a code. */
 export async function SignInGate({ tenant }: { tenant: Tenant }) {
@@ -11,9 +12,10 @@ export async function SignInGate({ tenant }: { tenant: Tenant }) {
   const t = await getTranslations("signIn")
   const name = pick(locale, tenant.nameTa, tenant.nameEn)
   return (
-    <div className="mx-auto min-h-dvh max-w-md">
+    <div className="min-h-dvh">
       <FarmBanner name={name} initials={tenant.invoicePrefix} />
-      <main className="flex flex-col gap-5 px-4 py-6">
+      <main className="mx-auto flex w-full max-w-md flex-col gap-5 px-4 py-6">
+        <CartArt variant="scene" priority className="rounded-3xl border" />
         <div>
           <h1 className="text-2xl font-bold">{t("welcome")}</h1>
           <p className="mt-1 text-muted-foreground">{t("welcomeHint", { farm: name })}</p>

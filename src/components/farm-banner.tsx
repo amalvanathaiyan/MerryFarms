@@ -1,6 +1,7 @@
 import Link from "next/link"
-import { ArrowLeft, Sprout, UserRound } from "lucide-react"
+import { ArrowLeft, UserRound } from "lucide-react"
 import { LanguageToggle } from "@/components/language-toggle"
+import { WheelMark } from "@/components/art/wheel-mark"
 
 /**
  * The farm's banner, fixed at the top of every customer page. The name gets almost the
@@ -23,8 +24,8 @@ export function FarmBanner({
   myOrders?: { href: string; label: string }
 }) {
   return (
-    <header className="sticky top-0 z-20 border-b bg-header text-header-foreground shadow-sm">
-      <div className="flex items-center gap-3 px-4 py-3">
+    <header className="sticky top-0 z-20 border-b bg-header/95 text-header-foreground backdrop-blur">
+      <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">
         <Link href={href} className="flex min-w-0 flex-1 items-center gap-3" aria-label={back}>
           {back ? (
             <ArrowLeft className="size-5 shrink-0" aria-hidden />
@@ -34,10 +35,10 @@ export function FarmBanner({
             </span>
           )}
           <span className="flex min-w-0 flex-col">
-            <span className="text-lg font-bold leading-tight break-words">{name}</span>
-            {/* The platform's own mark, quieter than the farm's name. */}
-            <span className="mt-0.5 flex items-center gap-1 text-xs font-medium tracking-wide opacity-70" lang="en">
-              <Sprout className="size-3.5" aria-hidden />
+            <span className="font-display text-lg font-bold leading-tight break-words sm:text-xl">{name}</span>
+            {/* The platform's own mark (the cart wheel), quieter than the farm's name. */}
+            <span className="mt-0.5 flex items-center gap-1 text-xs font-medium tracking-wide opacity-75" lang="en">
+              <WheelMark className="size-4 text-primary" />
               FarmForYou
             </span>
           </span>

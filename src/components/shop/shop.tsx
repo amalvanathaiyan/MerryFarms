@@ -20,6 +20,8 @@ import { EnablePush } from "@/components/push/enable-push"
 import { ProductPicture } from "@/components/product-picture"
 import type { ArtKind } from "@/domain/product-art"
 import { FarmBanner } from "@/components/farm-banner"
+import { CartArt } from "@/components/art/cart-art"
+import { KindDrawing } from "@/components/art/kind-drawing"
 
 export interface ShopData {
   farm: {
@@ -45,7 +47,8 @@ export interface ShopData {
   initialCart: Record<string, number> | null
   /** Set when the customer is changing an earlier order: placing this one replaces it. */
   changing: { id: string; code: string; slotKey: string | null } | null
-  categories: { id: string; name: string }[]
+  /** kind picks the category's small drawing. */
+  categories: { id: string; name: string; kind: ArtKind }[]
   products: {
     id: string
     categoryId: string
@@ -171,9 +174,10 @@ export function Shop({ data }: { data: ShopData }) {
     // The order is already with the farm (saved, and on staff phones); nothing to forward.
     const tracked = placed.account === "connected"
     return (
-      <div className="mx-auto min-h-dvh max-w-md">
+      <div className="min-h-dvh">
         {header}
-        <main className="flex flex-col gap-4 px-4 py-8">
+        <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-6">
+          <CartArt variant="plain" className="mx-auto max-w-sm" />
           <h1 className="text-2xl font-bold">{t("placedTitle", { code: placed.code })}</h1>
           <p className="text-lg">{placed.needsCall ? t("placedCall", { farm: data.farm.name }) : t("placedConfirmed")}</p>
           <pre className="whitespace-pre-wrap rounded-xl border bg-card p-4 font-sans text-base">
@@ -234,7 +238,7 @@ export function Shop({ data }: { data: ShopData }) {
     // Code sign-in: the number is verified before the order form appears; the cart is kept.
     if (data.farm.otp && !data.me) {
       return (
-        <div className="mx-auto min-h-dvh max-w-md pb-10">
+        <div className="mx-auto min-h-dvh w-full max-w-xl pb-10">
           {cartHeader}
           <div className="flex flex-col gap-5 px-4 pt-4">
             {cartLines}
@@ -247,7 +251,7 @@ export function Shop({ data }: { data: ShopData }) {
       )
     }
     return (
-      <div className="mx-auto min-h-dvh max-w-md pb-10">
+      <div className="mx-auto min-h-dvh w-full max-w-xl pb-10">
         {cartHeader}
         <form onSubmit={submit} className="flex flex-col gap-5 px-4 pt-4">
           {data.changing && <p className="rounded-xl bg-yolk p-3 text-sm font-medium text-yolk-foreground">{t("changingOrder", { code: data.changing.code })}</p>}
@@ -338,10 +342,33 @@ export function Shop({ data }: { data: ShopData }) {
   }
 
   return (
-    <div className="mx-auto min-h-dvh max-w-md pb-28">
+    <div className="min-h-dvh pb-28">
       {header}
-      <main className="flex flex-col gap-5 px-4 pt-4">
-        <h1 className="text-2xl font-bold">{t("hello")}</h1>
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 pt-4 sm:px-6">
+        {/* Welcome: the bullock cart bringing the farm to you. Side by side from tablet width up. */}
+        <section className="grid overflow-hidden rounded-3xl border bg-card md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] md:items-center">
+          <CartArt variant="scene" priority className="md:order-2" />
+          <div className="flex flex-col gap-3 p-4 sm:p-6">
+            <div>
+              <h1 className="text-2xl font-bold sm:text-3xl">{t("hello")}</h1>
+              <p className="text-muted-foreground">{t("fromTheFarm")}</p>
+            </div>
+            {data.farm.paused ? (
+              <p className="rounded-xl bg-destructive/10 p-4 font-medium text-destructive">{te("shop_paused")}</p>
+            ) : data.nextDelivery ? (
+              <section className="rounded-2xl bg-yolk p-4 text-yolk-foreground">
+                <div className="text-sm font-medium">{t("nextDelivery")}</div>
+                <div className="font-display text-lg font-bold">{data.nextDelivery.label}</div>
+                <div className="text-sm">
+                  {t("orderBy", { time: data.nextDelivery.orderBy })}
+                  {data.farm.deliveryFeePaise > 0 && data.farm.freeAbovePaise > 0 && ` · ${t("freeAbove", { amount: formatRupees(data.farm.freeAbovePaise) })}`}
+                </div>
+              </section>
+            ) : (
+              <p className="rounded-xl bg-yolk p-4 text-yolk-foreground">{t("noSlots")}</p>
+            )}
+          </div>
+        </section>
 
         {!data.farm.webOrdering && !data.farm.paused && (
           <section className="flex flex-col gap-3 rounded-2xl border-2 border-primary bg-accent p-4">
@@ -361,34 +388,28 @@ export function Shop({ data }: { data: ShopData }) {
           </section>
         )}
 
-        {data.farm.paused ? (
-          <p className="rounded-xl bg-destructive/10 p-4 font-medium text-destructive">{te("shop_paused")}</p>
-        ) : data.nextDelivery ? (
-          <section className="rounded-2xl bg-yolk p-4 text-yolk-foreground">
-            <div className="text-sm font-medium">{t("nextDelivery")}</div>
-            <div className="text-lg font-bold">{data.nextDelivery.label}</div>
-            <div className="text-sm">
-              {t("orderBy", { time: data.nextDelivery.orderBy })}
-              {data.farm.deliveryFeePaise > 0 && data.farm.freeAbovePaise > 0 && ` · ${t("freeAbove", { amount: formatRupees(data.farm.freeAbovePaise) })}`}
-            </div>
-          </section>
-        ) : (
-          <p className="rounded-xl bg-yolk p-4 text-yolk-foreground">{t("noSlots")}</p>
-        )}
-
         {data.closures.length > 0 && (
           <p className="flex items-start gap-2 rounded-xl border border-dashed p-3 text-sm">
             <CalendarOff className="mt-0.5 size-4 shrink-0" /> {t("noDeliveryOn", { days: data.closures.join(", ") })}
           </p>
         )}
 
-        {data.categories.length === 0 && <p className="py-10 text-center text-muted-foreground">{t("noProducts")}</p>}
+        {data.categories.length === 0 && (
+          <div className="flex flex-col items-center gap-3 py-8 text-center text-muted-foreground">
+            <CartArt variant="plain" className="max-w-xs opacity-80" />
+            <p>{t("noProducts")}</p>
+          </div>
+        )}
 
         {data.categories.map((c) => (
           <section key={c.id} className="flex flex-col gap-3" aria-labelledby={`cat-${c.id}`}>
-            <h2 id={`cat-${c.id}`} className="text-lg font-semibold">
+            <h2 id={`cat-${c.id}`} className="flex items-center gap-3 text-xl font-bold">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-accent text-primary">
+                <KindDrawing kind={c.kind} className="size-8" />
+              </span>
               {c.name}
             </h2>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {data.products
               .filter((p) => p.categoryId === c.id)
               .map((p) => {
@@ -432,6 +453,7 @@ export function Shop({ data }: { data: ShopData }) {
                   </article>
                 )
               })}
+            </div>
           </section>
         ))}
 
@@ -445,13 +467,13 @@ export function Shop({ data }: { data: ShopData }) {
           <button
             type="button"
             onClick={() => setView("cart")}
-            className="flex w-full items-center justify-between rounded-2xl bg-primary px-5 py-4 text-lg font-semibold text-primary-foreground shadow-lg"
+            className="flex w-full flex-wrap items-center justify-between gap-2 rounded-full bg-primary py-2 pr-2 pl-5 text-lg font-semibold text-primary-foreground shadow-lg"
           >
             <span className="flex items-center gap-2 tabular-nums">
               <ShoppingBasket className="size-5" />
               {t("cartBar", { count, total: formatRupees(total) })}
             </span>
-            <span>{t("viewCart")} →</span>
+            <span className="rounded-full bg-sun px-4 py-2 text-base font-bold text-sun-foreground">{t("viewCart")} →</span>
           </button>
         </div>
       )}

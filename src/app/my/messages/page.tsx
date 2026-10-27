@@ -28,9 +28,9 @@ export default async function MyMessagesPage() {
   const messages = await thread(tenant.id, me.id)
 
   return (
-    <div className="mx-auto min-h-dvh max-w-md pb-28">
+    <div className="min-h-dvh pb-28">
       <FarmBanner name={pick(locale, tenant.nameTa, tenant.nameEn)} initials={tenant.invoicePrefix} href="/my" back={t("back")} />
-      <main className="flex flex-col gap-3 px-4 pt-4">
+      <main className="mx-auto flex w-full max-w-2xl flex-col gap-3 px-4 pt-4 sm:px-6">
         <p className="rounded-xl bg-accent p-3 text-sm">{t("customerHint")}</p>
         <ChatThread
           messages={messages.map((m) => ({ id: m.id, mine: m.sender === "customer", body: m.body, time: chatTime(m.createdAt, locale), seen: !!m.seenAt }))}

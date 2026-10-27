@@ -34,6 +34,7 @@ A Tamil-first, multi-tenant platform for small farms that sell direct to custome
 | Rules | Confirmation-call rules per farm, order lifecycle, IST dates and cut-offs, delivery charges, GST inside prices, invoice numbering per financial year, Indian mobile numbers |
 | Multi-tenancy | `tenantId` on every farm table, enforced by `src/lib/tenant-db.ts`; Supabase API roles locked out by `prisma/sql/rls.sql`; farm resolved from the subdomain or `DEFAULT_TENANT_SLUG` |
 | Installable app | Web app manifest, icons and offline page; service worker built with `npm run build`, including the notification handlers in `src/worker/` |
+| Look & art | FarmForYou's own art, drawn in code: a Tamil bullock cart carrying produce from every kind of farm past delta farmland (shop welcome, sign-in, order placed, offline), the cart-wheel mark (app icons, favicon, headers), a line drawing per product type on category headings, a little cart riding the order-progress track. Leaf green, sunflower and field colours; Baloo Thambi 2 headings, Hind Madurai text. Works from 320px phones to wide desktops: product grid on wider screens, side menu in the farm app from 1024px. Regenerate art with `node scripts/art/cart-art.mjs` and icons with `node scripts/art/icons.mjs`. |
 
 Not yet: PDF files, automated WhatsApp (Cloud API), platform admin.
 

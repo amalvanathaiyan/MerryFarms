@@ -96,7 +96,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       : null,
     categories: categories
       .filter((c) => products.some((p) => p.categoryId === c.id))
-      .map((c) => ({ id: c.id, name: pick(locale, c.nameTa, c.nameEn) })),
+      .map((c) => ({ id: c.id, name: pick(locale, c.nameTa, c.nameEn), kind: artFor(c.kind, c.nameEn, c.nameTa) })),
     products: products.map((p) => ({
       id: p.id,
       categoryId: p.categoryId,

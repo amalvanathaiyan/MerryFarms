@@ -6,6 +6,8 @@ import { LoginForm } from "./login-form"
 import { isDemoLoginEnabled, DEMO_AUTH_PREFIX } from "@/lib/demo-auth"
 import { tenantDb } from "@/lib/tenant-db"
 import { demoSignIn } from "@/app/actions/auth"
+import { CartArt } from "@/components/art/cart-art"
+import { WheelMark } from "@/components/art/wheel-mark"
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
   const { next, error } = await searchParams
@@ -20,13 +22,24 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       : []
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 px-4 py-10">
-      <div className="flex justify-end">
-        <LanguageToggle />
+    <main className="mx-auto grid min-h-dvh w-full max-w-5xl items-center gap-8 px-4 py-8 sm:px-6 md:grid-cols-2 md:gap-12">
+      {/* The brand side: FarmForYou's cart on the farm road. On phones it sits above the form. */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <WheelMark tone="tile" className="size-12" />
+          <div className="flex flex-col leading-tight">
+            <span className="font-display text-xl font-bold" lang="en">
+              FarmForYou
+            </span>
+            <span className="text-sm text-muted-foreground">{tenant ? pick(locale, tenant.nameTa, tenant.nameEn) : ""}</span>
+          </div>
+        </div>
+        <CartArt variant="scene" priority className="rounded-3xl border" />
       </div>
-      <div>
-        <p className="text-sm text-muted-foreground">{tenant ? pick(locale, tenant.nameTa, tenant.nameEn) : "FarmForYou"}</p>
+      <div className="flex w-full max-w-sm flex-col gap-6 justify-self-center">
+      <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <LanguageToggle />
       </div>
       {error === "not_staff" && (
         <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-destructive">
@@ -47,6 +60,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </section>
       )}
       <LoginForm next={target} />
+      </div>
     </main>
   )
 }

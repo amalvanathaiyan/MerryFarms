@@ -17,6 +17,7 @@
   },
   "shop": {
     "hello": "Hello!",
+    "fromTheFarm": "Straight from the farm to your home",
     "nextDelivery": "Next delivery",
     "orderBy": "Order by {time}",
     "freeAbove": "Free delivery above {amount}",
