@@ -53,7 +53,7 @@ export function FarmBanner({
             <UserRound className="size-5" aria-hidden />
           </Link>
         )}
-        <LanguageToggle variant="icon" />
+        <LanguageToggle compact />
       </div>
     </header>
   )
