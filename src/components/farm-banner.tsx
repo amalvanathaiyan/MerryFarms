@@ -44,7 +44,12 @@ export function FarmBanner({
           </span>
         </Link>
         {myOrders && (
-          <Link href={myOrders.href} className="grid size-10 shrink-0 place-items-center rounded-full border bg-card text-card-foreground" aria-label={myOrders.label} title={myOrders.label}>
+          <Link
+            href={myOrders.href}
+            className="grid size-10 shrink-0 place-items-center rounded-full border bg-card text-card-foreground transition-[color,background-color,border-color,box-shadow,transform] duration-200 ease-out hover:border-primary hover:bg-accent hover:text-primary hover:shadow-md active:scale-95"
+            aria-label={myOrders.label}
+            title={myOrders.label}
+          >
             <UserRound className="size-5" aria-hidden />
           </Link>
         )}
