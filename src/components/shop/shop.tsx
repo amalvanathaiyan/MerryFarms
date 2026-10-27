@@ -467,13 +467,13 @@ export function Shop({ data }: { data: ShopData }) {
           <button
             type="button"
             onClick={() => setView("cart")}
-            className="flex w-full flex-wrap items-center justify-between gap-2 rounded-full bg-primary py-2 pr-2 pl-5 text-lg font-semibold text-primary-foreground shadow-lg"
+            className="group flex w-full flex-wrap items-center justify-between gap-2 rounded-full bg-primary py-2 pr-2 pl-5 text-lg font-semibold text-primary-foreground shadow-lg hover:-translate-y-0.5 hover:shadow-xl"
           >
             <span className="flex items-center gap-2 tabular-nums">
               <ShoppingBasket className="size-5" />
               {t("cartBar", { count, total: formatRupees(total) })}
             </span>
-            <span className="rounded-full bg-sun px-4 py-2 text-base font-bold text-sun-foreground">{t("viewCart")} →</span>
+            <span className="rounded-full bg-sun px-4 py-2 text-base font-bold text-sun-foreground transition-colors group-hover:bg-[hsl(45_100%_56%)]">{t("viewCart")} →</span>
           </button>
         </div>
       )}
