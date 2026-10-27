@@ -13,6 +13,8 @@ import { formatRupees } from "@/domain/money"
 import { customerMayChange, orderCode, isOpen } from "@/domain/orders"
 import { formatIndianMobile } from "@/domain/phone"
 import { FarmBanner } from "@/components/farm-banner"
+import { CartArt } from "@/components/art/cart-art"
+import { CartIcon } from "@/components/art/cart-icon"
 import { Button } from "@/components/ui/button"
 import { ConnectForm } from "@/components/shop/connect-form"
 import { SignInFlow } from "@/components/shop/sign-in-flow"
@@ -47,9 +49,10 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
 
   if (!me) {
     return (
-      <div className="mx-auto min-h-dvh max-w-md">
+      <div className="min-h-dvh">
         {header}
-        <main className="flex flex-col gap-5 px-4 py-6">
+        <main className="mx-auto flex w-full max-w-md flex-col gap-5 px-4 py-6">
+          <CartArt variant="plain" className="mx-auto max-w-xs" />
           <h1 className="text-2xl font-bold">{otp ? tsi("welcome") : t("connectTitle")}</h1>
           {link === "expired" && <p className="rounded-lg bg-yolk p-3 text-sm text-yolk-foreground">{t("linkExpired")}</p>}
           <p className="text-muted-foreground">{otp ? tsi("myHint") : t("connectHint", { farm: farmName })}</p>
@@ -74,9 +77,9 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
   const slotText = (o: (typeof orders)[number]) => (o.channel === "walk_in" ? to("atFarm") : `${dayLabel(o.slotDate, locale, labels)} · ${o.slotLabel}`)
 
   return (
-    <div className="mx-auto min-h-dvh max-w-md pb-10">
+    <div className="min-h-dvh pb-10">
       {header}
-      <main className="flex flex-col gap-5 px-4 py-6">
+      <main className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 py-6 sm:px-6">
         <div>
           <h1 className="text-2xl font-bold">{t("hello", { name: me.name })}</h1>
           <p className="text-sm text-muted-foreground tabular-nums">{formatIndianMobile(me.phone)}</p>
@@ -114,7 +117,12 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
 
         <section className="flex flex-col gap-3">
           <h2 className="text-lg font-semibold">{t("onTheWay")}</h2>
-          {open.length === 0 && <p className="text-sm text-muted-foreground">{t("noOpen")}</p>}
+          {open.length === 0 && (
+            <p className="flex items-center gap-3 rounded-2xl border border-dashed p-4 text-sm text-muted-foreground">
+              <CartIcon className="size-8 text-primary/60" />
+              {t("noOpen")}
+            </p>
+          )}
           {open.map((o) => {
             const step = STEPS.indexOf(o.status as (typeof STEPS)[number])
             return (
@@ -124,10 +132,16 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
                   <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold">{to(`status_${o.status}`)}</span>
                 </div>
                 <p className="text-sm">{itemsText(o)}</p>
-                <div className="grid grid-cols-5 gap-1" aria-hidden>
-                  {STEPS.map((s, i) => (
-                    <span key={s} className={i <= step ? "h-1.5 rounded-full bg-primary" : "h-1.5 rounded-full bg-muted"} />
-                  ))}
+                {/* Progress: a little bullock cart rides along the track to the current step. */}
+                <div aria-hidden>
+                  <div className="relative h-7">
+                    <CartIcon className="absolute bottom-0.5 size-6 text-primary transition-[left]" style={{ left: `calc(${((Math.max(step, 0) + 0.5) / STEPS.length) * 100}% - 12px)` }} />
+                  </div>
+                  <div className="grid grid-cols-5 gap-1">
+                    {STEPS.map((s, i) => (
+                      <span key={s} className={i <= step ? "h-1.5 rounded-full bg-primary" : "h-1.5 rounded-full bg-muted"} />
+                    ))}
+                  </div>
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground tabular-nums">
                   <span>{slotText(o)}</span>

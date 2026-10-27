@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────
-   FarmForYou base theme — calm leaf green, mint, soft lime and sunflower.
+   FarmForYou base theme ("Kolam Field") — leaf green for actions, sunflower for the one thing to
+   do next, a soft field-green ground, ink-green text. Baloo Thambi 2 headings, Hind Madurai body.
    Tenants can later override --primary from their branding.
    Large type by default: many customers are older and read Tamil.
 ───────────────────────────────────────────────── */
@@ -35,8 +36,14 @@
   --color-lime-foreground: hsl(var(--lime-foreground));
   --color-yolk: hsl(var(--yolk));
   --color-yolk-foreground: hsl(var(--yolk-foreground));
+  --color-sun: hsl(var(--sun));
+  --color-sun-foreground: hsl(var(--sun-foreground));
 
-  --font-sans: var(--font-tamil), "Noto Sans", system-ui, sans-serif;
+  --font-sans: var(--font-body), "Noto Sans Tamil", system-ui, sans-serif;
+  --font-display: var(--font-heading), var(--font-body), "Noto Sans Tamil", system-ui, sans-serif;
+
+  /* Small phones (360px): below this, tight rows switch to compact versions (xs: / max-xs:). */
+  --breakpoint-xs: 22.5rem;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -45,36 +52,38 @@
 }
 
 @layer base {
-  /* Calm leaf green, easy on the eyes for long use: soft off-white grounds, a muted
-     green for actions, pale mint for highlights, gentle lime and sunflower accents.
-     Primary green keeps at least 4.5:1 contrast with white text. */
+  /* Field ground (#F4F6EE), white cards, ink-green text (#16301F), leaf-green actions (#1E6B45,
+     6.5:1 with white), mint highlights (#DCEBDD), cream notes (#FFF1C7), and sunflower (#F5B700,
+     with ink text) for the single most important action on a screen. */
   :root {
-    --background: 90 20% 97%;
-    --foreground: 150 22% 15%;
+    --background: 74 30% 95%;
+    --foreground: 141 37% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 150 22% 15%;
+    --card-foreground: 141 37% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 150 22% 15%;
-    --primary: 148 38% 32%;
+    --popover-foreground: 141 37% 14%;
+    --primary: 150 56% 27%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 120 18% 94%;
-    --secondary-foreground: 150 22% 15%;
-    --muted: 100 14% 94%;
-    --muted-foreground: 150 10% 36%;
-    --accent: 135 28% 91%;
-    --accent-foreground: 150 22% 15%;
-    --destructive: 6 58% 46%;
+    --secondary: 96 22% 91%;
+    --secondary-foreground: 141 37% 14%;
+    --muted: 90 20% 92%;
+    --muted-foreground: 139 12% 33%;
+    --accent: 124 27% 89%;
+    --accent-foreground: 141 37% 14%;
+    --destructive: 9 59% 45%;
     --destructive-foreground: 0 0% 100%;
-    --border: 110 14% 86%;
-    --input: 110 12% 78%;
-    --ring: 148 38% 32%;
+    --border: 96 20% 87%;
+    --input: 104 18% 78%;
+    --ring: 150 56% 27%;
     --lime: 84 38% 62%;
     --lime-foreground: 90 40% 14%;
-    --yolk: 46 80% 90%;
-    --yolk-foreground: 35 70% 22%;
-    /* Header bar: pale mint with dark green text instead of a bright block of colour. */
-    --header: 130 26% 92%;
-    --header-foreground: 150 30% 18%;
+    --yolk: 45 100% 89%;
+    --yolk-foreground: 45 100% 18%;
+    --sun: 45 100% 48%;
+    --sun-foreground: 141 37% 14%;
+    /* Header bar: the field ground itself, so the farm's name sits on the page, not in a block of colour. */
+    --header: 74 30% 95%;
+    --header-foreground: 141 37% 14%;
     /* Chart series colour: a touch more colourful than --primary so bars don't read grey.
        Validated with the dataviz palette checks on the light surface (#2e8b57). */
     --chart-1: #2e8b57;
@@ -89,7 +98,7 @@
       --card-foreground: 120 12% 88%;
       --popover: 150 12% 11%;
       --popover-foreground: 120 12% 88%;
-      --primary: 145 30% 56%;
+      --primary: 150 42% 52%;
       --primary-foreground: 150 30% 8%;
       --secondary: 150 10% 15%;
       --secondary-foreground: 120 12% 88%;
@@ -101,11 +110,13 @@
       --destructive-foreground: 150 30% 8%;
       --border: 145 8% 21%;
       --input: 145 8% 27%;
-      --ring: 145 30% 56%;
+      --ring: 150 42% 52%;
       --lime: 84 30% 52%;
       --lime-foreground: 90 40% 8%;
       --yolk: 45 35% 18%;
       --yolk-foreground: 46 70% 86%;
+      --sun: 45 95% 55%;
+      --sun-foreground: 150 30% 8%;
       --header: 150 12% 13%;
       --header-foreground: 120 12% 88%;
       --chart-1: #3fa66a; /* validated on the dark surface */
@@ -128,6 +139,13 @@
     font-size: 16px;
     /* Tamil vowel signs need extra line height */
     line-height: 1.6;
+  }
+
+  /* Headings in the rounded display face: warm, and made for Tamil. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
   }
 
   input,
