@@ -44,6 +44,9 @@
 
   /* Small phones (360px): below this, tight rows switch to compact versions (xs: / max-xs:). */
   --breakpoint-xs: 22.5rem;
+  /* Bottom-tab labels: five Tamil words across a phone. */
+  --text-tab: 0.65625rem;
+  --text-tab--line-height: 1.25;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

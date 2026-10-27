@@ -31,7 +31,7 @@ export function FarmNav({ toConfirm, unread, messagesOn }: { toConfirm: number; 
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "relative flex min-w-0 flex-col items-center gap-0.5 px-0.5 py-2 text-center text-[11px] leading-tight font-medium sm:text-xs",
+              "relative flex min-w-0 flex-col items-center gap-0.5 px-0.5 py-2 text-center text-tab font-medium sm:text-xs",
               "lg:flex-row lg:gap-3 lg:rounded-2xl lg:px-3 lg:py-2.5 lg:text-left lg:text-base",
               active ? "font-semibold text-primary lg:bg-accent" : "text-muted-foreground lg:hover:bg-accent lg:hover:text-primary"
             )}

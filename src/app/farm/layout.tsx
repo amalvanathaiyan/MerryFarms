@@ -35,8 +35,9 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
               <div className="truncate text-xs opacity-80">{staff.name}</div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-0.5">
-            <LanguageToggle compact />
+          {/* Language sits beside the name; the labelled actions take their own row on phones. */}
+          <LanguageToggle compact />
+          <div className="flex flex-wrap items-center gap-0.5 max-sm:w-full">
             {featuresOf(tenant).whatsappLite && (
               <Link href="/farm/whatsapp" className={ICON_LINK}>
                 <MessageCircle className="size-5" aria-hidden />

@@ -35,7 +35,7 @@ export function LanguageToggle({ className, compact = false }: { className?: str
           aria-busy={pending}
           className={cn("inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border bg-card px-3 text-sm font-medium text-card-foreground sm:hidden", STATES, pending && "animate-pulse", className)}
         >
-          <Languages className="size-4 max-xs:hidden" aria-hidden />
+          <Languages className="size-4 max-sm:hidden" aria-hidden />
           {LOCALE_LABELS[other]}
         </button>
       </>
