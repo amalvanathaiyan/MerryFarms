@@ -1,0 +1,744 @@
+// FarmForYou — Prisma schema (Merry Farms is the first farm)
+// Multi-tenant farm-shop platform. Database: Supabase Postgres (free tier at launch).
+// Tenant isolation: tenantId on every farm-owned model, enforced in code by
+// src/lib/tenant-db.ts, plus RLS enabled with no public policies (prisma/sql/rls.sql).
+// Money is stored in paise (Int). Bilingual text is stored as Ta/En column pairs.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────
+
+enum TenantStatus {
+  trial
+  active
+  suspended
+}
+
+enum Plan {
+  free
+  starter
+  growth
+  pro
+}
+
+enum WhatsAppMode {
+  lite // farm's own WhatsApp Business app + one-tap prefilled messages
+  cloud // Meta WhatsApp Cloud API
+}
+
+enum Language {
+  ta
+  en
+}
+
+enum StaffRole {
+  owner
+  order_desk
+  packing
+  delivery
+}
+
+enum OrderStatus {
+  to_confirm
+  confirmed
+  packed
+  out_for_delivery
+  delivered
+  cancelled
+}
+
+enum OrderChannel {
+  whatsapp
+  web
+  phone
+  walk_in
+}
+
+enum PaymentMethod {
+  upi_on_delivery
+  cash_on_delivery
+  upi_prepaid
+  credit
+}
+
+enum CallOutcome {
+  confirmed
+  changed
+  cancelled
+  no_answer
+  wrong_number
+}
+
+enum InvoiceType {
+  tax_invoice
+  bill_of_supply
+  credit_note
+}
+
+enum LedgerType {
+  charge // + order delivered
+  payment // − money received
+  adjustment // ± manual correction
+  credit_note // − goods returned or short delivered
+  refund // + money paid back to the customer
+}
+
+enum SubscriptionStatus {
+  active
+  paused
+  cancelled
+}
+
+enum MessageSender {
+  customer
+  farm
+}
+
+enum ReturnReason {
+  damaged
+  short_delivered
+  returned
+  quality
+  other
+}
+
+enum RefundMethod {
+  account // reduce dues, or keep as an advance
+  cash
+  upi
+}
+
+enum PaymentStatus {
+  received
+  pending
+  failed
+  refunded
+}
+
+// ─────────────────────────────────────────────────
+// TENANT & STAFF
+// ─────────────────────────────────────────────────
+
+model Tenant {
+  id              String       @id @default(uuid())
+  slug            String       @unique // subdomain, e.g. "merryfarms"
+  nameTa          String
+  nameEn          String
+  status          TenantStatus @default(trial)
+  plan            Plan         @default(free)
+  trialEndsAt     DateTime?
+  defaultLanguage Language     @default(ta)
+  phone           String // farm contact number shown to customers
+  upiId           String? // payments go straight to the farm
+  gstin           String?
+  fssaiNo         String?
+  invoicePrefix   String       @default("INV")
+
+  // WhatsApp
+  whatsappMode          WhatsAppMode @default(lite)
+  whatsappNumber        String? // number customers chat with
+  whatsappPhoneNumberId String? // Cloud API only
+  whatsappAccessToken   String? // Cloud API only, encrypted at rest
+  whatsappWabaId        String? // Cloud API only
+
+  // Feature switches chosen by the farm owner; see src/domain/features.ts.
+  // What is actually on = plan allows it AND the farm switched it on.
+  features Json @default("{}")
+
+  // Delivery area (src/domain/delivery-area.ts): radius around the farm and/or PIN codes served.
+  farmLat          Float?
+  farmLng          Float?
+  deliveryRadiusKm Float?
+  servedPincodes   String[]
+
+  // Delivery charges
+  deliveryFeePaise Int @default(3000)
+  freeAbovePaise   Int @default(50000) // 0 = never free
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  settings   TenantSettings?
+  staff      StaffMember[]
+  categories Category[]
+  products   Product[]
+  slots      DeliverySlot[]
+  customers  Customer[]
+  orders     Order[]
+
+  @@map("tenants")
+}
+
+/// Which orders need a confirmation call. Each farm sets its own rules.
+model TenantSettings {
+  id                     String  @id @default(uuid())
+  tenantId               String  @unique
+  callWhatsAppOrders     Boolean @default(true)
+  callWebOrdersFromNew   Boolean @default(true)
+  newCustomerOrderCount  Int     @default(3) // fewer delivered orders than this = "new"
+  callAboveTotalPaise    Int     @default(150000)
+  callAboveUsualMultiple Int     @default(3)
+  skipCallForTrusted     Boolean @default(true)
+  skipCallForPrepaid     Boolean @default(true)
+  callRetryMinutes       Int     @default(30)
+  maxCallAttempts        Int     @default(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_settings")
+}
+
+model StaffMember {
+  id         String      @id @default(uuid())
+  tenantId   String
+  authUserId String // Supabase auth.users id
+  name       String
+  phone      String?
+  email      String?
+  roles      StaffRole[]
+  language   Language    @default(ta)
+  isActive   Boolean     @default(true)
+  createdAt  DateTime    @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, authUserId])
+  @@index([authUserId])
+  @@map("staff_members")
+}
+
+/// Platform owners (FarmForYou). Not tied to a tenant.
+model PlatformAdmin {
+  id         String   @id @default(uuid())
+  authUserId String   @unique
+  name       String
+  createdAt  DateTime @default(now())
+
+  @@map("platform_admins")
+}
+
+// ─────────────────────────────────────────────────
+// CATALOGUE & DELIVERY
+// ─────────────────────────────────────────────────
+
+model Category {
+  id             String  @id @default(uuid())
+  tenantId       String
+  nameTa         String
+  nameEn         String
+  sortOrder      Int     @default(0)
+  showOnWhatsApp Boolean @default(true)
+  /// What it holds (egg, milk, oil, vegetables, pickles…; see domain/product-art). Picks the drawing.
+  kind           String?
+  deletedAt      DateTime? // removed by the farm; kept so old products and orders stay readable
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@index([tenantId])
+  @@map("categories")
+}
+
+model Product {
+  id         String    @id @default(uuid())
+  tenantId   String
+  categoryId String
+  nameTa     String
+  nameEn     String
+  packTa     String // e.g. "30 முட்டை"
+  packEn     String // e.g. "Tray of 30"
+  noteTa     String?
+  noteEn     String?
+  pricePaise Int // GST-inclusive selling price
+  offerPricePaise Int? // a lower price for a while ("₹390 → ₹360")
+  offerEndsOn     String? // last IST day of the offer, "2026-10-25"; null = until removed
+  stockQty   Int       @default(0)
+  stockUnit  String    @default("packs")
+  hsn        String?
+  gstRate    Int       @default(0) // percent; 0 = exempt
+  imageUrl   String?
+  onWeb      Boolean   @default(true)
+  onWhatsApp Boolean   @default(true)
+  isActive   Boolean   @default(true)
+  sortOrder  Int       @default(0)
+  deletedAt  DateTime? // soft delete keeps old orders readable
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category   Category    @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
+
+  @@index([tenantId, categoryId])
+  @@map("products")
+}
+
+model DeliverySlot {
+  id          String  @id @default(uuid())
+  tenantId    String
+  nameTa      String
+  nameEn      String
+  startTime   String // "07:00", farm local time (IST)
+  endTime     String // "09:00"
+  daysOfWeek  Int[] // 0 = Sunday … 6 = Saturday
+  cutoffHours Int     @default(12)
+  maxOrders   Int     @default(20)
+  isActive    Boolean @default(true)
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders        Order[]
+  subscriptions Subscription[]
+
+  @@index([tenantId])
+  @@map("delivery_slots")
+}
+
+// ─────────────────────────────────────────────────
+// CUSTOMERS
+// ─────────────────────────────────────────────────
+
+model Customer {
+  id               String    @id @default(uuid())
+  tenantId         String
+  phone            String // E.164, e.g. +919000010001
+  name             String
+  language         Language  @default(ta)
+  isTrusted        Boolean   @default(false) // owner-marked; may skip the call
+  creditLimitPaise Int       @default(0) // 0 = no credit (khata)
+  marketingOptIn   Boolean   @default(false)
+  optInAt          DateTime?
+  notes            String?
+  /// The customer's private key for "My orders" and messages (no login). Kept in a cookie on
+  /// their phone and in their personal link; the farm can reset it.
+  accessToken      String?   @unique
+  tokenIssuedAt    DateTime?
+  createdAt        DateTime  @default(now())
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  addresses     Address[]
+  messages      Message[]
+  orders        Order[]
+  ledger        LedgerEntry[]
+  payments      Payment[]
+  invoices      Invoice[]
+  subscriptions Subscription[]
+
+  @@unique([tenantId, phone])
+  @@map("customers")
+}
+
+model Address {
+  id         String   @id @default(uuid())
+  tenantId   String
+  customerId String
+  line       String
+  landmark   String?
+  pincode    String?
+  lat        Float?
+  lng        Float?
+  /// How the location was given: "gps" (where the phone was), "map" (pin placed on the map), "link" (a maps link pasted).
+  locationSource String?
+  /// The place at the location, looked up when it was given: "Velachery, Chennai 600042".
+  placeName      String?
+  /// Delivery to someone else (e.g. ordering for parents): who receives it, and their phone.
+  receiverName   String?
+  receiverPhone  String?
+  isDefault  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orders   Order[]
+
+  @@index([tenantId, customerId])
+  @@map("addresses")
+}
+
+// ─────────────────────────────────────────────────
+// ORDERS
+// ─────────────────────────────────────────────────
+
+model Order {
+  id               String        @id @default(uuid())
+  tenantId         String
+  number           Int // per-tenant running number, shown as MF-1047
+  customerId       String
+  addressId        String?
+  channel          OrderChannel
+  status           OrderStatus   @default(to_confirm)
+  slotId           String?
+  slotDate         String // "2026-10-21", IST date of delivery
+  slotLabel        String // copied at order time, e.g. "7–9 AM"
+  paymentMethod    PaymentMethod
+  subtotalPaise    Int
+  deliveryFeePaise Int
+  totalPaise       Int
+  needsCall        Boolean       @default(true)
+  cancelReason     String?
+  note             String?
+  deliveredAt      DateTime?
+  subscriptionId   String? // set when a weekly/daily plan created this order
+  areaCheck        String? // "inside" | "outside" | "unknown"; null when the farm has no area set
+  distanceKm       Float? // from the farm, when the customer shared their location
+  pinCheck         String? // PIN typed vs PIN at the location: "match" | "near" | "mismatch" | "unknown"; null without a location
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer     Customer           @relation(fields: [customerId], references: [id])
+  address      Address?           @relation(fields: [addressId], references: [id])
+  slot         DeliverySlot?      @relation(fields: [slotId], references: [id])
+  items        OrderItem[]
+  events       OrderEvent[]
+  calls        ConfirmationCall[]
+  invoices     Invoice[]
+  payments     Payment[]
+  returns      OrderReturn[]
+  subscription Subscription?      @relation(fields: [subscriptionId], references: [id])
+
+  @@unique([tenantId, number])
+  @@unique([subscriptionId, slotDate]) // a plan never creates two orders for the same day
+  @@index([tenantId, status])
+  @@index([tenantId, slotDate, slotId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String @id @default(uuid())
+  tenantId       String
+  orderId        String
+  productId      String
+  qty            Int
+  unitPricePaise Int // copied at order time
+  gstRate        Int // copied at order time
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([tenantId, orderId])
+  @@map("order_items")
+}
+
+/// Audit trail of every status change on an order.
+model OrderEvent {
+  id         String       @id @default(uuid())
+  tenantId   String
+  orderId    String
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  byStaffId  String?
+  note       String?
+  at         DateTime     @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, orderId])
+  @@map("order_events")
+}
+
+model ConfirmationCall {
+  id          String      @id @default(uuid())
+  tenantId    String
+  orderId     String
+  attempt     Int
+  outcome     CallOutcome
+  calledById  String?
+  note        String?
+  durationSec Int?
+  at          DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, orderId])
+  @@map("confirmation_calls")
+}
+
+// ─────────────────────────────────────────────────
+// BILLING
+// ─────────────────────────────────────────────────
+
+/// An issued invoice never changes: everything printed on it is frozen in `snapshot`,
+/// so renaming a product or changing the farm's address later cannot alter old invoices.
+model Invoice {
+  id          String      @id @default(uuid())
+  tenantId    String
+  orderId     String?
+  customerId  String
+  type        InvoiceType
+  number      String // e.g. MF/2026-27/0001
+  fy          String // "2026-27"
+  seq         Int
+  totalPaise  Int
+  taxPaise    Int         @default(0)
+  snapshot    Json // see InvoiceSnapshot in src/domain/invoices.ts
+  publicToken String      @unique // unguessable; lets the customer open their invoice without login
+  pdfUrl      String?
+  issuedAt    DateTime    @default(now())
+
+  /// For credit notes: the invoice they correct.
+  refInvoiceId String?
+
+  order       Order?        @relation(fields: [orderId], references: [id])
+  customer    Customer      @relation(fields: [customerId], references: [id])
+  refInvoice  Invoice?      @relation("CreditNotes", fields: [refInvoiceId], references: [id])
+  creditNotes Invoice[]     @relation("CreditNotes")
+  returns     OrderReturn[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, customerId])
+  @@index([tenantId, fy, seq])
+  @@map("invoices")
+}
+
+/// Next invoice sequence per tenant per financial year.
+model InvoiceCounter {
+  tenantId String
+  series   String @default("INV") // "INV" for invoices, "CN" for credit notes
+  fy       String
+  nextSeq  Int    @default(1)
+
+  @@id([tenantId, series, fy])
+  @@map("invoice_counters")
+}
+
+/// Khata: a customer's balance is the sum of their entries (charges positive, payments negative).
+model LedgerEntry {
+  id          String     @id @default(uuid())
+  tenantId    String
+  customerId  String
+  type        LedgerType
+  amountPaise Int
+  refType     String? // "order" | "payment" | "invoice"
+  refId       String?
+  note        String?
+  at          DateTime   @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId, customerId])
+  @@map("ledger_entries")
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  tenantId      String
+  customerId    String
+  orderId       String?
+  method        PaymentMethod
+  amountPaise   Int
+  status        PaymentStatus @default(received)
+  collectedById String?
+  reference     String? // UPI reference or Razorpay id
+  note          String?
+  at            DateTime      @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  order    Order?   @relation(fields: [orderId], references: [id])
+
+  @@index([tenantId, customerId])
+  @@map("payments")
+}
+
+/// Goods returned or short delivered after an order was delivered.
+/// Kept even when the farm doesn't issue invoices, so the history is always there.
+model OrderReturn {
+  id               String       @id @default(uuid())
+  tenantId         String
+  orderId          String
+  /// [{ productId, qty, unitPricePaise, gstRate }] at the agreed prices
+  items            Json
+  reason           ReturnReason
+  note             String?
+  amountPaise      Int // goods + any delivery charge refunded
+  deliveryFeePaise Int          @default(0)
+  refundMethod     RefundMethod
+  restocked        Boolean      @default(false)
+  creditNoteId     String?
+  byStaffId        String?
+  at               DateTime     @default(now())
+
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  creditNote Invoice? @relation(fields: [creditNoteId], references: [id])
+
+  @@index([tenantId, orderId])
+  @@map("order_returns")
+}
+
+/// The farm's own wording for a WhatsApp message (see src/domain/templates.ts).
+/// Empty text falls back to the built-in default for that language.
+model MessageTemplate {
+  id        String   @id @default(uuid())
+  tenantId  String
+  key       String // a TemplateKey, e.g. "confirmed"
+  bodyTa    String?
+  bodyEn    String?
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, key])
+  @@map("message_templates")
+}
+
+/// A weekly or daily plan: the same order on chosen days (eggs every Sunday, milk every day).
+/// Orders are created a day or two ahead; see src/server/plans.ts.
+model Subscription {
+  id            String             @id @default(uuid())
+  tenantId      String
+  customerId    String
+  addressId     String?
+  slotId        String
+  /// [{ productId, qty }]
+  items         Json
+  daysOfWeek    Int[] // 0 = Sunday … 6 = Saturday
+  paymentMethod PaymentMethod
+  discountPct   Int                @default(0) // plan price, e.g. 5 = 5% off
+  status        SubscriptionStatus @default(active)
+  startDate     String // IST "YYYY-MM-DD"
+  pausedUntil   String? // paused up to and including this date
+  skipDates     String[] // single days the customer doesn't want
+  note          String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  customer Customer     @relation(fields: [customerId], references: [id])
+  slot     DeliverySlot @relation(fields: [slotId], references: [id])
+  orders   Order[]
+
+  @@index([tenantId, status])
+  @@map("subscriptions")
+}
+
+/// A message between a customer and the farm, inside the app (no WhatsApp needed).
+/// One conversation per customer; a message can mention an order.
+model Message {
+  id         String        @id @default(uuid())
+  tenantId   String
+  customerId String
+  sender     MessageSender
+  body       String
+  orderId    String?
+  byStaffId  String? // who replied, for farm messages
+  /// When the other side opened the conversation after this message (the "Seen" tick).
+  seenAt     DateTime?
+  createdAt  DateTime      @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, customerId, createdAt])
+  @@index([tenantId, sender, seenAt])
+  @@map("messages")
+}
+
+/// A phone that accepted notifications (web push), for a customer or a staff member.
+model PushSubscription {
+  id         String    @id @default(uuid())
+  tenantId   String
+  customerId String?
+  staffId    String?
+  endpoint   String
+  p256dh     String
+  auth       String
+  createdAt  DateTime  @default(now())
+  lastSentAt DateTime?
+
+  @@unique([tenantId, endpoint])
+  @@index([tenantId, customerId])
+  @@index([tenantId, staffId])
+  @@map("push_subscriptions")
+}
+
+/// A product's photo, shrunk on the phone before upload (~50 KB). Kept in the database so
+/// the free tier needs no separate file storage; served by /img/p/<productId>.
+model ProductImage {
+  productId String   @id
+  tenantId  String
+  mime      String
+  data      Bytes
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("product_images")
+}
+
+/// A sign-in code sent to a customer's mobile. Only a keyed hash of the code is kept.
+model OtpCode {
+  id        String    @id @default(uuid())
+  tenantId  String
+  phone     String
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int       @default(0)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([tenantId, phone, createdAt])
+  @@map("otp_codes")
+}
+
+/// A day (or one slot on a day) with no deliveries: festival, family event, rest day.
+model ClosedDay {
+  id        String   @id @default(uuid())
+  tenantId  String
+  date      String // IST "2026-01-15"
+  slotId    String? // null = the whole day
+  note      String? // shown to customers, e.g. "Pongal"
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, date])
+  @@map("closed_days")
+}
+
+/// One day's flock figures, entered by the farm (one row per farm per day).
+model DailyRecord {
+  id            String   @id @default(uuid())
+  tenantId      String
+  date          String // IST "2026-10-22"
+  eggsCollected Int?
+  eggsBroken    Int?
+  birds         Int? // birds in the flock that day
+  birdsLost     Int? // died or culled
+  feedKg        Float?
+  note          String?
+  byStaffId     String?
+  updatedAt     DateTime @updatedAt
+
+  @@unique([tenantId, date])
+  @@map("daily_records")
+}
+
+/// Money spent running the farm (feed, medicine, chicks, labour…), for profit.
+model Expense {
+  id          String   @id @default(uuid())
+  tenantId    String
+  date        String // IST
+  kind        String // feed | medicine | chicks | labour | transport | electricity | packing | other
+  amountPaise Int
+  note        String?
+  byStaffId   String?
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, date])
+  @@map("expenses")
+}
+
+/// How much of a product the farm made or collected on a day (bottles of oil, litres of
+/// milk, packs of eggs), and how much spoiled. Good quantity can go into stock.
+model ProductionEntry {
+  id        String   @id @default(uuid())
+  tenantId  String
+  date      String // IST
+  productId String
+  made      Float // in the product's own unit (stockUnit)
+  wasted    Float    @default(0)
+  byStaffId String?
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, date, productId])
+  @@map("production_entries")
+}
