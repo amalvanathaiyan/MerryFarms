@@ -32,7 +32,7 @@ export default async function FarmAdminPage({ params }: { params: Promise<{ id: 
 
       <section className="flex flex-wrap items-center gap-4">
         <FarmMark logoUrl={farm.logoUrl} initials={farm.invoicePrefix} className="size-16" />
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-[12rem] flex-1 flex-col">
           <h1 className="text-2xl font-bold">{pick(locale, farm.nameTa, farm.nameEn)}</h1>
           <span className="text-sm text-muted-foreground" lang="en">
             {farm.slug} · {farm.phone}
@@ -58,14 +58,14 @@ export default async function FarmAdminPage({ params }: { params: Promise<{ id: 
         )}
       </div>
 
-      <dl className="grid grid-cols-3 gap-3">
+      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {[
           [t("products"), counts.products],
           [t("customers"), counts.customers],
           [t("ordersAll"), counts.orders],
         ].map(([k, v]) => (
           <div key={k} className="rounded-2xl border bg-card p-3">
-            <dt className="text-sm text-muted-foreground">{k}</dt>
+            <dt className="text-xs text-muted-foreground wrap-anywhere sm:text-sm">{k}</dt>
             <dd className="font-display text-2xl font-bold tabular-nums">{v}</dd>
           </div>
         ))}

@@ -64,7 +64,7 @@ export function ShopArtPicker({ picked: initial, isDefault, kinds, suggested }: 
             {locale === "ta" ? g.ta : g.en}
             {kinds.includes(g.key) && <span className="ml-2 rounded-full bg-accent px-2 py-0.5 text-xs font-medium">{t("youSellThis")}</span>}
           </legend>
-          <div className="grid grid-cols-3 gap-2 xs:grid-cols-4 sm:grid-cols-6 lg:grid-cols-8">
+          <div className="grid grid-cols-3 gap-2 xs:grid-cols-4 sm:grid-cols-5 lg:grid-cols-6">
             {g.items.map((d) => {
               const on = picked.includes(d.id)
               const [, , w, h] = d.vb.split(" ").map(Number)
@@ -83,7 +83,7 @@ export function ShopArtPicker({ picked: initial, isDefault, kinds, suggested }: 
                   <svg viewBox={d.vb} width={Math.round(Math.min(48, (w / h) * 36))} height={Math.round(Math.min(36, (h / w) * 48))} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="text-primary" aria-hidden>
                     <path d={d.d} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
                   </svg>
-                  <span>{locale === "ta" ? d.ta : d.en}</span>
+                  <span className="max-w-full wrap-anywhere">{locale === "ta" ? d.ta : d.en}</span>
                   {on && (
                     <span className="absolute top-1.5 right-1.5 grid size-5 place-items-center rounded-full bg-primary text-primary-foreground">
                       <Check className="size-3.5" strokeWidth={3} aria-hidden />

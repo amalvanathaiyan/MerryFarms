@@ -68,7 +68,7 @@ export default async function AdminHome() {
                 <span className="rounded-full bg-accent px-2.5 py-0.5 font-medium">{t(`plan_${f.plan}`)}</span>
                 {f.status === "trial" && f.trialEndsAt && <span className="rounded-full border px-2.5 py-0.5">{t("trialEnds", { date: day.format(f.trialEndsAt) })}</span>}
               </div>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                 <div>
                   <dt className="text-muted-foreground">{t("orders30")}</dt>
                   <dd className="font-semibold tabular-nums">{f.orders30}</dd>
