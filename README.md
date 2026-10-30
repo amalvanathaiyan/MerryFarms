@@ -36,8 +36,10 @@ A Tamil-first, multi-tenant platform for small farms that sell direct to custome
 | Multi-tenancy | `tenantId` on every farm table, enforced by `src/lib/tenant-db.ts`; Supabase API roles locked out by `prisma/sql/rls.sql`; farm resolved from the subdomain or `DEFAULT_TENANT_SLUG` |
 | Installable app | Web app manifest, icons and offline page; service worker built with `npm run build`, including the notification handlers in `src/worker/` |
 | Look & art | FarmForYou's own art, drawn in code: a Tamil bullock cart carrying produce from every kind of farm past delta farmland (shop welcome, sign-in, order placed, offline), the cart-wheel mark (app icons, favicon, headers), a line drawing per product type on category headings, a little cart riding the order-progress track. Leaf green, sunflower and field colours; Baloo Thambi 2 headings, Hind Madurai text. Works from 320px phones to wide desktops: product grid on wider screens, side menu in the farm app from 1024px. Regenerate art with `node scripts/art/cart-art.mjs` and icons with `node scripts/art/icons.mjs`. |
+| Farm logo & shop drawings | Owner, in Settings: **logo** (picked on the phone, shrunk to 512 px, kept in the database like product photos, served by `/img/logo`) shown in the shop banner and the farm app header instead of initials. **Shop drawings**: pick up to 12 of the 137 FarmForYou line drawings (village set + one group per product type, Tamil and English names), with a live preview; they stand as a little farm scene at the foot of the shop. Until the owner picks, the shop shows the bullock cart, palm, paddy and sun plus two drawings per product type it sells. |
+| Platform admin (`/admin`) | For FarmForYou only (a row in `platform_admins`, made with `npm run admin:add`; being a farm's staff gives no access). **Farms**: every farm with status (on trial, trial over, active, paused), plan, trial end, orders and sales in 30 days, customers, last order; totals at the top. **New farm**: names, web address (subdomain, checked and reserved names refused), phone, bill prefix (suggested from the name), language, plan and free-trial days, owner; creates the farm with a morning delivery slot and the owner's login, showing a temporary password once. **A farm**: change plan, status (pausing stops its shop at once), trial end and details; staff list with **new password**; add an owner. |
 
-Not yet: PDF files, automated WhatsApp (Cloud API), platform admin.
+Not yet: PDF files, automated WhatsApp (Cloud API), plan billing (payments for FarmForYou plans).
 
 ## Stack
 
@@ -84,6 +86,11 @@ Open http://localhost:3000 for the shop. The farm app needs a real Supabase proj
    ```bash
    npm run staff:add -- --email you@example.com --password 'a-long-password' --name "Your name" --roles owner
    ```
+   and, for running the platform (adding more farms, plans, trials), make yourself a platform admin. The same login can be both:
+   ```bash
+   npm run admin:add -- --email you@example.com --name "Your name"
+   ```
+   Then open `/admin` (in the demo: http://localhost:3000/login?next=/admin and the demo admin button).
 5. For phone notifications, run `node scripts/vapid-keys.mjs` once and add the three lines to `.env.local` (and to the host's environment settings). Keep `VAPID_PRIVATE_KEY` secret; changing the keys means everyone has to turn notifications on again.
 6. `npm run dev`, then sign in at http://localhost:3000/login.
 

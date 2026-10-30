@@ -76,6 +76,8 @@ CREATE TABLE "tenants" (
     "servedPincodes" TEXT[],
     "deliveryFeePaise" INTEGER NOT NULL DEFAULT 3000,
     "freeAbovePaise" INTEGER NOT NULL DEFAULT 50000,
+    "logoUrl" TEXT,
+    "shopArt" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -120,6 +122,7 @@ CREATE TABLE "platform_admins" (
     "id" TEXT NOT NULL,
     "authUserId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "email" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "platform_admins_pkey" PRIMARY KEY ("id")
@@ -451,6 +454,16 @@ CREATE TABLE "product_images" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "product_images_pkey" PRIMARY KEY ("productId")
+);
+
+-- CreateTable
+CREATE TABLE "tenant_logos" (
+    "tenantId" TEXT NOT NULL,
+    "mime" TEXT NOT NULL,
+    "data" BYTEA NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "tenant_logos_pkey" PRIMARY KEY ("tenantId")
 );
 
 -- CreateTable

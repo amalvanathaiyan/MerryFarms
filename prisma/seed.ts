@@ -114,6 +114,12 @@ async function main() {
         create: { tenantId: tenant.id, authUserId: st.authUserId, name: st.name, roles: [...st.roles] },
       })
     }
+    // Demo platform admin (FarmForYou, all farms): /login?next=/admin shows its demo button.
+    await prisma.platformAdmin.upsert({
+      where: { authUserId: "demo-admin" },
+      update: {},
+      create: { authUserId: "demo-admin", name: "FarmForYou admin (demo)" },
+    })
 
     type Sample = {
       phone: string

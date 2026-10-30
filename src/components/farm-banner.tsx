@@ -12,6 +12,7 @@ import { HelpButton } from "@/components/shop/help-button"
 export function FarmBanner({
   name,
   initials,
+  logoUrl,
   href = "/",
   back,
   myOrders,
@@ -19,6 +20,8 @@ export function FarmBanner({
 }: {
   name: string
   initials: string
+  /** The farm's logo; its initials show until it adds one. */
+  logoUrl?: string | null
   /** Where tapping the name goes. */
   href?: string
   /** Shows a back arrow with this word beside it ("பின்"). */
@@ -36,6 +39,9 @@ export function FarmBanner({
                 <ArrowLeft className="size-4" aria-hidden />
                 {back}
               </span>
+            ) : logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- small logo served by our own route
+              <img src={logoUrl} alt="" className="size-9 shrink-0 rounded-xl border bg-card object-contain xs:size-11 xs:rounded-2xl" />
             ) : (
               <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-xs font-bold text-primary-foreground xs:size-11 xs:rounded-2xl xs:text-sm" aria-hidden>
                 {initials}

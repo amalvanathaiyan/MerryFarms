@@ -24,6 +24,7 @@ import { CartArt } from "@/components/art/cart-art"
 import { HelpButton } from "./help-button"
 import { HowTo } from "./how-to"
 import { KindDrawing } from "@/components/art/kind-drawing"
+import { ArtStrip } from "@/components/art/art-strip"
 
 export interface ShopData {
   farm: {
@@ -46,6 +47,7 @@ export interface ShopData {
     messages: boolean
     /** New orders get a confirmation call (told to first-time customers in "How to order"). */
     calls: boolean
+    logoUrl: string | null
   }
   me: {
     name: string
@@ -55,6 +57,8 @@ export interface ShopData {
   initialCart: Record<string, number> | null
   /** Set when the customer is changing an earlier order: placing this one replaces it. */
   changing: { id: string; code: string; slotKey: string | null } | null
+  /** The drawings the farm chose for its shop (or the default for what it sells). */
+  art: { id: string; vb: string; d: string }[]
   /** kind picks the category's small drawing. */
   categories: { id: string; name: string; kind: ArtKind }[]
   products: {
@@ -184,6 +188,7 @@ export function Shop({ data }: { data: ShopData }) {
     <FarmBanner
       name={data.farm.name}
       initials={data.farm.orderPrefix}
+      logoUrl={data.farm.logoUrl}
       myOrders={data.farm.accounts ? { href: "/my", label: t("myOrders"), shortLabel: t("ordersShort") } : undefined}
       help={{ ...help, raised: view === "shop" && count > 0 }}
     />
@@ -504,6 +509,8 @@ export function Shop({ data }: { data: ShopData }) {
             </div>
           </section>
         ))}
+
+        <ArtStrip drawings={data.art} caption={t("fromTheFarm")} className="mt-4" />
 
         <a href={`tel:${data.farm.phone}`} className="flex items-center justify-center gap-2 py-4 text-primary underline-offset-4 hover:underline">
           <Phone className="size-4" /> {t("callFarm")}

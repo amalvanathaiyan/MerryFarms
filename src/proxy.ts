@@ -37,7 +37,8 @@ export async function proxy(request: NextRequest) {
   const next = () => NextResponse.next({ request: { headers: requestHeaders } })
   let response = next()
 
-  const isFarmApp = pathname.startsWith("/farm")
+  // The farm app and the platform admin both need a signed-in user; each page then checks who they are.
+  const isFarmApp = pathname.startsWith("/farm") || pathname.startsWith("/admin")
   // Demo mode (local only): the page itself checks the demo staff member belongs to this farm.
   if (isFarmApp && isDemoLoginEnabled() && request.cookies.get(DEMO_COOKIE)?.value.startsWith(DEMO_AUTH_PREFIX)) {
     return response
