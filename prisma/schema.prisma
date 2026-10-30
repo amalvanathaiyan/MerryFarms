@@ -163,6 +163,11 @@ model Tenant {
   deliveryFeePaise Int @default(3000)
   freeAbovePaise   Int @default(50000) // 0 = never free
 
+  // Look: the farm's logo (served by /img/logo, see TenantLogo) and the drawings it picked for its shop
+  // (ids from src/components/art/drawing-library.ts; empty = chosen from its product types).
+  logoUrl String?
+  shopArt String[] @default([])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -220,6 +225,7 @@ model PlatformAdmin {
   id         String   @id @default(uuid())
   authUserId String   @unique
   name       String
+  email      String?
   createdAt  DateTime @default(now())
 
   @@map("platform_admins")
@@ -664,6 +670,16 @@ model ProductImage {
 
   @@index([tenantId])
   @@map("product_images")
+}
+
+/// A farm's logo, shrunk on the phone before upload. Kept in the database like product photos; served by /img/logo.
+model TenantLogo {
+  tenantId  String   @id
+  mime      String
+  data      Bytes
+  updatedAt DateTime @updatedAt
+
+  @@map("tenant_logos")
 }
 
 /// A sign-in code sent to a customer's mobile. Only a keyed hash of the code is kept.

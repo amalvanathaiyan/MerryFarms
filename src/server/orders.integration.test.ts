@@ -46,6 +46,8 @@ const tenantRow = (id: string, slug: string, features: Record<string, boolean> =
   farmLng: null as number | null,
   deliveryRadiusKm: null as number | null,
   servedPincodes: [] as string[],
+  logoUrl: null as string | null,
+  shopArt: [] as string[],
   trialEndsAt: null,
   createdAt: NOW,
   updatedAt: NOW,
@@ -1018,5 +1020,44 @@ describe("delivery spot and receiver", () => {
     )
     expect(decision).toEqual({ needsCall: true, reason: "location_mismatch" })
     expect(o).toMatchObject({ status: "to_confirm", pinCheck: "mismatch" })
+  })
+})
+
+describe("platform admin: farms", () => {
+  it("adds a farm on trial with its owner login and a starting delivery slot", async () => {
+    process.env.DEMO_LOGIN = "1" // owner logins are demo ids here; no Supabase in tests
+    const { createFarm } = await import("./platform")
+    const r = await createFarm(
+      { nameTa: "காவேரி பால்", nameEn: "Kaveri Dairy", slug: "kaveri", phone: "+919000050001", defaultLanguage: "ta", invoicePrefix: "KD", plan: "starter", trialDays: 30, owner: { name: "Selvam", email: "selvam@example.com" } },
+      NOW
+    )
+    expect(r.tenant).toMatchObject({ slug: "kaveri", status: "trial", plan: "starter", invoicePrefix: "KD" })
+    expect(r.tenant.trialEndsAt!.getTime() - NOW.getTime()).toBe(30 * 24 * 60 * 60 * 1000)
+    expect(r.owner).toMatchObject({ roles: ["owner"], email: "selvam@example.com" })
+    expect(await tenantDb(r.tenant.id).deliverySlot.count()).toBe(1)
+  })
+
+  it("refuses a subdomain that is taken or kept for the platform, and leaves nothing behind", async () => {
+    const { createFarm } = await import("./platform")
+    const base = { nameTa: "x", nameEn: "X Farm", phone: "+919000050002", defaultLanguage: "ta" as const, invoicePrefix: "XF", plan: "free" as const, trialDays: 0, owner: { name: "X", email: "x@example.com" } }
+    await expect(createFarm({ ...base, slug: "kaveri" }, NOW)).rejects.toThrow("slug_taken")
+    await expect(createFarm({ ...base, slug: "admin" }, NOW)).rejects.toThrow("slug_reserved")
+    await expect(createFarm({ ...base, slug: "xfarm", invoicePrefix: "x" }, NOW)).rejects.toThrow("invoice_prefix")
+    expect(await prisma.tenant.count({ where: { slug: { in: ["admin", "xfarm"] } } })).toBe(0)
+  })
+
+  it("changes plan and status, keeping a trial end only while on trial, and lists every farm with its figures", async () => {
+    const { updateFarm, listFarms } = await import("./platform")
+    const farm = (await prisma.tenant.findUnique({ where: { slug: "kaveri" } }))!
+    const changes = { nameTa: farm.nameTa, nameEn: farm.nameEn, phone: farm.phone, invoicePrefix: "KD", defaultLanguage: "ta" as const }
+    await updateFarm(farm.id, { ...changes, plan: "growth", status: "trial", trialEndsOn: "2026-12-31" })
+    expect(await prisma.tenant.findUnique({ where: { id: farm.id } })).toMatchObject({ plan: "growth", status: "trial" })
+    await updateFarm(farm.id, { ...changes, plan: "growth", status: "active", trialEndsOn: "2026-12-31" })
+    expect((await prisma.tenant.findUnique({ where: { id: farm.id } }))!.trialEndsAt).toBeNull()
+
+    const farms = await listFarms(NOW)
+    expect(farms.map((f) => f.slug)).toEqual(expect.arrayContaining(["merryfarms", "otherfarm", "smallfarm", "kaveri"]))
+    expect(farms.find((f) => f.slug === "kaveri")).toMatchObject({ staff: 1, customers: 0, orders30: 0 })
+    expect(farms.find((f) => f.slug === "merryfarms")!.customers).toBeGreaterThan(0)
   })
 })

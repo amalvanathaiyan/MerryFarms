@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { createSSRClient } from "@/lib/supabase/server"
 import { requireTenant } from "@/lib/tenant"
 import { tenantDb } from "@/lib/tenant-db"
+import { prisma } from "@/lib/prisma"
 import { DEMO_AUTH_PREFIX, DEMO_COOKIE, isDemoLoginEnabled } from "@/lib/demo-auth"
 import type { StaffRole } from "@prisma/client"
 
@@ -36,6 +37,18 @@ export const requireStaff = cache(async (allowed?: StaffRole[]) => {
   if (allowed && !staff.roles.some((r) => allowed.includes(r))) redirect("/farm?error=access_denied")
 
   return { tenant, staff, db }
+})
+
+/**
+ * A FarmForYou platform admin (the people who run the platform, not a farm), or a redirect to /login.
+ * Being staff at a farm gives no admin rights; only a row in platform_admins does.
+ */
+export const requirePlatformAdmin = cache(async () => {
+  const authUserId = await currentAuthUserId()
+  if (!authUserId) redirect("/login?next=/admin")
+  const admin = await prisma.platformAdmin.findUnique({ where: { authUserId } })
+  if (!admin) redirect("/login?next=/admin&error=not_admin")
+  return admin
 })
 
 export const OWNER_ONLY: StaffRole[] = ["owner"]
