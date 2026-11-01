@@ -1023,30 +1023,12 @@ describe("delivery spot and receiver", () => {
   })
 })
 
-describe("self-registered farms and sign-in", () => {
-  const signup = { ownerName: "Valli", nameTa: "வள்ளி பண்ணை", nameEn: "Valli Farm", slug: "vallifarm", phone: "+919000060001", defaultLanguage: "ta" as const }
-
-  it("makes the farm and its owner once, however many times it is called", async () => {
-    const { provisionSignup, SIGNUP_TRIAL_DAYS } = await import("./platform")
-    expect(await provisionSignup("auth-valli", "Valli@Example.com", signup, NOW)).toBe("vallifarm")
-    expect(await provisionSignup("auth-valli", "valli@example.com", { ...signup, slug: "another" }, NOW)).toBe("vallifarm")
-    const farm = await prisma.tenant.findUniqueOrThrow({ where: { slug: "vallifarm" } })
-    expect(farm).toMatchObject({ status: "trial", plan: "free", invoicePrefix: "VF" })
-    expect(farm.trialEndsAt!.getTime() - NOW.getTime()).toBe(SIGNUP_TRIAL_DAYS * 24 * 60 * 60 * 1000)
-    expect(await prisma.tenant.count({ where: { slug: "another" } })).toBe(0)
-    expect(await tenantDb(farm.id).staffMember.findMany()).toMatchObject([{ authUserId: "auth-valli", staffCode: "VAL-001", email: "valli@example.com", roles: ["owner"] }])
-    expect(await tenantDb(farm.id).deliverySlot.count()).toBe(1)
-  })
-
-  it("moves to a free address when the wanted one went while the email waited", async () => {
-    const { provisionSignup } = await import("./platform")
-    expect(await provisionSignup("auth-other", "other@example.com", signup, NOW)).toBe("vallifarm-2")
-  })
-
-  it("ignores logins that have no sign-up waiting", async () => {
-    const { provisionFromMetadata } = await import("./platform")
-    expect(await provisionFromMetadata("auth-none", "none@example.com", {})).toBeNull()
-    expect(await provisionFromMetadata("auth-none", "none@example.com", { farmSignup: { slug: "x" } })).toBeNull()
+describe("sign-in and staff logins", () => {
+  beforeAll(async () => {
+    const farm = { nameTa: "வள்ளி பண்ணை", nameEn: "Valli Farm", phone: "+919000060001", invoicePrefix: "VF" }
+    const valli = await prisma.tenant.create({ data: { ...farm, slug: "vallifarm" } })
+    await prisma.tenant.create({ data: { ...farm, slug: "vallifarm-2" } })
+    await tenantDb(valli.id).staffMember.create({ data: { tenantId: valli.id, authUserId: "auth-valli", staffCode: "VAL-001", name: "Valli", email: "valli@example.com", roles: ["owner"] } })
   })
 
   it("gives staff an ID, with or without an email, and finds their login from it", async () => {
@@ -1084,11 +1066,9 @@ describe("self-registered farms and sign-in", () => {
   })
 
   it("keeps platform admin logins off every farm", async () => {
-    const { provisionSignup } = await import("./platform")
     const staffSvc = await import("./staff")
     await expect(staffSvc.assertFarmLogin("auth-boss")).rejects.toThrow("login_not_allowed")
     await expect(staffSvc.assertFarmLogin("auth-valli")).resolves.toBeUndefined()
-    await expect(provisionSignup("auth-boss", "boss@example.com", signup, NOW)).rejects.toThrow("login_not_allowed")
   })
 
   it("won't reset a password that also opens another farm or the admin area", async () => {

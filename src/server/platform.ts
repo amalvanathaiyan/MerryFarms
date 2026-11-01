@@ -1,12 +1,9 @@
 import "server-only"
 import { prisma } from "@/lib/prisma"
-import { z } from "zod"
-import { checkSlug, isInvoicePrefix, suggestInvoicePrefix, trialEnd, type FarmStatus } from "@/domain/tenants"
-import { nextStaffCode } from "@/domain/staff"
+import { checkSlug, isInvoicePrefix, trialEnd, type FarmStatus } from "@/domain/tenants"
 import { farmUrl } from "@/lib/farm-url"
-import { tenantDb } from "@/lib/tenant-db"
 import type { Plan } from "@/domain/features"
-import { addStaff, assertFarmLogin, resetStaffPassword } from "./staff"
+import { addStaff, resetStaffPassword } from "./staff"
 import { OrderError } from "./orders"
 
 /**
@@ -98,67 +95,6 @@ export async function createFarm(input: NewFarm, now = new Date()) {
     await prisma.tenant.delete({ where: { id: tenant.id } })
     throw e
   }
-}
-
-/** A farm registering itself gets the free plan with the same trial the admin form starts with. */
-export const SIGNUP_TRIAL_DAYS = 30
-
-/** Stored on the Supabase login at sign-up, so the farm can be made once the email is confirmed. */
-export const farmSignup = z.object({
-  ownerName: z.string().trim().min(1).max(60),
-  nameTa: z.string().trim().min(1).max(80),
-  nameEn: z.string().trim().min(1).max(80),
-  slug: z.string().trim().toLowerCase().max(30),
-  phone: z.string().trim().min(10).max(20),
-  defaultLanguage: z.enum(["ta", "en"]),
-})
-export type FarmSignup = z.infer<typeof farmSignup>
-
-/** The name may have been taken while the email was waiting to be confirmed. */
-async function freeSlug(slug: string) {
-  for (let n = 1; ; n++) {
-    const candidate = n === 1 ? slug : `${slug.slice(0, 27)}-${n}`
-    if (!(await prisma.tenant.findUnique({ where: { slug: candidate }, select: { id: true } }))) return candidate
-  }
-}
-
-/**
- * Makes the farm for an owner who registered themselves. Safe to call twice: the email-confirm link and a later
- * sign-in both call it, and a login already on a farm gets no second one.
- */
-export async function provisionSignup(authUserId: string, email: string, signup: FarmSignup, now = new Date()) {
-  const already = await prisma.staffMember.findFirst({ where: { authUserId }, select: { tenant: { select: { slug: true } } } })
-  if (already) return already.tenant.slug
-  await assertFarmLogin(authUserId)
-  const slugProblem = checkSlug(signup.slug)
-  if (slugProblem) throw new OrderError(slugProblem)
-  const slug = await freeSlug(signup.slug)
-  const tenant = await prisma.tenant.create({
-    data: {
-      slug,
-      nameTa: signup.nameTa,
-      nameEn: signup.nameEn,
-      phone: signup.phone,
-      whatsappNumber: signup.phone,
-      defaultLanguage: signup.defaultLanguage,
-      invoicePrefix: suggestInvoicePrefix(signup.nameEn),
-      plan: "free",
-      status: "trial",
-      trialEndsAt: trialEnd(now, SIGNUP_TRIAL_DAYS),
-      settings: { create: {} },
-      slots: { create: { nameTa: "காலை", nameEn: "Morning", startTime: "07:00", endTime: "09:00", daysOfWeek: [0, 1, 2, 3, 4, 5, 6], cutoffHours: 12, maxOrders: 20 } },
-    },
-  })
-  await tenantDb(tenant.id).staffMember.create({
-    data: { tenantId: tenant.id, authUserId, staffCode: nextStaffCode(slug, []), name: signup.ownerName, email: email.toLowerCase(), phone: signup.phone, roles: ["owner"] },
-  })
-  return slug
-}
-
-/** Finishes a sign-up left waiting on a login's metadata, if there is one. */
-export async function provisionFromMetadata(authUserId: string, email: string, metadata: unknown) {
-  const signup = farmSignup.safeParse((metadata as { farmSignup?: unknown } | null)?.farmSignup)
-  return signup.success ? provisionSignup(authUserId, email, signup.data) : null
 }
 
 /**

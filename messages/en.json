@@ -835,20 +835,7 @@
     "same_password": "That's your old password. Choose a different one.",
     "link_expired": "This link has expired. Ask for a new one from the sign-in page.",
     "current_wrong": "Your current password is wrong.",
-    "too_many_emails": "Too many emails sent just now. Wait an hour and try again, or call FarmForYou.",
-    "registerLink": "New farm? Register here",
-    "registerTitle": "Register your farm",
-    "registerButton": "Create my farm",
-    "haveAccount": "Already registered? Sign in",
-    "yourName": "Your name",
-    "farmNameEn": "Farm name in English",
-    "farmNameTa": "Farm name in Tamil (optional)",
-    "farmPhone": "Farm mobile number",
-    "farmAddress": "Your farm's web address",
-    "farmAddressExample": "yourfarm",
-    "registerCheckEmail": "Almost done. We sent a link to {email}. Open it to finish making your farm.",
-    "email_taken": "That email already has a login. Sign in instead.",
-    "signup_closed": "New farms can't register here yet. Call FarmForYou and we'll add your farm."
+    "too_many_emails": "Too many emails sent just now. Wait an hour and try again, or call FarmForYou."
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
