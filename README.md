@@ -95,6 +95,17 @@ Open http://localhost:3000 for the shop. The farm app needs a real Supabase proj
 5. For phone notifications, run `node scripts/vapid-keys.mjs` once and add the three lines to `.env.local` (and to the host's environment settings). Keep `VAPID_PRIVATE_KEY` secret; changing the keys means everyone has to turn notifications on again.
 6. `npm run dev`, then sign in at http://localhost:3000/login.
 
+## Host on Vercel
+
+`vercel.json` runs the app in Mumbai (next to the database) and calls the plan-orders job at 18:00 IST.
+
+1. Import the GitHub repository at vercel.com. It detects Next.js and uses `npm run build`.
+2. In the project's Environment Variables, import `.env.local`, then remove `DEMO_LOGIN` if present. `CRON_SECRET` is needed for the evening job.
+3. In Supabase → Authentication → URL Configuration, set the Site URL to the Vercel address and add `https://<address>/auth/callback**` to the Redirect URLs.
+4. Deploying needs the database to match the code first: `npm run db:push` and `npm run db:rls` from this computer.
+
+On a `*.vercel.app` address the site is one farm (`DEFAULT_TENANT_SLUG`) and registering new farms stays closed. For more farms, add your own domain with a wildcard (`*.your-domain`, which needs Vercel's nameservers) and set `NEXT_PUBLIC_ROOT_DOMAIN`. Vercel's free Hobby plan is for non-commercial use only; a business needs Pro.
+
 ## Commands
 
 | Command | Does |
