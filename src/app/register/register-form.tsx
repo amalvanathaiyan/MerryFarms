@@ -65,7 +65,7 @@ export function RegisterForm({ domain }: { domain: string }) {
       </label>
       <label className={FIELD}>
         {t("farmNameTa")}
-        <Input value={f.nameTa} onChange={(e) => setF({ ...f, nameTa: e.target.value })} className="h-12 font-normal" />
+        <Input lang="ta" value={f.nameTa} onChange={(e) => setF({ ...f, nameTa: e.target.value })} className="h-12 font-normal" />
       </label>
       <label className={FIELD}>
         {t("farmPhone")}

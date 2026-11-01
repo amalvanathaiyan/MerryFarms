@@ -1,6 +1,10 @@
 {
   "common": {
     "language": "மொழி",
+    "tamilTypingHint": "ஆங்கில எழுத்தில் எழுதினால் தமிழாக மாறும். உதாரணம்: thamizh → தமிழ்",
+    "tamilTypingCapitals": "பெரிய N, L, R தட்டினால் ண, ள, ற வரும்",
+    "tamilTypingOff": "தமிழ் மாற்றத்தை நிறுத்து",
+    "tamilTypingOn": "ஆங்கில எழுத்தில் தமிழ் எழுது",
     "save": "சேமி",
     "cancel": "ரத்து",
     "close": "மூடு",

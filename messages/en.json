@@ -1,6 +1,10 @@
 {
   "common": {
     "language": "Language",
+    "tamilTypingHint": "English letters turn into Tamil. Example: thamizh → தமிழ்",
+    "tamilTypingCapitals": "Capital N, L, R give ண, ள, ற",
+    "tamilTypingOff": "Stop Tamil typing",
+    "tamilTypingOn": "Type Tamil in English letters",
     "save": "Save",
     "cancel": "Cancel",
     "close": "Close",
