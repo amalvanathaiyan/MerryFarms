@@ -16,6 +16,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "postinstall": "prisma generate",
     "staff:add": "tsx scripts/add-staff.ts",
+    "admin:add": "tsx scripts/add-admin.ts",
     "dev:db": "node scripts/dev-db.mjs",
     "demo": "node scripts/demo.mjs"
   },

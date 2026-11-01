@@ -20,6 +20,7 @@ export default async function StaffPage() {
         rows={members.map((m) => ({
           id: m.id,
           name: m.name,
+          staffCode: m.staffCode,
           email: m.email,
           phone: m.phone,
           roles: m.roles,

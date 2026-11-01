@@ -4,7 +4,7 @@ import { pick } from "@/lib/i18n-helpers"
 import { LanguageToggle } from "@/components/language-toggle"
 import { FarmNav } from "@/components/farm/farm-nav"
 import Link from "next/link"
-import { BarChart3, LogOut, MessageCircle, Settings } from "lucide-react"
+import { BarChart3, CircleUserRound, LogOut, MessageCircle, Settings } from "lucide-react"
 import { featuresOf } from "@/lib/features"
 import { signOut } from "@/app/actions/auth"
 import { WheelMark } from "@/components/art/wheel-mark"
@@ -29,7 +29,12 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5 sm:px-6">
           {/* The name keeps at least 10rem; on narrow phones the icons wrap to a second line instead of squeezing it out. */}
           <div className="flex min-w-[10rem] flex-1 items-center gap-3">
-            <WheelMark tone="tile" className="size-10" title="FarmForYou" />
+            {tenant.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- small logo served by our own route
+              <img src={tenant.logoUrl} alt="" className="size-10 shrink-0 rounded-xl border bg-card object-contain" />
+            ) : (
+              <WheelMark tone="tile" className="size-10" title="FarmForYou" />
+            )}
             <div className="min-w-0">
               <div className="font-display line-clamp-2 text-lg font-bold leading-snug break-words">{pick(locale, tenant.nameTa, tenant.nameEn)}</div>
               <div className="truncate text-xs opacity-80">{staff.name}</div>
@@ -56,6 +61,10 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
                 {t("settings")}
               </Link>
             )}
+            <Link href="/farm/account" className={ICON_LINK}>
+              <CircleUserRound className="size-5" aria-hidden />
+              {t("account")}
+            </Link>
             <form action={signOut}>
               <button type="submit" className={ICON_LINK}>
                 <LogOut className="size-5" aria-hidden />

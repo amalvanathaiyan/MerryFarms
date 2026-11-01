@@ -9,6 +9,7 @@ import { Shop, type ShopData } from "@/components/shop/shop"
 import { featuresOf } from "@/lib/features"
 import { getSessionCustomer } from "@/lib/customer-session"
 import { artFor } from "@/domain/product-art"
+import { shopArt } from "@/components/art/drawing-library"
 import { otpOn } from "@/server/otp"
 import { SignInGate } from "@/components/shop/sign-in-gate"
 import { currentPrice, offerActive, percentOff } from "@/domain/offers"
@@ -75,6 +76,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       otp: otpOn(tenant),
       messages: features.messages,
       calls: features.callConfirmation,
+      logoUrl: tenant.logoUrl,
     },
     me: me
       ? {
@@ -104,6 +106,10 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     changing: changeable
       ? { id: changeable.id, code: orderCode(tenant.invoicePrefix, changeable.number), slotKey: changeable.slotId ? `${changeable.slotDate}|${changeable.slotId}` : null }
       : null,
+    art: shopArt(
+      tenant.shopArt,
+      categories.map((c) => artFor(c.kind, c.nameEn, c.nameTa))
+    ).map(({ id, vb, d }) => ({ id, vb, d })),
     categories: categories
       .filter((c) => products.some((p) => p.categoryId === c.id))
       .map((c) => ({ id: c.id, name: pick(locale, c.nameTa, c.nameEn), kind: artFor(c.kind, c.nameEn, c.nameTa) })),

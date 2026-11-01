@@ -46,6 +46,8 @@ const tenantRow = (id: string, slug: string, features: Record<string, boolean> =
   farmLng: null as number | null,
   deliveryRadiusKm: null as number | null,
   servedPincodes: [] as string[],
+  logoUrl: null as string | null,
+  shopArt: [] as string[],
   trialEndsAt: null,
   createdAt: NOW,
   updatedAt: NOW,
@@ -1018,5 +1020,105 @@ describe("delivery spot and receiver", () => {
     )
     expect(decision).toEqual({ needsCall: true, reason: "location_mismatch" })
     expect(o).toMatchObject({ status: "to_confirm", pinCheck: "mismatch" })
+  })
+})
+
+describe("self-registered farms and sign-in", () => {
+  const signup = { ownerName: "Valli", nameTa: "வள்ளி பண்ணை", nameEn: "Valli Farm", slug: "vallifarm", phone: "+919000060001", defaultLanguage: "ta" as const }
+
+  it("makes the farm and its owner once, however many times it is called", async () => {
+    const { provisionSignup, SIGNUP_TRIAL_DAYS } = await import("./platform")
+    expect(await provisionSignup("auth-valli", "Valli@Example.com", signup, NOW)).toBe("vallifarm")
+    expect(await provisionSignup("auth-valli", "valli@example.com", { ...signup, slug: "another" }, NOW)).toBe("vallifarm")
+    const farm = await prisma.tenant.findUniqueOrThrow({ where: { slug: "vallifarm" } })
+    expect(farm).toMatchObject({ status: "trial", plan: "free", invoicePrefix: "VF" })
+    expect(farm.trialEndsAt!.getTime() - NOW.getTime()).toBe(SIGNUP_TRIAL_DAYS * 24 * 60 * 60 * 1000)
+    expect(await prisma.tenant.count({ where: { slug: "another" } })).toBe(0)
+    expect(await tenantDb(farm.id).staffMember.findMany()).toMatchObject([{ authUserId: "auth-valli", staffCode: "VAL-001", email: "valli@example.com", roles: ["owner"] }])
+    expect(await tenantDb(farm.id).deliverySlot.count()).toBe(1)
+  })
+
+  it("moves to a free address when the wanted one went while the email waited", async () => {
+    const { provisionSignup } = await import("./platform")
+    expect(await provisionSignup("auth-other", "other@example.com", signup, NOW)).toBe("vallifarm-2")
+  })
+
+  it("ignores logins that have no sign-up waiting", async () => {
+    const { provisionFromMetadata } = await import("./platform")
+    expect(await provisionFromMetadata("auth-none", "none@example.com", {})).toBeNull()
+    expect(await provisionFromMetadata("auth-none", "none@example.com", { farmSignup: { slug: "x" } })).toBeNull()
+  })
+
+  it("gives staff an ID, with or without an email, and finds their login from it", async () => {
+    process.env.DEMO_LOGIN = "1"
+    const staffSvc = await import("./staff")
+    const farm = await prisma.tenant.findUniqueOrThrow({ where: { slug: "vallifarm" } })
+    const { member } = await staffSvc.addStaff(farm.id, { name: "Muthu", roles: ["delivery"] })
+    expect(member).toMatchObject({ staffCode: "VAL-002", email: null })
+    expect(await staffSvc.staffLoginEmail(farm.id, "VAL-002")).toBe(`val-002.${farm.id}@staff.farmforyou.internal`)
+    expect(await staffSvc.staffLoginEmail(farm.id, "VAL-001")).toBe("valli@example.com")
+    expect(await staffSvc.staffLoginEmail(farm.id, "VAL-999")).toBeNull()
+    await expect(staffSvc.addStaff(farm.id, { name: "No email owner", roles: ["owner"] })).rejects.toThrow("owner_email_required")
+    await staffSvc.setStaffActive(farm.id, (await tenantDb(farm.id).staffMember.findFirstOrThrow({ where: { staffCode: "VAL-001" } })).id, member.id, false)
+    expect(await staffSvc.staffLoginEmail(farm.id, "VAL-002")).toBeNull()
+  })
+
+  it("never finds a Staff ID through another farm", async () => {
+    const staffSvc = await import("./staff")
+    const other = await prisma.tenant.findUniqueOrThrow({ where: { slug: "vallifarm-2" } })
+    expect(await staffSvc.staffLoginEmail(other.id, "VAL-002")).toBeNull()
+  })
+
+  it("sends each person to the right place after sign-in", async () => {
+    const { homeAfterSignIn } = await import("./platform")
+    const farm = await prisma.tenant.findUniqueOrThrow({ where: { slug: "vallifarm" } })
+    const other = await prisma.tenant.findUniqueOrThrow({ where: { slug: "vallifarm-2" } })
+    expect(await homeAfterSignIn("auth-valli", farm.id)).toBe("/farm")
+    expect(await homeAfterSignIn("auth-valli", farm.id, "/farm/orders")).toBe("/farm/orders")
+    expect(await homeAfterSignIn("auth-valli", farm.id, "https://evil.example/farm")).toBe("/farm")
+    expect(await homeAfterSignIn("auth-valli", other.id)).toBe("http://vallifarm.localhost:3000/farm")
+    await prisma.platformAdmin.create({ data: { authUserId: "auth-boss", name: "Boss" } })
+    expect(await homeAfterSignIn("auth-boss", farm.id)).toBe("/admin")
+    expect(await homeAfterSignIn("auth-boss", farm.id, "/admin/farms/x")).toBe("/admin/farms/x")
+    expect(await homeAfterSignIn("auth-valli", farm.id, "/admin")).toBe("/farm")
+  })
+})
+
+describe("platform admin: farms", () => {
+  it("adds a farm on trial with its owner login and a starting delivery slot", async () => {
+    process.env.DEMO_LOGIN = "1" // owner logins are demo ids here; no Supabase in tests
+    const { createFarm } = await import("./platform")
+    const r = await createFarm(
+      { nameTa: "காவேரி பால்", nameEn: "Kaveri Dairy", slug: "kaveri", phone: "+919000050001", defaultLanguage: "ta", invoicePrefix: "KD", plan: "starter", trialDays: 30, owner: { name: "Selvam", email: "selvam@example.com" } },
+      NOW
+    )
+    expect(r.tenant).toMatchObject({ slug: "kaveri", status: "trial", plan: "starter", invoicePrefix: "KD" })
+    expect(r.tenant.trialEndsAt!.getTime() - NOW.getTime()).toBe(30 * 24 * 60 * 60 * 1000)
+    expect(r.owner).toMatchObject({ roles: ["owner"], email: "selvam@example.com" })
+    expect(await tenantDb(r.tenant.id).deliverySlot.count()).toBe(1)
+  })
+
+  it("refuses a subdomain that is taken or kept for the platform, and leaves nothing behind", async () => {
+    const { createFarm } = await import("./platform")
+    const base = { nameTa: "x", nameEn: "X Farm", phone: "+919000050002", defaultLanguage: "ta" as const, invoicePrefix: "XF", plan: "free" as const, trialDays: 0, owner: { name: "X", email: "x@example.com" } }
+    await expect(createFarm({ ...base, slug: "kaveri" }, NOW)).rejects.toThrow("slug_taken")
+    await expect(createFarm({ ...base, slug: "admin" }, NOW)).rejects.toThrow("slug_reserved")
+    await expect(createFarm({ ...base, slug: "xfarm", invoicePrefix: "x" }, NOW)).rejects.toThrow("invoice_prefix")
+    expect(await prisma.tenant.count({ where: { slug: { in: ["admin", "xfarm"] } } })).toBe(0)
+  })
+
+  it("changes plan and status, keeping a trial end only while on trial, and lists every farm with its figures", async () => {
+    const { updateFarm, listFarms } = await import("./platform")
+    const farm = (await prisma.tenant.findUnique({ where: { slug: "kaveri" } }))!
+    const changes = { nameTa: farm.nameTa, nameEn: farm.nameEn, phone: farm.phone, invoicePrefix: "KD", defaultLanguage: "ta" as const }
+    await updateFarm(farm.id, { ...changes, plan: "growth", status: "trial", trialEndsOn: "2026-12-31" })
+    expect(await prisma.tenant.findUnique({ where: { id: farm.id } })).toMatchObject({ plan: "growth", status: "trial" })
+    await updateFarm(farm.id, { ...changes, plan: "growth", status: "active", trialEndsOn: "2026-12-31" })
+    expect((await prisma.tenant.findUnique({ where: { id: farm.id } }))!.trialEndsAt).toBeNull()
+
+    const farms = await listFarms(NOW)
+    expect(farms.map((f) => f.slug)).toEqual(expect.arrayContaining(["merryfarms", "otherfarm", "smallfarm", "kaveri"]))
+    expect(farms.find((f) => f.slug === "kaveri")).toMatchObject({ staff: 1, customers: 0, orders30: 0 })
+    expect(farms.find((f) => f.slug === "merryfarms")!.customers).toBeGreaterThan(0)
   })
 })

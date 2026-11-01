@@ -27,7 +27,8 @@ A Tamil-first, multi-tenant platform for small farms that sell direct to custome
 | Phone notifications | Standard web push (free, no WhatsApp): staff get new web orders and customer messages; customers get farm replies and order confirmed / on the way / delivered / cancelled, in their language. "Get updates on this phone" button on Today, My orders and after ordering, with Home Screen steps for iPhone. Phones that stop accepting notifications are forgotten automatically. Needs the hosted HTTPS app and VAPID keys (`node scripts/vapid-keys.mjs`); without keys the app works as before. |
 | Customers change or cancel | From My orders, until the slot's cut-off: **Cancel** (with a reason; stock returns; staff notified) or **Change** (the shop opens with the order's items; placing replaces the old order in one transaction, reusing its stock and slot place). After the cut-off: "Call the farm to change". |
 | Closed days | On the Slots page: close a whole day or one delivery time with a reason (e.g. Pongal). Those slots disappear for customers and staff, the shop says "No deliveries on …", plan orders skip the day, and orders already booked that day are counted for the farm to move. |
-| Staff and logins | Owner only (Settings → Staff and logins): add staff with email, mobile and roles (owner, order desk, packing, delivery); the app creates the login and shows a temporary password once (e.g. Farm-4827-kmtq). Edit roles, make a new password, remove or restore access (history kept). A farm always keeps an owner, and owners can't remove their own access. In the demo, new staff appear as demo sign-in buttons. |
+| Staff and logins | Owner only (Settings → Staff and logins): add staff with a name, roles (owner, order desk, packing, delivery) and optional email and mobile; the app gives them a **Staff ID** (MER-002), creates the login and shows a temporary password once (e.g. Farm-4827-kmtq). Staff without an email sign in with the Staff ID on a hidden internal login; owners need a real email. Edit roles, make a new password, remove or restore access (history kept). A farm always keeps an owner, and owners can't remove their own access. In the demo, new staff appear as demo sign-in buttons. |
+| Signing in | Same flow as Hotelier-4U. **Sign-in page** with two tabs: owner (email and password) and staff (Staff ID and password; on the platform's main address they also give the Farm ID). **Register your farm** (`/register`): owner, farm names, mobile, web address, email and password; makes the farm on the free plan with a 30-day trial, straight away or after the emailed link when Supabase's "Confirm email" is on, and a sign-up interrupted part-way finishes at the next sign-in. Closed until farms have addresses (`NEXT_PUBLIC_ROOT_DOMAIN`). **Forgot password** (`/forgot-password`): emailed link, then `/auth/update-password`; it never reveals whether an email has a login. **My account** (`/farm/account`, every role): change your name and, with the current password, your password. After sign-in platform admins go to `/admin`, and staff signed in on the wrong address go to their own farm; with `NEXT_PUBLIC_ROOT_DOMAIN` set the sign-in cookie is shared across farm subdomains, and `requireStaff()` still checks the farm. |
 | Backups | Nightly encrypted database backup by GitHub Actions (`.github/workflows/backup.yml`, kept 30 days; turns on when `BACKUP_DATABASE_URL` and `BACKUP_PASSPHRASE` secrets are set). Owners can also **Download all my data** (Reports) as one JSON file without keys or links. Setup and restore: `docs/backups.md`. |
 | Any kind of farm | Categories have a type (eggs, poultry & meat, milk, ghee & dairy, oils, vegetables, greens, fruits, rice & grains, honey, spices, pickles & homemade, plants & seeds, other) chosen with a picture picker or guessed from Tamil/English names; each has its own drawing until photos are added. One-tap ready-made categories. Units include grams, ml, bottles, dozen, bunches and bags. |
 | Farm records & profit | Own feature switch. **Records** page (owner and packing staff): **Made / collected** per product each day (with spoiled; the good quantity goes into stock when stock is tracked; shown in Reports). For poultry farms also each day's eggs collected and broken, birds in the flock and lost, feed used (kg), note; last two weeks at a glance. Owner adds **expenses** by type (feed, medicine, chicks, labour, transport, electricity/water, trays & packing, other). **Reports → Farm and profit**: net sales minus spending = profit (and margin), good eggs per day, laying rate, feed cost and all costs per egg, birds lost, spending by type. Today reminds owner/packing staff to enter the day's record. |
@@ -36,8 +37,10 @@ A Tamil-first, multi-tenant platform for small farms that sell direct to custome
 | Multi-tenancy | `tenantId` on every farm table, enforced by `src/lib/tenant-db.ts`; Supabase API roles locked out by `prisma/sql/rls.sql`; farm resolved from the subdomain or `DEFAULT_TENANT_SLUG` |
 | Installable app | Web app manifest, icons and offline page; service worker built with `npm run build`, including the notification handlers in `src/worker/` |
 | Look & art | FarmForYou's own art, drawn in code: a Tamil bullock cart carrying produce from every kind of farm past delta farmland (shop welcome, sign-in, order placed, offline), the cart-wheel mark (app icons, favicon, headers), a line drawing per product type on category headings, a little cart riding the order-progress track. Leaf green, sunflower and field colours; Baloo Thambi 2 headings, Hind Madurai text. Works from 320px phones to wide desktops: product grid on wider screens, side menu in the farm app from 1024px. Regenerate art with `node scripts/art/cart-art.mjs` and icons with `node scripts/art/icons.mjs`. |
+| Farm logo & shop drawings | Owner, in Settings: **logo** (picked on the phone, shrunk to 512 px, kept in the database like product photos, served by `/img/logo`) shown in the shop banner and the farm app header instead of initials. **Shop drawings**: pick up to 12 of the 137 FarmForYou line drawings (village set + one group per product type, Tamil and English names), with a live preview; they stand as a little farm scene at the foot of the shop. Until the owner picks, the shop shows the bullock cart, palm, paddy and sun plus two drawings per product type it sells. |
+| Platform admin (`/admin`) | For FarmForYou only (a row in `platform_admins`, made with `npm run admin:add`; being a farm's staff gives no access). **Farms**: every farm with status (on trial, trial over, active, paused), plan, trial end, orders and sales in 30 days, customers, last order; totals at the top. **New farm**: names, web address (subdomain, checked and reserved names refused), phone, bill prefix (suggested from the name), language, plan and free-trial days, owner; creates the farm with a morning delivery slot and the owner's login, showing a temporary password once. **A farm**: change plan, status (pausing stops its shop at once), trial end and details; staff list with **new password**; add an owner. |
 
-Not yet: PDF files, automated WhatsApp (Cloud API), platform admin.
+Not yet: PDF files, automated WhatsApp (Cloud API), plan billing (payments for FarmForYou plans).
 
 ## Stack
 
@@ -73,7 +76,7 @@ Open http://localhost:3000 for the shop. The farm app needs a real Supabase proj
 ## Set up on Supabase (free tier)
 
 1. Create a Supabase project (region: Mumbai). Copy `.env.local.template` to `.env.local` and fill it in.
-2. In Supabase → Authentication → Providers, keep Email on and turn off "Confirm email" (staff are created by the owner).
+2. In Supabase → Authentication → Providers, keep Email on. Leave "Confirm email" on so self-registered owners prove their email (logins made by the app or scripts skip it). In Authentication → URL Configuration set the Site URL to your address and add `https://*.your-domain/auth/callback**` (and `http://localhost:3000/auth/callback**`) to the Redirect URLs, or emailed links won't work. Supabase's built-in email sends only a few messages an hour; add your own SMTP before opening registration widely.
 3. Create the tables and lock the public API:
    ```bash
    npm run db:push
@@ -84,8 +87,24 @@ Open http://localhost:3000 for the shop. The farm app needs a real Supabase proj
    ```bash
    npm run staff:add -- --email you@example.com --password 'a-long-password' --name "Your name" --roles owner
    ```
+   and, for running the platform (adding more farms, plans, trials), make yourself a platform admin. The same login can be both:
+   ```bash
+   npm run admin:add -- --email you@example.com --name "Your name"
+   ```
+   Then open `/admin` (in the demo: http://localhost:3000/login?next=/admin and the demo admin button).
 5. For phone notifications, run `node scripts/vapid-keys.mjs` once and add the three lines to `.env.local` (and to the host's environment settings). Keep `VAPID_PRIVATE_KEY` secret; changing the keys means everyone has to turn notifications on again.
 6. `npm run dev`, then sign in at http://localhost:3000/login.
+
+## Host on Vercel
+
+`vercel.json` runs the app in Mumbai (next to the database) and calls the plan-orders job at 18:00 IST.
+
+1. Import the GitHub repository at vercel.com. It detects Next.js and uses `npm run build`.
+2. In the project's Environment Variables, import `.env.local`, then remove `DEMO_LOGIN` if present. `CRON_SECRET` is needed for the evening job.
+3. In Supabase → Authentication → URL Configuration, set the Site URL to the Vercel address and add `https://<address>/auth/callback**` to the Redirect URLs.
+4. Deploying needs the database to match the code first: `npm run db:push` and `npm run db:rls` from this computer.
+
+On a `*.vercel.app` address the site is one farm (`DEFAULT_TENANT_SLUG`) and registering new farms stays closed. For more farms, add your own domain with a wildcard (`*.your-domain`, which needs Vercel's nameservers) and set `NEXT_PUBLIC_ROOT_DOMAIN`. Vercel's free Hobby plan is for non-commercial use only; a business needs Pro.
 
 ## Commands
 

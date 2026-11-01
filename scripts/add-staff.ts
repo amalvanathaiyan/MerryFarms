@@ -12,6 +12,7 @@ config({ path: ".env.local", quiet: true })
 import { createClient } from "@supabase/supabase-js"
 import { PrismaClient, type StaffRole } from "@prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
+import { nextStaffCode } from "../src/domain/staff"
 import { Pool } from "pg"
 
 const ROLES: StaffRole[] = ["owner", "order_desk", "packing", "delivery"]
@@ -54,10 +55,12 @@ async function main() {
       if (!userId) throw new Error("No login with that email. Pass --password to create one.")
     }
 
+    const codes = await prisma.staffMember.findMany({ where: { tenantId: tenant.id }, select: { staffCode: true } })
+    const staffCode = nextStaffCode(tenant.slug, codes.map((c) => c.staffCode))
     await prisma.staffMember.upsert({
       where: { tenantId_authUserId: { tenantId: tenant.id, authUserId: userId } },
       update: { name, roles, email, isActive: true },
-      create: { tenantId: tenant.id, authUserId: userId, name, roles, email },
+      create: { tenantId: tenant.id, authUserId: userId, staffCode, name, roles, email },
     })
     console.log(`${name} <${email}> can now sign in to ${tenant.nameEn} as ${roles.join(", ")}.`)
   } finally {

@@ -6,10 +6,19 @@ import { cannotEnable, FEATURE_KEYS, FEATURES, parseChoices, resolveFeatures } f
 import { SettingsForm } from "@/components/farm/settings-form"
 import { FeatureSwitches, type FeatureRow } from "@/components/farm/feature-switches"
 import { DeliveryAreaForm } from "@/components/farm/delivery-area-form"
+import { LogoForm } from "@/components/farm/logo-form"
+import { ShopArtPicker } from "@/components/farm/shop-art-picker"
+import { DRAWINGS, defaultShopArt } from "@/components/art/drawing-library"
+import { artFor } from "@/domain/product-art"
 
 export default async function SettingsPage() {
-  const { tenant } = await requireStaff(OWNER_ONLY)
+  const { tenant, db } = await requireStaff(OWNER_ONLY)
   const t = await getTranslations("farm.settings")
+  // What the farm sells decides the suggested shop drawings, and which drawing groups come first.
+  const categories = await db.category.findMany({ where: { deletedAt: null }, select: { kind: true, nameEn: true, nameTa: true } })
+  const kinds = [...new Set(categories.map((c) => artFor(c.kind, c.nameEn, c.nameTa)))]
+  const suggested = defaultShopArt(kinds)
+  const picked = tenant.shopArt.filter((id) => DRAWINGS.has(id))
 
   const choices = parseChoices(tenant.features)
   const resolved = resolveFeatures(tenant.plan, choices)
@@ -33,6 +42,8 @@ export default async function SettingsPage() {
       <Link href="/farm/staff" className="flex items-center justify-between rounded-2xl border bg-card p-4 font-semibold">
         {t("staffLink")} <span aria-hidden>→</span>
       </Link>
+      <LogoForm logoUrl={tenant.logoUrl} initials={tenant.invoicePrefix} />
+      <ShopArtPicker picked={picked.length ? picked : suggested} isDefault={picked.length === 0} kinds={kinds} suggested={suggested} />
       <FeatureSwitches rows={rows} />
       {resolved.deliveryArea && (
         <DeliveryAreaForm

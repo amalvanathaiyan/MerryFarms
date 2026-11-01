@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import { isLocale } from "./i18n/routing"
 import { DEMO_AUTH_PREFIX, DEMO_COOKIE, isDemoLoginEnabled } from "./lib/demo-auth"
+import { authCookieOptions } from "./lib/supabase/cookie-options"
 
 /**
  * Multi-tenant proxy (Next.js 16 — renamed from middleware)
@@ -37,7 +38,8 @@ export async function proxy(request: NextRequest) {
   const next = () => NextResponse.next({ request: { headers: requestHeaders } })
   let response = next()
 
-  const isFarmApp = pathname.startsWith("/farm")
+  // The farm app and the platform admin both need a signed-in user; each page then checks who they are.
+  const isFarmApp = pathname.startsWith("/farm") || pathname.startsWith("/admin")
   // Demo mode (local only): the page itself checks the demo staff member belongs to this farm.
   if (isFarmApp && isDemoLoginEnabled() && request.cookies.get(DEMO_COOKIE)?.value.startsWith(DEMO_AUTH_PREFIX)) {
     return response
@@ -47,6 +49,7 @@ export async function proxy(request: NextRequest) {
   if (!isFarmApp || !supabaseUrl || !supabaseKey) return response
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    cookieOptions: authCookieOptions(),
     cookies: {
       getAll() {
         return request.cookies.getAll()

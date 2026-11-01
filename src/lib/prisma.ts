@@ -6,8 +6,13 @@ import { Pool } from "pg"
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
 function createPrismaClient() {
+  const url = process.env.DATABASE_URL!
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL!,
+    connectionString: url,
+    // Each Vercel function holds its own pool; a few connections each keeps the Supabase pooler from filling up.
+    max: process.env.VERCEL ? 3 : undefined,
+    // Encrypt traffic to Supabase. Its certificate comes from its own authority, so the chain can't be verified here.
+    ssl: url.includes(".supabase.") ? { rejectUnauthorized: false } : undefined,
   })
   // Supabase's pooler closes idle connections. Without a listener, that error
   // would crash the whole process; the pool replaces the connection on its own.

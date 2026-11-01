@@ -76,6 +76,8 @@ CREATE TABLE "tenants" (
     "servedPincodes" TEXT[],
     "deliveryFeePaise" INTEGER NOT NULL DEFAULT 3000,
     "freeAbovePaise" INTEGER NOT NULL DEFAULT 50000,
+    "logoUrl" TEXT,
+    "shopArt" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -104,6 +106,7 @@ CREATE TABLE "staff_members" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
     "authUserId" TEXT NOT NULL,
+    "staffCode" TEXT,
     "name" TEXT NOT NULL,
     "phone" TEXT,
     "email" TEXT,
@@ -120,6 +123,7 @@ CREATE TABLE "platform_admins" (
     "id" TEXT NOT NULL,
     "authUserId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "email" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "platform_admins_pkey" PRIMARY KEY ("id")
@@ -454,6 +458,16 @@ CREATE TABLE "product_images" (
 );
 
 -- CreateTable
+CREATE TABLE "tenant_logos" (
+    "tenantId" TEXT NOT NULL,
+    "mime" TEXT NOT NULL,
+    "data" BYTEA NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "tenant_logos_pkey" PRIMARY KEY ("tenantId")
+);
+
+-- CreateTable
 CREATE TABLE "otp_codes" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
@@ -535,6 +549,9 @@ CREATE INDEX "staff_members_authUserId_idx" ON "staff_members"("authUserId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "staff_members_tenantId_authUserId_key" ON "staff_members"("tenantId", "authUserId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "staff_members_tenantId_staffCode_key" ON "staff_members"("tenantId", "staffCode");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "platform_admins_authUserId_key" ON "platform_admins"("authUserId");
