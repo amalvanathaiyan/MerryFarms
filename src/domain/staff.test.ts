@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { checkStaffChange } from "./staff"
+import { checkStaffChange, internalStaffEmail, nextStaffCode, normaliseStaffCode } from "./staff"
 import { tempPassword } from "./staff-password"
 
 const owner = { id: "o", roles: ["owner" as const], isActive: true }
@@ -29,5 +29,22 @@ describe("staff changes", () => {
     const seen = new Set(Array.from({ length: 50 }, tempPassword))
     for (const p of seen) expect(p).toMatch(/^Farm-\d{4}-[a-z]{4}$/)
     expect(seen.size).toBeGreaterThan(45)
+  })
+})
+
+describe("staff IDs", () => {
+  it("number on from the highest ID, whatever order they were made in", () => {
+    expect(nextStaffCode("merryfarms", [])).toBe("MER-001")
+    expect(nextStaffCode("merryfarms", ["MER-001", "MER-007", null])).toBe("MER-008")
+    expect(nextStaffCode("a-b-farm", [])).toBe("ABF-001")
+    expect(nextStaffCode("merryfarms", ["MER-999"])).toBe("MER-1000")
+  })
+
+  it("read the same however they are typed", () => {
+    expect(normaliseStaffCode("  mer-002 ")).toBe("MER-002")
+  })
+
+  it("keep hidden login emails apart between farms with the same prefix", () => {
+    expect(internalStaffEmail("MER-001", "farm-a")).not.toBe(internalStaffEmail("MER-001", "farm-b"))
   })
 })

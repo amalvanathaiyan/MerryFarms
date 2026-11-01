@@ -106,6 +106,7 @@ CREATE TABLE "staff_members" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
     "authUserId" TEXT NOT NULL,
+    "staffCode" TEXT,
     "name" TEXT NOT NULL,
     "phone" TEXT,
     "email" TEXT,
@@ -548,6 +549,9 @@ CREATE INDEX "staff_members_authUserId_idx" ON "staff_members"("authUserId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "staff_members_tenantId_authUserId_key" ON "staff_members"("tenantId", "authUserId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "staff_members_tenantId_staffCode_key" ON "staff_members"("tenantId", "staffCode");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "platform_admins_authUserId_key" ON "platform_admins"("authUserId");

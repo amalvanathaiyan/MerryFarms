@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import { isLocale } from "./i18n/routing"
 import { DEMO_AUTH_PREFIX, DEMO_COOKIE, isDemoLoginEnabled } from "./lib/demo-auth"
+import { authCookieOptions } from "./lib/supabase/cookie-options"
 
 /**
  * Multi-tenant proxy (Next.js 16 — renamed from middleware)
@@ -48,6 +49,7 @@ export async function proxy(request: NextRequest) {
   if (!isFarmApp || !supabaseUrl || !supabaseKey) return response
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    cookieOptions: authCookieOptions(),
     cookies: {
       getAll() {
         return request.cookies.getAll()

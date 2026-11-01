@@ -9,7 +9,7 @@ import { addStaffAction, resetStaffPasswordAction, setStaffActiveAction, updateS
 import { ROLES, type Role } from "@/domain/staff"
 import { cn } from "@/lib/utils"
 
-export type StaffRow = { id: string; name: string; email: string | null; phone: string | null; roles: Role[]; isActive: boolean; isMe: boolean; demo: boolean }
+export type StaffRow = { id: string; name: string; staffCode: string | null; email: string | null; phone: string | null; roles: Role[]; isActive: boolean; isMe: boolean; demo: boolean }
 type Draft = { id?: string; name: string; email: string; phone: string; roles: Role[] }
 
 /** The owner adds staff, sets what they can do, resets passwords and removes access. */
@@ -19,7 +19,7 @@ export function StaffManager({ rows, demo }: { rows: StaffRow[]; demo: boolean }
   const te = useTranslations("errors")
   const [draft, setDraft] = useState<Draft | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [shown, setShown] = useState<{ name: string; email: string; password: string } | null>(null)
+  const [shown, setShown] = useState<{ name: string; signInWith: string; password: string } | null>(null)
   const [pending, start] = useTransition()
 
   const fail = (code: string) => setError(te.has(code) ? te(code) : te("generic"))
@@ -47,10 +47,10 @@ export function StaffManager({ rows, demo }: { rows: StaffRow[]; demo: boolean }
       {shown && (
         <div role="status" className="flex flex-col gap-2 rounded-2xl border-2 border-primary bg-card p-4">
           <p className="font-semibold">{t("passwordFor", { name: shown.name })}</p>
-          <p className="text-sm text-muted-foreground">{shown.email}</p>
+          <p className="font-semibold tracking-wide">{shown.signInWith}</p>
           <p className="flex items-center justify-between gap-2 rounded-lg bg-accent px-3 py-2 font-mono text-lg tracking-wide">
             {shown.password}
-            <button type="button" aria-label={t("copy")} onClick={() => navigator.clipboard?.writeText(`${shown.email}\n${shown.password}`)}>
+            <button type="button" aria-label={t("copy")} onClick={() => navigator.clipboard?.writeText(`${shown.signInWith}\n${shown.password}`)}>
               <Copy className="size-4" />
             </button>
           </p>
@@ -77,7 +77,7 @@ export function StaffManager({ rows, demo }: { rows: StaffRow[]; demo: boolean }
               const payload = { name: draft.name, phone: draft.phone || undefined, roles: draft.roles }
               const r = draft.id ? await updateStaffAction({ ...payload, id: draft.id }) : await addStaffAction({ ...payload, email: draft.email })
               if (!r.ok) return fail(r.error)
-              if (!draft.id && r.password) setShown({ name: draft.name, email: draft.email, password: r.password })
+              if (!draft.id && r.password) setShown({ name: draft.name, signInWith: r.staffCode ?? draft.email, password: r.password })
               setDraft(null)
             })
           }}
@@ -90,7 +90,7 @@ export function StaffManager({ rows, demo }: { rows: StaffRow[]; demo: boolean }
           {!draft.id && (
             <label className="flex flex-col gap-1.5 text-sm font-semibold">
               {t("email")}
-              <Input required type="email" autoComplete="off" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} className="font-normal" />
+              <Input required={draft.roles.includes("owner")} type="email" autoComplete="off" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} className="font-normal" />
               <span className="font-normal text-muted-foreground">{demo ? t("emailHintDemo") : t("emailHint")}</span>
             </label>
           )}
@@ -130,7 +130,7 @@ export function StaffManager({ rows, demo }: { rows: StaffRow[]; demo: boolean }
                 <div className="font-semibold">
                   {s.name} {s.isMe && <span className="text-sm font-normal text-muted-foreground">({t("you")})</span>}
                 </div>
-                <div className="truncate text-sm text-muted-foreground">{[s.email, s.phone].filter(Boolean).join(" · ")}</div>
+                <div className="truncate text-sm text-muted-foreground">{[s.staffCode, s.email, s.phone].filter(Boolean).join(" · ")}</div>
               </div>
               {!s.isActive && <span className="shrink-0 rounded-full bg-muted px-2 text-xs font-semibold">{t("noAccess")}</span>}
             </div>
@@ -151,7 +151,7 @@ export function StaffManager({ rows, demo }: { rows: StaffRow[]; demo: boolean }
                       setError(null)
                       const r = await resetStaffPasswordAction(s.id)
                       if (!r.ok) return fail(r.error)
-                      if (r.password) setShown({ name: s.name, email: s.email ?? "", password: r.password })
+                      if (r.password) setShown({ name: s.name, signInWith: s.staffCode ?? s.email ?? "", password: r.password })
                     })
                   }
                 >

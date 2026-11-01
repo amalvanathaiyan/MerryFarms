@@ -103,15 +103,15 @@ async function main() {
 
     // Demo staff: signed in with the demo buttons on /login (npm run demo only).
     const staff = [
-      { authUserId: "demo-owner", name: "உரிமையாளர் · Owner (demo)", roles: ["owner"] as const },
-      { authUserId: "demo-desk", name: "ஆர்டர் மேசை · Order desk (demo)", roles: ["order_desk", "packing"] as const },
-      { authUserId: "demo-delivery", name: "டெலிவரி · Delivery (demo)", roles: ["delivery"] as const },
+      { authUserId: "demo-owner", staffCode: "MER-001", name: "உரிமையாளர் · Owner (demo)", roles: ["owner"] as const },
+      { authUserId: "demo-desk", staffCode: "MER-002", name: "ஆர்டர் மேசை · Order desk (demo)", roles: ["order_desk", "packing"] as const },
+      { authUserId: "demo-delivery", staffCode: "MER-003", name: "டெலிவரி · Delivery (demo)", roles: ["delivery"] as const },
     ]
     for (const st of staff) {
       await prisma.staffMember.upsert({
         where: { tenantId_authUserId: { tenantId: tenant.id, authUserId: st.authUserId } },
         update: {},
-        create: { tenantId: tenant.id, authUserId: st.authUserId, name: st.name, roles: [...st.roles] },
+        create: { tenantId: tenant.id, authUserId: st.authUserId, staffCode: st.staffCode, name: st.name, roles: [...st.roles] },
       })
     }
     // Demo platform admin (FarmForYou, all farms): /login?next=/admin shows its demo button.

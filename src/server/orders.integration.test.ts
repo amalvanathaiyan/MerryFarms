@@ -1023,6 +1023,67 @@ describe("delivery spot and receiver", () => {
   })
 })
 
+describe("self-registered farms and sign-in", () => {
+  const signup = { ownerName: "Valli", nameTa: "வள்ளி பண்ணை", nameEn: "Valli Farm", slug: "vallifarm", phone: "+919000060001", defaultLanguage: "ta" as const }
+
+  it("makes the farm and its owner once, however many times it is called", async () => {
+    const { provisionSignup, SIGNUP_TRIAL_DAYS } = await import("./platform")
+    expect(await provisionSignup("auth-valli", "Valli@Example.com", signup, NOW)).toBe("vallifarm")
+    expect(await provisionSignup("auth-valli", "valli@example.com", { ...signup, slug: "another" }, NOW)).toBe("vallifarm")
+    const farm = await prisma.tenant.findUniqueOrThrow({ where: { slug: "vallifarm" } })
+    expect(farm).toMatchObject({ status: "trial", plan: "free", invoicePrefix: "VF" })
+    expect(farm.trialEndsAt!.getTime() - NOW.getTime()).toBe(SIGNUP_TRIAL_DAYS * 24 * 60 * 60 * 1000)
+    expect(await prisma.tenant.count({ where: { slug: "another" } })).toBe(0)
+    expect(await tenantDb(farm.id).staffMember.findMany()).toMatchObject([{ authUserId: "auth-valli", staffCode: "VAL-001", email: "valli@example.com", roles: ["owner"] }])
+    expect(await tenantDb(farm.id).deliverySlot.count()).toBe(1)
+  })
+
+  it("moves to a free address when the wanted one went while the email waited", async () => {
+    const { provisionSignup } = await import("./platform")
+    expect(await provisionSignup("auth-other", "other@example.com", signup, NOW)).toBe("vallifarm-2")
+  })
+
+  it("ignores logins that have no sign-up waiting", async () => {
+    const { provisionFromMetadata } = await import("./platform")
+    expect(await provisionFromMetadata("auth-none", "none@example.com", {})).toBeNull()
+    expect(await provisionFromMetadata("auth-none", "none@example.com", { farmSignup: { slug: "x" } })).toBeNull()
+  })
+
+  it("gives staff an ID, with or without an email, and finds their login from it", async () => {
+    process.env.DEMO_LOGIN = "1"
+    const staffSvc = await import("./staff")
+    const farm = await prisma.tenant.findUniqueOrThrow({ where: { slug: "vallifarm" } })
+    const { member } = await staffSvc.addStaff(farm.id, { name: "Muthu", roles: ["delivery"] })
+    expect(member).toMatchObject({ staffCode: "VAL-002", email: null })
+    expect(await staffSvc.staffLoginEmail(farm.id, "VAL-002")).toBe(`val-002.${farm.id}@staff.farmforyou.internal`)
+    expect(await staffSvc.staffLoginEmail(farm.id, "VAL-001")).toBe("valli@example.com")
+    expect(await staffSvc.staffLoginEmail(farm.id, "VAL-999")).toBeNull()
+    await expect(staffSvc.addStaff(farm.id, { name: "No email owner", roles: ["owner"] })).rejects.toThrow("owner_email_required")
+    await staffSvc.setStaffActive(farm.id, (await tenantDb(farm.id).staffMember.findFirstOrThrow({ where: { staffCode: "VAL-001" } })).id, member.id, false)
+    expect(await staffSvc.staffLoginEmail(farm.id, "VAL-002")).toBeNull()
+  })
+
+  it("never finds a Staff ID through another farm", async () => {
+    const staffSvc = await import("./staff")
+    const other = await prisma.tenant.findUniqueOrThrow({ where: { slug: "vallifarm-2" } })
+    expect(await staffSvc.staffLoginEmail(other.id, "VAL-002")).toBeNull()
+  })
+
+  it("sends each person to the right place after sign-in", async () => {
+    const { homeAfterSignIn } = await import("./platform")
+    const farm = await prisma.tenant.findUniqueOrThrow({ where: { slug: "vallifarm" } })
+    const other = await prisma.tenant.findUniqueOrThrow({ where: { slug: "vallifarm-2" } })
+    expect(await homeAfterSignIn("auth-valli", farm.id)).toBe("/farm")
+    expect(await homeAfterSignIn("auth-valli", farm.id, "/farm/orders")).toBe("/farm/orders")
+    expect(await homeAfterSignIn("auth-valli", farm.id, "https://evil.example/farm")).toBe("/farm")
+    expect(await homeAfterSignIn("auth-valli", other.id)).toBe("http://vallifarm.localhost:3000/farm")
+    await prisma.platformAdmin.create({ data: { authUserId: "auth-boss", name: "Boss" } })
+    expect(await homeAfterSignIn("auth-boss", farm.id)).toBe("/admin")
+    expect(await homeAfterSignIn("auth-boss", farm.id, "/admin/farms/x")).toBe("/admin/farms/x")
+    expect(await homeAfterSignIn("auth-valli", farm.id, "/admin")).toBe("/farm")
+  })
+})
+
 describe("platform admin: farms", () => {
   it("adds a farm on trial with its owner login and a starting delivery slot", async () => {
     process.env.DEMO_LOGIN = "1" // owner logins are demo ids here; no Supabase in tests

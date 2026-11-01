@@ -8,7 +8,7 @@ import { normaliseIndianMobile } from "@/domain/phone"
 import { OrderError } from "@/server/orders"
 import { addStaff, resetStaffPassword, setStaffActive, updateStaff } from "@/server/staff"
 
-type Result = { ok: true; password?: string | null } | { ok: false; error: string }
+type Result = { ok: true; password?: string | null; staffCode?: string | null } | { ok: false; error: string }
 
 const roles = z.array(z.enum(ROLES as [string, ...string[]])).min(1)
 const base = {
@@ -32,14 +32,14 @@ async function attempt(fn: () => Promise<Result>): Promise<Result> {
 const phoneOf = (raw?: string) => (raw ? (normaliseIndianMobile(raw) ?? "bad") : undefined)
 
 export async function addStaffAction(raw: unknown): Promise<Result> {
-  const parsed = z.object({ ...base, email: z.string().trim().email().max(120) }).safeParse(raw)
+  const parsed = z.object({ ...base, email: z.union([z.string().trim().email().max(120), z.literal("")]).optional() }).safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_form" }
   const phone = phoneOf(parsed.data.phone)
   if (phone === "bad") return { ok: false, error: "phone_invalid" }
   const { tenant } = await requireStaff(OWNER_ONLY)
   return attempt(async () => {
-    const { password } = await addStaff(tenant.id, { ...parsed.data, phone, roles: parsed.data.roles as never })
-    return { ok: true, password }
+    const { member, password } = await addStaff(tenant.id, { ...parsed.data, phone, roles: parsed.data.roles as never })
+    return { ok: true, password, staffCode: member.staffCode }
   })
 }
 
