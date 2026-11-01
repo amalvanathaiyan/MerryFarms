@@ -26,3 +26,15 @@ export function checkStaffChange(staff: Member[], actorId: string, targetId: str
   }
   return null
 }
+
+/** The next Staff ID on a farm: the first three letters of its web address, then a number. merryfarms → MER-001. */
+export function nextStaffCode(slug: string, existing: (string | null)[]): string {
+  const prefix = slug.replace(/[^a-z0-9]/g, "").slice(0, 3).toUpperCase()
+  const used = existing.map((c) => Number(c?.split("-").pop())).filter(Number.isInteger)
+  return `${prefix}-${String(Math.max(0, ...used) + 1).padStart(3, "0")}`
+}
+
+export const normaliseStaffCode = (raw: string) => raw.trim().toUpperCase()
+
+/** Staff without an email still need one for their Supabase login. They never see it; the farm id keeps it unique. */
+export const internalStaffEmail = (code: string, tenantId: string) => `${code.toLowerCase()}.${tenantId}@staff.farmforyou.internal`

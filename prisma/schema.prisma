@@ -205,9 +205,10 @@ model StaffMember {
   id         String      @id @default(uuid())
   tenantId   String
   authUserId String // Supabase auth.users id
+  staffCode  String? // what staff sign in with, e.g. MER-002; null only on logins made before staff IDs
   name       String
   phone      String?
-  email      String?
+  email      String? // null for staff signing in by Staff ID alone
   roles      StaffRole[]
   language   Language    @default(ta)
   isActive   Boolean     @default(true)
@@ -216,6 +217,7 @@ model StaffMember {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, authUserId])
+  @@unique([tenantId, staffCode])
   @@index([authUserId])
   @@map("staff_members")
 }

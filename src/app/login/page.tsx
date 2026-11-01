@@ -1,20 +1,16 @@
-import { getLocale, getTranslations } from "next-intl/server"
-import { getTenant } from "@/lib/tenant"
-import { pick } from "@/lib/i18n-helpers"
-import { LanguageToggle } from "@/components/language-toggle"
+import { getTranslations } from "next-intl/server"
+import { farmKnownFromAddress, getTenant } from "@/lib/tenant"
 import { LoginForm } from "./login-form"
 import { isDemoLoginEnabled, DEMO_AUTH_PREFIX } from "@/lib/demo-auth"
 import { tenantDb } from "@/lib/tenant-db"
 import { prisma } from "@/lib/prisma"
 import { demoSignIn } from "@/app/actions/auth"
-import { CartArt } from "@/components/art/cart-art"
-import { WheelMark } from "@/components/art/wheel-mark"
+import { AuthShell } from "@/components/auth-shell"
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
   const { next, error } = await searchParams
   const t = await getTranslations("login")
   const tenant = await getTenant()
-  const locale = await getLocale()
   // Only allow redirects back into the farm app or the platform admin.
   const forAdmin = next?.startsWith("/admin") ?? false
   const target = next?.startsWith("/farm") || forAdmin ? next! : "/farm"
@@ -25,30 +21,13 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       : tenant
         ? await tenantDb(tenant.id).staffMember.findMany({ where: { authUserId: { startsWith: DEMO_AUTH_PREFIX }, isActive: true }, orderBy: { createdAt: "asc" } })
         : []
+  const notice = error === "not_admin" ? t("notAdmin") : error === "not_staff" ? t("notStaff") : error === "auth_failed" ? t("authFailed") : null
 
   return (
-    <main className="mx-auto grid min-h-dvh w-full max-w-5xl items-center gap-8 px-4 py-8 sm:px-6 md:grid-cols-2 md:gap-12">
-      {/* The brand side: FarmForYou's cart on the farm road. On phones it sits above the form. */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-3">
-          <WheelMark tone="tile" className="size-12" />
-          <div className="flex flex-col leading-tight">
-            <span className="font-display text-xl font-bold" lang="en">
-              FarmForYou
-            </span>
-            <span className="text-sm text-muted-foreground">{tenant ? pick(locale, tenant.nameTa, tenant.nameEn) : ""}</span>
-          </div>
-        </div>
-        <CartArt variant="scene" priority className="rounded-3xl border" />
-      </div>
-      <div className="flex w-full max-w-sm flex-col gap-6 justify-self-center">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">{forAdmin ? t("adminTitle") : t("title")}</h1>
-        <LanguageToggle />
-      </div>
-      {(error === "not_staff" || error === "not_admin") && (
+    <AuthShell title={forAdmin ? t("adminTitle") : t("title")}>
+      {notice && (
         <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-destructive">
-          {error === "not_admin" ? t("notAdmin") : t("notStaff")}
+          {notice}
         </p>
       )}
       {demoStaff.length > 0 && (
@@ -64,8 +43,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           ))}
         </section>
       )}
-      <LoginForm next={target} />
-      </div>
-    </main>
+      <LoginForm next={target} forAdmin={forAdmin} farmKnown={await farmKnownFromAddress()} />
+    </AuthShell>
   )
 }

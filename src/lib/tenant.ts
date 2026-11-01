@@ -22,3 +22,11 @@ export async function requireTenant() {
 }
 
 export type Tenant = NonNullable<Awaited<ReturnType<typeof getTenant>>>
+
+/** False only on the platform's main address with farms on subdomains: there, staff must say which farm they are from. */
+export async function farmKnownFromAddress() {
+  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN?.toLowerCase()
+  if (!root) return true
+  const host = ((await headers()).get("host") ?? "").split(":")[0].toLowerCase()
+  return host.endsWith(`.${root}`) && host !== `www.${root}` && host !== `admin.${root}`
+}

@@ -1,14 +1,16 @@
 import "server-only"
 import { randomUUID } from "node:crypto"
+import { prisma } from "@/lib/prisma"
 import { tenantDb } from "@/lib/tenant-db"
 import { isDemoLoginEnabled, DEMO_AUTH_PREFIX } from "@/lib/demo-auth"
 import { createServiceClient } from "@/lib/supabase/server"
-import { checkStaffChange, type Role, type StaffChange } from "@/domain/staff"
+import { checkStaffChange, internalStaffEmail, nextStaffCode, type Role, type StaffChange } from "@/domain/staff"
 import { tempPassword } from "@/domain/staff-password"
 import { OrderError } from "./orders"
 
 /**
- * Staff logins are Supabase Auth users (email + password). In the local demo there is no
+ * Staff logins are Supabase Auth users. Everyone gets a Staff ID; staff without an email sign in with that alone,
+ * on a hidden internal email address. In the local demo there is no
  * Supabase: new staff get a demo id and appear as a demo sign-in button instead.
  */
 const demoLogins = () => isDemoLoginEnabled() && !process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -27,18 +29,30 @@ async function createLogin(email: string, password: string): Promise<{ userId: s
   return { userId: user.id, existing: true }
 }
 
-export async function addStaff(tenantId: string, input: { name: string; email: string; phone?: string; roles: Role[] }) {
+export async function addStaff(tenantId: string, input: { name: string; email?: string; phone?: string; roles: Role[] }) {
   if (input.roles.length === 0) throw new OrderError("roles_required")
+  // An owner needs a real email: it is how they get back in with "Forgot password".
+  if (input.roles.includes("owner") && !input.email) throw new OrderError("owner_email_required")
   const db = tenantDb(tenantId)
-  const email = input.email.toLowerCase()
-  if (await db.staffMember.findFirst({ where: { email } })) throw new OrderError("staff_exists")
+  const email = input.email?.toLowerCase() || null
+  if (email && (await db.staffMember.findFirst({ where: { email } }))) throw new OrderError("staff_exists")
+  const { slug } = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { slug: true } })
+  const codes = await db.staffMember.findMany({ select: { staffCode: true } })
+  const staffCode = nextStaffCode(slug, codes.map((c) => c.staffCode))
   const password = tempPassword()
-  const { userId, existing } = await createLogin(email, password)
+  const { userId, existing } = await createLogin(email ?? internalStaffEmail(staffCode, tenantId), password)
   const linked = await db.staffMember.findFirst({ where: { authUserId: userId } })
   if (linked) throw new OrderError("staff_exists")
-  const member = await db.staffMember.create({ data: { tenantId, authUserId: userId, name: input.name, email, phone: input.phone || null, roles: input.roles } })
+  const member = await db.staffMember.create({ data: { tenantId, authUserId: userId, staffCode, name: input.name, email, phone: input.phone || null, roles: input.roles } })
   // An existing login keeps its own password; a demo login needs none.
   return { member, password: existing || demoLogins() ? null : password }
+}
+
+/** The login email behind a Staff ID on this farm, or null when there is no such active staff member. */
+export async function staffLoginEmail(tenantId: string, staffCode: string) {
+  const member = await tenantDb(tenantId).staffMember.findFirst({ where: { staffCode, isActive: true }, select: { email: true } })
+  if (!member) return null
+  return member.email ?? internalStaffEmail(staffCode, tenantId)
 }
 
 async function guarded(tenantId: string, actorId: string, targetId: string, change: StaffChange) {

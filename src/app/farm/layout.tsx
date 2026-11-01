@@ -4,7 +4,7 @@ import { pick } from "@/lib/i18n-helpers"
 import { LanguageToggle } from "@/components/language-toggle"
 import { FarmNav } from "@/components/farm/farm-nav"
 import Link from "next/link"
-import { BarChart3, LogOut, MessageCircle, Settings } from "lucide-react"
+import { BarChart3, CircleUserRound, LogOut, MessageCircle, Settings } from "lucide-react"
 import { featuresOf } from "@/lib/features"
 import { signOut } from "@/app/actions/auth"
 import { WheelMark } from "@/components/art/wheel-mark"
@@ -61,6 +61,10 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
                 {t("settings")}
               </Link>
             )}
+            <Link href="/farm/account" className={ICON_LINK}>
+              <CircleUserRound className="size-5" aria-hidden />
+              {t("account")}
+            </Link>
             <form action={signOut}>
               <button type="submit" className={ICON_LINK}>
                 <LogOut className="size-5" aria-hidden />
