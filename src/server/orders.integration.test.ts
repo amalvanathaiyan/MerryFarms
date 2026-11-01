@@ -1082,6 +1082,34 @@ describe("self-registered farms and sign-in", () => {
     expect(await homeAfterSignIn("auth-boss", farm.id, "/admin/farms/x")).toBe("/admin/farms/x")
     expect(await homeAfterSignIn("auth-valli", farm.id, "/admin")).toBe("/farm")
   })
+
+  it("keeps platform admin logins off every farm", async () => {
+    const { provisionSignup } = await import("./platform")
+    const staffSvc = await import("./staff")
+    await expect(staffSvc.assertFarmLogin("auth-boss")).rejects.toThrow("login_not_allowed")
+    await expect(staffSvc.assertFarmLogin("auth-valli")).resolves.toBeUndefined()
+    await expect(provisionSignup("auth-boss", "boss@example.com", signup, NOW)).rejects.toThrow("login_not_allowed")
+  })
+
+  it("won't reset a password that also opens another farm or the admin area", async () => {
+    process.env.DEMO_LOGIN = "1"
+    const staffSvc = await import("./staff")
+    const farm = await prisma.tenant.findUniqueOrThrow({ where: { slug: "vallifarm" } })
+    const other = await prisma.tenant.findUniqueOrThrow({ where: { slug: "vallifarm-2" } })
+    const valli = await tenantDb(farm.id).staffMember.findFirstOrThrow({ where: { staffCode: "VAL-001" } })
+    await expect(staffSvc.resetStaffPassword(farm.id, valli.id)).resolves.toBeNull()
+
+    const code = { staffCode: "VAL-900", name: "Shared", roles: ["delivery" as const] }
+    const onOtherFarm = await tenantDb(other.id).staffMember.create({ data: { ...code, tenantId: other.id, authUserId: "auth-valli" } })
+    await expect(staffSvc.resetStaffPassword(farm.id, valli.id)).rejects.toThrow("login_shared")
+    await expect(staffSvc.resetStaffPassword(farm.id, valli.id, "platform")).resolves.toBeNull()
+    await tenantDb(other.id).staffMember.deleteMany({ where: { id: onOtherFarm.id } })
+
+    const admin = await tenantDb(farm.id).staffMember.create({ data: { ...code, tenantId: farm.id, authUserId: "auth-boss" } })
+    await expect(staffSvc.resetStaffPassword(farm.id, admin.id)).rejects.toThrow("login_shared")
+    await expect(staffSvc.resetStaffPassword(farm.id, admin.id, "platform")).rejects.toThrow("login_shared")
+    await tenantDb(farm.id).staffMember.deleteMany({ where: { id: admin.id } })
+  })
 })
 
 describe("platform admin: farms", () => {

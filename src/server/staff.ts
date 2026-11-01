@@ -29,6 +29,11 @@ async function createLogin(email: string, password: string): Promise<{ userId: s
   return { userId: user.id, existing: true }
 }
 
+/** Platform admins and farm people are always different logins. The error doesn't say why, so it can't reveal who is an admin. */
+export async function assertFarmLogin(authUserId: string) {
+  if (await prisma.platformAdmin.findUnique({ where: { authUserId }, select: { id: true } })) throw new OrderError("login_not_allowed")
+}
+
 export async function addStaff(tenantId: string, input: { name: string; email?: string; phone?: string; roles: Role[] }) {
   if (input.roles.length === 0) throw new OrderError("roles_required")
   // An owner needs a real email: it is how they get back in with "Forgot password".
@@ -41,6 +46,7 @@ export async function addStaff(tenantId: string, input: { name: string; email?: 
   const staffCode = nextStaffCode(slug, codes.map((c) => c.staffCode))
   const password = tempPassword()
   const { userId, existing } = await createLogin(email ?? internalStaffEmail(staffCode, tenantId), password)
+  await assertFarmLogin(userId)
   const linked = await db.staffMember.findFirst({ where: { authUserId: userId } })
   if (linked) throw new OrderError("staff_exists")
   const member = await db.staffMember.create({ data: { tenantId, authUserId: userId, staffCode, name: input.name, email, phone: input.phone || null, roles: input.roles } })
@@ -74,10 +80,17 @@ export async function setStaffActive(tenantId: string, actorId: string, id: stri
   await db.staffMember.updateMany({ where: { id }, data: { isActive: active } })
 }
 
-/** A new temporary password for someone who forgot theirs. */
-export async function resetStaffPassword(tenantId: string, id: string) {
+/**
+ * A new temporary password for someone who forgot theirs. A password belongs to the whole login, so one that also
+ * opens another farm is refused for a farm: it must never be able to take that over. They use "Forgot password",
+ * and the platform admin can step in on request if that fails too. Nobody here resets a platform admin's login.
+ */
+export async function resetStaffPassword(tenantId: string, id: string, by: "farm" | "platform" = "farm") {
   const member = await tenantDb(tenantId).staffMember.findFirst({ where: { id } })
   if (!member) throw new OrderError("staff_not_found")
+  const elsewhere = await prisma.staffMember.count({ where: { authUserId: member.authUserId, id: { not: member.id } } })
+  const admin = await prisma.platformAdmin.findUnique({ where: { authUserId: member.authUserId }, select: { id: true } })
+  if (admin || (elsewhere > 0 && by === "farm")) throw new OrderError("login_shared")
   if (demoLogins() || member.authUserId.startsWith(DEMO_AUTH_PREFIX)) return null
   const password = tempPassword()
   const { error } = await createServiceClient().auth.admin.updateUserById(member.authUserId, { password })

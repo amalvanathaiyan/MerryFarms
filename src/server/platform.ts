@@ -6,7 +6,7 @@ import { nextStaffCode } from "@/domain/staff"
 import { farmUrl } from "@/lib/farm-url"
 import { tenantDb } from "@/lib/tenant-db"
 import type { Plan } from "@/domain/features"
-import { addStaff, resetStaffPassword } from "./staff"
+import { addStaff, assertFarmLogin, resetStaffPassword } from "./staff"
 import { OrderError } from "./orders"
 
 /**
@@ -129,6 +129,7 @@ async function freeSlug(slug: string) {
 export async function provisionSignup(authUserId: string, email: string, signup: FarmSignup, now = new Date()) {
   const already = await prisma.staffMember.findFirst({ where: { authUserId }, select: { tenant: { select: { slug: true } } } })
   if (already) return already.tenant.slug
+  await assertFarmLogin(authUserId)
   const slugProblem = checkSlug(signup.slug)
   if (slugProblem) throw new OrderError(slugProblem)
   const slug = await freeSlug(signup.slug)
@@ -211,7 +212,7 @@ export async function addOwner(tenantId: string, owner: { name: string; email: s
   return addStaff(tenantId, { ...owner, roles: ["owner"] })
 }
 
-/** A new temporary password for any of a farm's staff (e.g. the owner forgot theirs). */
+/** The last resort, on the farm's request, when "Forgot password" hasn't got them back in. */
 export async function resetPassword(tenantId: string, staffId: string) {
-  return resetStaffPassword(tenantId, staffId)
+  return resetStaffPassword(tenantId, staffId, "platform")
 }

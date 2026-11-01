@@ -4,7 +4,8 @@
  *
  *   npm run admin:add -- --email you@example.com --password 'a-long-password' --name "Amal"
  *
- * If the email already has a login (e.g. they own a farm too), it is reused; --password can be left out.
+ * If the email already has a login, it is reused and --password can be left out. A login on a farm is refused:
+ * platform admins and farm people are always different logins.
  * Then sign in at /login?next=/admin (or open /admin).
  */
 import { config } from "dotenv"
@@ -44,6 +45,8 @@ async function main() {
       userId = data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase())?.id
       if (!userId) throw new Error("No login with that email. Pass --password to create one.")
     }
+
+    if (await prisma.staffMember.findFirst({ where: { authUserId: userId } })) throw new Error("That login is on a farm. A platform admin needs its own email.")
 
     await prisma.platformAdmin.upsert({
       where: { authUserId: userId },

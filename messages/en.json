@@ -928,6 +928,8 @@
     "date_past": "Choose today or a later date.",
     "too_late_to_change": "It's too late to change this order online. Please call the farm.",
     "staff_exists": "Someone with that email is already on your staff.",
+    "login_not_allowed": "That email can't be used for a farm login. Please use a different email.",
+    "login_shared": "This login is also used elsewhere, so its password can't be changed here. Ask them to use \"Forgot password\" on the sign-in page.",
     "roles_required": "Choose at least one thing they can do.",
     "last_owner": "The farm needs at least one owner.",
     "cannot_change_self": "You can't remove your own owner access.",

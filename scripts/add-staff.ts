@@ -55,6 +55,8 @@ async function main() {
       if (!userId) throw new Error("No login with that email. Pass --password to create one.")
     }
 
+    if (await prisma.platformAdmin.findUnique({ where: { authUserId: userId } })) throw new Error("That login is a platform admin. A farm login needs its own email.")
+
     const codes = await prisma.staffMember.findMany({ where: { tenantId: tenant.id }, select: { staffCode: true } })
     const staffCode = nextStaffCode(tenant.slug, codes.map((c) => c.staffCode))
     await prisma.staffMember.upsert({
