@@ -3,7 +3,7 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { z } from "zod"
-import { createSSRClient } from "@/lib/supabase/server"
+import { createEmailLinkClient, createServiceClient, createSSRClient } from "@/lib/supabase/server"
 import { DEMO_AUTH_PREFIX, DEMO_COOKIE, isDemoLoginEnabled } from "@/lib/demo-auth"
 import { farmUrl } from "@/lib/farm-url"
 import { farmKnownFromAddress, getTenant } from "@/lib/tenant"
@@ -55,14 +55,22 @@ export async function sendPasswordReset(rawEmail: string): Promise<{ error?: str
   const email = z.string().trim().email().max(120).safeParse(rawEmail)
   if (!email.success) return { error: "invalid_form" }
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return { error: "no_sign_in" }
-  const supabase = await createSSRClient()
-  const { error } = await supabase.auth.resetPasswordForEmail(email.data, { redirectTo: await absoluteUrl("/auth/callback?type=recovery") })
+  const { error } = await createEmailLinkClient().auth.resetPasswordForEmail(email.data, { redirectTo: await absoluteUrl("/auth/callback?type=recovery") })
   if (error?.status === 429) return { error: "too_many_emails" }
   if (error) console.error("[password reset]", error.message)
   return {}
 }
 
-/** The last step of "Forgot password": the emailed link has already signed them in. */
+/** The emailed link carries its sign-in in the address, where only the browser can read it; this turns it into a session. */
+export async function openRecoveryLink(raw: unknown): Promise<{ error?: string }> {
+  const tokens = z.object({ access_token: z.string().min(1).max(4000), refresh_token: z.string().min(1).max(400) }).safeParse(raw)
+  if (!tokens.success) return { error: "link_expired" }
+  const supabase = await createSSRClient()
+  const { error } = await supabase.auth.setSession(tokens.data)
+  return error ? { error: "link_expired" } : {}
+}
+
+/** The last step of "Forgot password" or a first sign-in with a temporary password. */
 export async function setNewPassword(password: string): Promise<{ error: string } | undefined> {
   if (password.length < MIN_PASSWORD || password.length > 200) return { error: "password_short" }
   const supabase = await createSSRClient()
@@ -72,6 +80,10 @@ export async function setNewPassword(password: string): Promise<{ error: string 
   if (!user) return { error: "link_expired" }
   const { error } = await supabase.auth.updateUser({ password })
   if (error) return { error: error.code === "same_password" ? "same_password" : "generic" }
+  if (user.app_metadata?.tempPassword) {
+    const { error: flag } = await createServiceClient().auth.admin.updateUserById(user.id, { app_metadata: { tempPassword: false } })
+    if (flag) return { error: "generic" }
+  }
   redirect(await homeAfterSignIn(user.id, (await getTenant())?.id))
 }
 

@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server"
+import { saveAccount } from "@/app/actions/account"
 import { requireStaff } from "@/lib/auth"
 import { DEMO_AUTH_PREFIX } from "@/lib/demo-auth"
 import { AccountForm } from "./account-form"
@@ -14,7 +15,7 @@ export default async function AccountPage() {
         <h1 className="text-xl font-bold">{t("title")}</h1>
         <p className="text-sm text-muted-foreground">{t("hint")}</p>
       </div>
-      <AccountForm name={staff.name} staffCode={staff.staffCode} email={staff.email} canChangePassword={!staff.authUserId.startsWith(DEMO_AUTH_PREFIX)} />
+      <AccountForm name={staff.name} staffCode={staff.staffCode} email={staff.email} canChangePassword={!staff.authUserId.startsWith(DEMO_AUTH_PREFIX)} save={saveAccount} />
     </div>
   )
 }

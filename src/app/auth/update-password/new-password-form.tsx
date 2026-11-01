@@ -1,16 +1,28 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { setNewPassword } from "@/app/actions/auth"
+import { openRecoveryLink, setNewPassword } from "@/app/actions/auth"
 
 export function NewPasswordForm() {
   const t = useTranslations("login")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
+
+  useEffect(() => {
+    const link = new URLSearchParams(window.location.hash.slice(1))
+    const access_token = link.get("access_token")
+    const refresh_token = link.get("refresh_token")
+    if (!access_token && !link.get("error")) return
+    window.history.replaceState(null, "", window.location.pathname)
+    start(async () => {
+      const r = access_token && refresh_token ? await openRecoveryLink({ access_token, refresh_token }) : { error: "link_expired" }
+      if (r.error) setError(t(r.error))
+    })
+  }, [t])
 
   return (
     <form

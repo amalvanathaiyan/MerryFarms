@@ -825,7 +825,7 @@
     "forgotTitle": "Forgot your password?",
     "forgotHint": "Enter your email and we'll send you a link to make a new password.",
     "forgotSend": "Send me the link",
-    "forgotSent": "If that email has a login, a link is on its way. Open it on this phone. Check your spam folder too.",
+    "forgotSent": "If that email has a login, a link is on its way. Check your spam folder too. If it doesn't come or doesn't work, ask FarmForYou to reset your password.",
     "backToSignIn": "Back to sign in",
     "newPasswordTitle": "Make a new password",
     "newPassword": "New password",

@@ -18,7 +18,7 @@ const demoLogins = () => isDemoLoginEnabled() && !process.env.SUPABASE_SERVICE_R
 async function createLogin(email: string, password: string): Promise<{ userId: string; existing: boolean }> {
   if (demoLogins()) return { userId: `${DEMO_AUTH_PREFIX}${randomUUID().slice(0, 8)}`, existing: false }
   const admin = createServiceClient().auth.admin
-  const { data, error } = await admin.createUser({ email, password, email_confirm: true })
+  const { data, error } = await admin.createUser({ email, password, email_confirm: true, app_metadata: { tempPassword: true } })
   if (data.user) return { userId: data.user.id, existing: false }
   if (!error?.message.toLowerCase().includes("already")) throw error
   // The email already has a login (e.g. staff at another farm too): link it, keep their password.
@@ -93,7 +93,7 @@ export async function resetStaffPassword(tenantId: string, id: string, by: "farm
   if (admin || (elsewhere > 0 && by === "farm")) throw new OrderError("login_shared")
   if (demoLogins() || member.authUserId.startsWith(DEMO_AUTH_PREFIX)) return null
   const password = tempPassword()
-  const { error } = await createServiceClient().auth.admin.updateUserById(member.authUserId, { password })
+  const { error } = await createServiceClient().auth.admin.updateUserById(member.authUserId, { password, app_metadata: { tempPassword: true } })
   if (error) throw error
   return password
 }

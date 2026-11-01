@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { getTranslations } from "next-intl/server"
-import { LogOut } from "lucide-react"
+import { LogOut, UserRound } from "lucide-react"
 import { requirePlatformAdmin } from "@/lib/auth"
 import { LanguageToggle } from "@/components/language-toggle"
 import { WheelMark } from "@/components/art/wheel-mark"
@@ -30,6 +30,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </Link>
           <div className="flex items-center gap-1">
             <LanguageToggle compact />
+            <Link href="/admin/account" className="flex h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-xl px-1.5 text-[11px] leading-none font-medium hover:bg-accent hover:text-primary">
+              <UserRound className="size-5" aria-hidden />
+              {tc("account")}
+            </Link>
             <form action={signOutAdmin}>
               <button type="submit" className="flex h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-xl px-1.5 text-[11px] leading-none font-medium hover:bg-accent hover:text-primary">
                 <LogOut className="size-5" aria-hidden />
