@@ -39,7 +39,7 @@ async function main() {
 
   try {
     const tenant = await prisma.tenant.findUnique({ where: { slug } })
-    if (!tenant) throw new Error(`No farm with slug "${slug}". Run npm run db:seed first.`)
+    if (!tenant) throw new Error(`No farm with slug "${slug}". Add the farm in /admin first.`)
 
     let userId: string | undefined
     if (password) {

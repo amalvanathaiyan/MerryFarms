@@ -77,23 +77,19 @@ Open http://localhost:3000 for the shop. The farm app needs a real Supabase proj
 
 1. Create a Supabase project (region: Mumbai). Copy `.env.local.template` to `.env.local` and fill it in.
 2. In Supabase → Authentication → Providers, keep Email on. Leave "Confirm email" on so self-registered owners prove their email (logins made by the app or scripts skip it). In Authentication → URL Configuration set the Site URL to your address and add `https://*.your-domain/auth/callback**` (and `http://localhost:3000/auth/callback**`) to the Redirect URLs, or emailed links won't work. Supabase's built-in email sends only a few messages an hour; add your own SMTP before opening registration widely.
-3. Create the tables and lock the public API:
+3. Create the tables and lock the public API. The platform starts with no farms:
    ```bash
    npm run db:push
    npm run db:rls
-   npm run db:seed            # add -- --demo for sample orders
    ```
-4. Create the owner's login:
+4. Create the first platform admin, the login that runs the platform:
    ```bash
-   npm run staff:add -- --email you@example.com --password 'a-long-password' --name "Your name" --roles owner
-   ```
-   and, for running the platform (adding more farms, plans, trials), make yourself a platform admin. The same login can be both:
-   ```bash
-   npm run admin:add -- --email you@example.com --name "Your name"
+   npm run admin:add -- --email you@example.com --password 'a-long-password' --name "Your name"
    ```
    Then open `/admin` (in the demo: http://localhost:3000/login?next=/admin and the demo admin button).
-5. For phone notifications, run `node scripts/vapid-keys.mjs` once and add the three lines to `.env.local` (and to the host's environment settings). Keep `VAPID_PRIVATE_KEY` secret; changing the keys means everyone has to turn notifications on again.
-6. `npm run dev`, then sign in at http://localhost:3000/login.
+5. Add each farm in `/admin` → **New farm**, including the first. Set `DEFAULT_TENANT_SLUG` to the farm shown when the address has no farm subdomain. A farm owner using the same email as an admin keeps that one login and password.
+6. For phone notifications, run `node scripts/vapid-keys.mjs` once and add the three lines to `.env.local` (and to the host's environment settings). Keep `VAPID_PRIVATE_KEY` secret; changing the keys means everyone has to turn notifications on again.
+7. `npm run dev`, then sign in at http://localhost:3000/login.
 
 ## Host on Vercel
 
