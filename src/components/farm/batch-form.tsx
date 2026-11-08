@@ -51,7 +51,10 @@ export function BatchForm({
   const [cost, setCost] = useState("")
   const [batchNo, setBatchNo] = useState(number != null ? String(number) : "")
   const set = (k: keyof BatchFormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setV({ ...v, [k]: e.target.value })
-  const bought = v.source === "bought"
+  // Three clear starts: chicks bought in, eggs bought and hatched here, or the farm's own eggs hatched here.
+  const chicksBought = v.source === "bought"
+  const eggsBought = v.source === "eggs_bought"
+  const ownEggs = v.source === "hatched"
 
   const chips = (key: "purpose" | "source", options: readonly string[]) => (
     <div className="flex flex-wrap gap-2">
@@ -96,14 +99,14 @@ export function BatchForm({
             source: v.source,
             supplier: v.supplier || undefined,
             startDate: v.startDate,
-            ageAtStartDays: bought ? (num(v.ageAtStartDays) ?? 0) : 0,
+            ageAtStartDays: chicksBought ? (num(v.ageAtStartDays) ?? 0) : 0,
             startCount: Number(v.startCount),
-            eggsSet: bought ? null : num(v.eggsSet),
-            parentBatchId: bought ? null : v.parentBatchId || null,
+            eggsSet: chicksBought ? null : num(v.eggsSet),
+            parentBatchId: ownEggs ? v.parentBatchId || null : null,
             eggValueRupees: num(v.eggValueRupees),
             note: v.note || undefined,
           }
-          const r = id ? await editBatch(id, { ...input, number: num(batchNo) ?? undefined }) : await addBatch({ ...input, chicksCostRupees: bought ? num(cost) : null })
+          const r = id ? await editBatch(id, { ...input, number: num(batchNo) ?? undefined }) : await addBatch({ ...input, chicksCostRupees: chicksBought || eggsBought ? num(cost) : null })
           if (!r.ok) return setError(te.has(r.error) ? te(r.error) : te("generic"))
           router.push(`/farm/poultry/batches/${id ?? r.id}`)
         })
@@ -117,7 +120,20 @@ export function BatchForm({
 
       <div className="flex flex-col gap-2">
         <span className="text-sm font-semibold">{t("whereFrom")}</span>
-        {chips("source", BATCH_SOURCES)}
+        <div className="grid gap-2">
+          {BATCH_SOURCES.map((o) => (
+            <button
+              key={o}
+              type="button"
+              aria-pressed={v.source === o}
+              onClick={() => setV({ ...v, source: o })}
+              className={cn("flex flex-col items-start rounded-2xl border-2 px-4 py-3 text-left", v.source === o ? "border-primary bg-accent" : "bg-card")}
+            >
+              <span className="font-bold">{t(`source_${o}`)}</span>
+              <span className="text-sm text-muted-foreground">{t(`sourceHint_${o}`)}</span>
+            </button>
+          ))}
+        </div>
       </div>
       <div className="flex flex-col gap-2">
         <span className="text-sm font-semibold">{t("whatFor")}</span>
@@ -131,20 +147,28 @@ export function BatchForm({
         {field(t("breed"), <Input value={v.breed} maxLength={60} onChange={set("breed")} placeholder={t("breedPlaceholder")} className="h-12 font-normal" />)}
       </div>
 
+      {(chicksBought || eggsBought) && field(t("supplier"), <Input value={v.supplier} maxLength={80} onChange={set("supplier")} className="h-12 font-normal" />)}
+
+      {eggsBought && (
+        <div className="grid grid-cols-2 gap-3">
+          {field(t("eggsBoughtCount"), numberInput("eggsSet"), t("eggsSetHint"))}
+          {!id && field(t("eggsCost"), <Input type="number" min={0} step="1" inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} className="h-12 text-lg font-normal tabular-nums" />, t("chicksCostHint"))}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3">
-        {field(bought ? t("startDateBought") : t("startDateHatched"), <Input type="date" required max={today} value={v.startDate} onChange={set("startDate")} className="h-12 font-normal" />)}
-        {field(bought ? t("startCountBought") : t("startCountHatched"), numberInput("startCount", { required: true, min: 1 }))}
+        {field(chicksBought ? t("startDateBought") : t("startDateHatched"), <Input type="date" required max={today} value={v.startDate} onChange={set("startDate")} className="h-12 font-normal" />)}
+        {field(chicksBought ? t("startCountBought") : t("startCountHatched"), numberInput("startCount", { required: true, min: 1 }))}
       </div>
 
-      {bought ? (
-        <>
-          <div className="grid grid-cols-2 gap-3">
-            {field(t("ageAtStart"), numberInput("ageAtStartDays"), t("ageAtStartHint"))}
-            {!id && field(t("chicksCost"), <Input type="number" min={0} step="1" inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} className="h-12 text-lg font-normal tabular-nums" />, t("chicksCostHint"))}
-          </div>
-          {field(t("supplier"), <Input value={v.supplier} maxLength={80} onChange={set("supplier")} className="h-12 font-normal" />)}
-        </>
-      ) : (
+      {chicksBought && (
+        <div className="grid grid-cols-2 gap-3">
+          {field(t("ageAtStart"), numberInput("ageAtStartDays"), t("ageAtStartHint"))}
+          {!id && field(t("chicksCost"), <Input type="number" min={0} step="1" inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} className="h-12 text-lg font-normal tabular-nums" />, t("chicksCostHint"))}
+        </div>
+      )}
+
+      {ownEggs && (
         <div className="grid grid-cols-2 gap-3">
           {field(t("eggsSet"), numberInput("eggsSet"), t("eggsSetHint"))}
           {parents.length > 0 &&

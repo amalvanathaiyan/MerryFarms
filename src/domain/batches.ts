@@ -8,8 +8,13 @@ import type { DayRecord } from "./records"
 
 export const BATCH_PURPOSES = ["eggs", "meat", "breeding"] as const
 export type BatchPurpose = (typeof BATCH_PURPOSES)[number]
-export const BATCH_SOURCES = ["bought", "hatched"] as const
+/** Where a batch came from: chicks bought in, eggs bought and hatched here, or the farm's own eggs hatched here. */
+export const BATCH_SOURCES = ["bought", "eggs_bought", "hatched"] as const
 export type BatchSource = (typeof BATCH_SOURCES)[number]
+/** Bought from someone (has a supplier and a price): chicks, or eggs to hatch. */
+export const boughtIn = (source: string) => source === "bought" || source === "eggs_bought"
+/** Hatched on the farm (first day = hatch day, eggs set, hatch rate): from bought eggs or the farm's own. */
+export const hatchedHere = (source: string) => source === "hatched" || source === "eggs_bought"
 /** Why birds were lost. "culled" is taken out on purpose (sick, weak); the rest died. */
 export const LOSS_CAUSES = ["disease", "predator", "heat", "weak", "injury", "unknown", "culled"] as const
 export type LossCause = (typeof LOSS_CAUSES)[number]
@@ -153,7 +158,7 @@ export function checkBatch(
   if (b.startDate > today) return "record_future"
   if (!Number.isInteger(b.startCount) || b.startCount < 1 || b.startCount > 1_000_000) return "batch_count_invalid"
   if (!Number.isInteger(b.ageAtStartDays) || b.ageAtStartDays < 0 || b.ageAtStartDays > 3650) return "batch_age_invalid"
-  if (b.source === "hatched" && b.eggsSet != null && b.eggsSet < b.startCount) return "hatched_more_than_set"
+  if (hatchedHere(b.source) && b.eggsSet != null && b.eggsSet < b.startCount) return "hatched_more_than_set"
   if (existing && b.startCount < existing.outSoFar) return "batch_count_below_out"
   if (existing?.firstEntry && b.startDate > existing.firstEntry) return "batch_start_after_entries"
   return null

@@ -834,8 +834,8 @@
       "purpose_eggs": "For eggs",
       "purpose_meat": "For meat",
       "purpose_breeding": "For breeding",
-      "source_bought": "Bought",
-      "source_hatched": "Hatched here",
+      "source_bought": "Bought chicks",
+      "source_hatched": "Our own eggs, hatched here",
       "enteredToday": "Done today",
       "enterToday": "Enter today",
       "ageDays": "{days, plural, one {# day old} other {# days old}}",
@@ -955,7 +955,15 @@
       "enterAllToday": "Enter today for all batches",
       "changeAllToday": "Change today's entries",
       "batchNumber": "Batch number",
-      "batchNumberHint": "Change it if a deleted test batch left a gap (e.g. make Batch 2 into Batch 1)."
+      "batchNumberHint": "Change it if a deleted test batch left a gap (e.g. make Batch 2 into Batch 1).",
+      "source_eggs_bought": "Bought eggs, hatched here",
+      "sourceHint_bought": "Chicks or birds bought from a hatchery or another farm",
+      "sourceHint_eggs_bought": "Hatching eggs bought from someone, hatched on this farm",
+      "sourceHint_hatched": "Eggs from this farm's own hens, hatched here",
+      "eggsBoughtCount": "How many eggs were bought",
+      "eggsCost": "Paid for the eggs (₹, optional)",
+      "moneyEggsBought": "Eggs bought to hatch",
+      "aliveCount": "{count} alive"
     },
     "vaccines": {
       "title": "Vaccinations",
@@ -1190,7 +1198,8 @@
       "saving": "Saving…",
       "saveCount": "{count, plural, one {Save # batch} other {Save # batches}}",
       "allSaved": "All saved",
-      "save": "Save"
+      "save": "Save",
+      "birdsShort": "{count, plural, one {# bird} other {# birds}}"
     },
     "eggStore": {
       "title": "Eggs in store",
@@ -1218,7 +1227,8 @@
       "lostTitle": "Birds lost in this period",
       "noLosses": "No birds lost in this period.",
       "lostHint": "Each bird at what its batch had cost per chick.",
-      "profitIsFarms": "The farm's real profit, from actual sales, is under Money → Profit"
+      "profitIsFarms": "The farm's real profit, from actual sales, is under Money → Profit",
+      "eggsBought": "Eggs bought to hatch"
     }
   },
   "login": {
