@@ -6,8 +6,17 @@ import { FarmNav } from "@/components/farm/farm-nav"
 import { featuresOf } from "@/lib/features"
 import { mainMenu } from "@/lib/farm-sections"
 import { WheelMark } from "@/components/art/wheel-mark"
+import type { Metadata } from "next"
+import { getTenant } from "@/lib/tenant"
+import { InstallCatcher } from "@/components/install-app"
 
 export const dynamic = "force-dynamic"
+
+/** Installing from the farm app gives its own icon that opens straight into the farm app (not the shop). */
+export async function generateMetadata(): Promise<Metadata> {
+  const tenant = await getTenant()
+  return { manifest: "/app-manifest?app=farm", appleWebApp: { capable: true, title: `${tenant?.nameEn ?? "FarmForYou"} Farm`, statusBarStyle: "default" } }
+}
 
 export default async function FarmLayout({ children }: { children: React.ReactNode }) {
   const { tenant, staff, db } = await requireStaff()
@@ -19,6 +28,7 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="flex min-h-dvh flex-col">
+      <InstallCatcher />
       {/* Only the farm and the language here: everything else is one tap away in the menu (More). */}
       <header className="sticky top-0 z-20 border-b bg-header/95 text-header-foreground backdrop-blur print:hidden">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">

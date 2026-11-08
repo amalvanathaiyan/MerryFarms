@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { getLocale, getTranslations } from "next-intl/server"
 import { ChevronLeft, ChevronRight, Download } from "lucide-react"
-import { OWNER_ONLY, requireStaff } from "@/lib/auth"
+import { requireStaff } from "@/lib/auth"
 import { requireFeature } from "@/lib/require-feature"
 import { dayLabel } from "@/lib/i18n-helpers"
 import { featuresOf } from "@/lib/features"
@@ -15,10 +15,14 @@ import { RecordsManager } from "@/components/farm/records-manager"
 
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/
 
-/** Money · Spending (owner): add what the farm spends, and see what was paid out in any month. */
+/**
+ * Money · Spending: the owner adds what the farm spends and sees what was paid out in any month. A manager adds
+ * expenses too, but sees only their own entries: no totals, no other entries, no Excel.
+ */
 export default async function MoneySpendingPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const sp = await searchParams
-  const { db, tenant, staff } = await requireStaff(OWNER_ONLY)
+  const { db, tenant, staff } = await requireStaff(["owner", "manager"])
+  const isOwner = staff.roles.includes("owner")
   requireFeature(tenant, "farmRecords")
   const features = featuresOf(tenant)
   const locale = await getLocale()
@@ -35,7 +39,7 @@ export default async function MoneySpendingPage({ searchParams }: { searchParams
   const monthName = new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${from}T00:00:00Z`))
 
   const [expenses, batches] = await Promise.all([
-    db.expense.findMany({ where: { date: { gte: from, lte: to } }, orderBy: [{ date: "desc" }, { createdAt: "desc" }] }),
+    db.expense.findMany({ where: { date: { gte: from, lte: to }, ...(isOwner ? {} : { byStaffId: staff.id }) }, orderBy: [{ date: "desc" }, { createdAt: "desc" }] }),
     features.poultryCare ? db.batch.findMany({ orderBy: { number: "desc" } }) : Promise.resolve([]),
   ])
   const batchName = (id: string | null) => {
@@ -46,10 +50,12 @@ export default async function MoneySpendingPage({ searchParams }: { searchParams
 
   return (
     <div className="flex flex-col gap-4">
-      <SectionHeader section="money" tabs={moneyTabs({ roles: staff.roles, features })} active="spending" />
+      <SectionHeader section="money" tabs={moneyTabs({ roles: staff.roles, features })} active="spending" hint={isOwner ? undefined : t("managerTitleHint")} />
       <RecordsManager
         today={today}
         canSpend
+        showTotals={isOwner}
+        canSpreadCosts={isOwner}
         poultry={features.poultryCare}
         batches={null}
         production={null}
@@ -89,11 +95,13 @@ export default async function MoneySpendingPage({ searchParams }: { searchParams
                 {t("showMonth")}
               </Button>
             </form>
-            <Button asChild variant="outline" className="h-12 justify-start text-base">
-              <a href={`/farm/reports/export?type=expenses&from=${from}&to=${to}`}>
-                <Download /> {t("downloadMonth", { month: monthName })}
-              </a>
-            </Button>
+            {isOwner && (
+              <Button asChild variant="outline" className="h-12 justify-start text-base">
+                <a href={`/farm/reports/export?type=expenses&from=${from}&to=${to}`}>
+                  <Download /> {t("downloadMonth", { month: monthName })}
+                </a>
+              </Button>
+            )}
           </div>
         }
       />

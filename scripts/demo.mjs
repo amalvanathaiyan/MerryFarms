@@ -28,9 +28,11 @@ const env = {
   DIRECT_URL: DATABASE_URL,
   DEFAULT_TENANT_SLUG: "merryfarms",
   DEMO_LOGIN: "1",
-  // No Supabase in demo mode: staff use the demo sign-in buttons.
+  // No Supabase in demo mode: staff use the demo sign-in buttons, and new staff get demo logins.
+  // The service key is cleared too, so nothing here can create a login on the live project.
   NEXT_PUBLIC_SUPABASE_URL: "",
   NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
+  SUPABASE_SERVICE_ROLE_KEY: "",
 }
 
 // Fresh database client and dev build every run, so a schema change is never served from

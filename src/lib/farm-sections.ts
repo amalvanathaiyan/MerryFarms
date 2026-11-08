@@ -50,7 +50,7 @@ export const SECTION_LOOK: Record<SectionKey, SectionLook> = {
   account: { strong: "bg-sec-account text-sec-on", tint: "bg-sec-account-tint", text: "text-sec-account", border: "border-sec-account" },
 }
 
-export type Role = "owner" | "order_desk" | "packing" | "delivery"
+export type Role = "owner" | "manager" | "order_desk" | "packing" | "delivery"
 
 export interface Who {
   roles: readonly string[]
@@ -81,12 +81,12 @@ export function poultryTabs(who: Who): Tab[] {
   ]
 }
 
-/** Money's tabs: packing staff only enter what was made; the rest is the owner's. */
+/** Money's tabs: a manager only adds spending, packing staff only enter what was made; the rest is the owner's. */
 export function moneyTabs(who: Who): Tab[] {
   const owner = has(who, "owner")
   const tabs: Tab[] = []
   if (owner && who.features.reports) tabs.push({ key: "sales", href: "/farm/money" })
-  if (owner && who.features.farmRecords) tabs.push({ key: "spending", href: "/farm/money/spending" })
+  if (who.features.farmRecords && has(who, "owner", "manager")) tabs.push({ key: "spending", href: "/farm/money/spending" })
   if (who.features.farmRecords && has(who, "owner", "packing")) tabs.push({ key: "made", href: "/farm/money/made" })
   if (owner && who.features.farmRecords) tabs.push({ key: "profit", href: "/farm/money/profit" })
   return tabs

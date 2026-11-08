@@ -3,8 +3,9 @@
  * active owner, and an owner can't lock themselves out.
  */
 
-export type Role = "owner" | "order_desk" | "packing" | "delivery"
-export const ROLES: Role[] = ["owner", "order_desk", "packing", "delivery"]
+export type Role = "owner" | "manager" | "order_desk" | "packing" | "delivery"
+/** "manager" adds farm expenses but sees no totals, sales or profit. */
+export const ROLES: Role[] = ["owner", "manager", "order_desk", "packing", "delivery"]
 
 type Member = { id: string; roles: Role[]; isActive: boolean }
 
