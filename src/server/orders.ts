@@ -383,8 +383,10 @@ export async function editOrder(tenant: Tenant, orderId: string, input: EditOrde
     const check = area && areaConfigured(area) ? checkArea(area, { location: addr?.lat != null && addr.lng != null ? { lat: addr.lat, lng: addr.lng } : null, pincode: addr?.pincode }) : null
 
     const totals = orderTotals(lines, tenant)
+    // Items are rewritten, but each one keeps the time it was first added to the order.
+    const firstAdded = new Map((await tx.orderItem.findMany({ where: { orderId }, select: { productId: true, createdAt: true } })).map((i) => [i.productId, i.createdAt]))
     await tx.orderItem.deleteMany({ where: { orderId } })
-    await tx.orderItem.createMany({ data: lines.map((l) => ({ ...l, orderId, tenantId: tenant.id })) })
+    await tx.orderItem.createMany({ data: lines.map((l) => ({ ...l, orderId, tenantId: tenant.id, ...(firstAdded.has(l.productId) ? { createdAt: firstAdded.get(l.productId) } : {}) })) })
     const r = await tx.order.updateMany({
       where: { id: orderId, status: order.status },
       data: {

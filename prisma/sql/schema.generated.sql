@@ -97,6 +97,8 @@ CREATE TABLE "tenant_settings" (
     "skipCallForPrepaid" BOOLEAN NOT NULL DEFAULT true,
     "callRetryMinutes" INTEGER NOT NULL DEFAULT 30,
     "maxCallAttempts" INTEGER NOT NULL DEFAULT 3,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "tenant_settings_pkey" PRIMARY KEY ("id")
 );
@@ -114,6 +116,7 @@ CREATE TABLE "staff_members" (
     "language" "Language" NOT NULL DEFAULT 'ta',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "staff_members_pkey" PRIMARY KEY ("id")
 );
@@ -125,6 +128,7 @@ CREATE TABLE "platform_admins" (
     "name" TEXT NOT NULL,
     "email" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "platform_admins_pkey" PRIMARY KEY ("id")
 );
@@ -134,6 +138,7 @@ CREATE TABLE "login_usernames" (
     "username" TEXT NOT NULL,
     "authUserId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "login_usernames_pkey" PRIMARY KEY ("username")
 );
@@ -148,6 +153,8 @@ CREATE TABLE "categories" (
     "showOnWhatsApp" BOOLEAN NOT NULL DEFAULT true,
     "kind" TEXT,
     "deletedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "categories_pkey" PRIMARY KEY ("id")
 );
@@ -194,6 +201,8 @@ CREATE TABLE "delivery_slots" (
     "cutoffHours" INTEGER NOT NULL DEFAULT 12,
     "maxOrders" INTEGER NOT NULL DEFAULT 20,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "delivery_slots_pkey" PRIMARY KEY ("id")
 );
@@ -213,6 +222,7 @@ CREATE TABLE "customers" (
     "accessToken" TEXT,
     "tokenIssuedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "customers_pkey" PRIMARY KEY ("id")
 );
@@ -233,6 +243,7 @@ CREATE TABLE "addresses" (
     "receiverPhone" TEXT,
     "isDefault" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "addresses_pkey" PRIMARY KEY ("id")
 );
@@ -276,6 +287,8 @@ CREATE TABLE "order_items" (
     "qty" INTEGER NOT NULL,
     "unitPricePaise" INTEGER NOT NULL,
     "gstRate" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "order_items_pkey" PRIMARY KEY ("id")
 );
@@ -290,6 +303,8 @@ CREATE TABLE "order_events" (
     "byStaffId" TEXT,
     "note" TEXT,
     "at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "order_events_pkey" PRIMARY KEY ("id")
 );
@@ -305,6 +320,8 @@ CREATE TABLE "confirmation_calls" (
     "note" TEXT,
     "durationSec" INTEGER,
     "at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "confirmation_calls_pkey" PRIMARY KEY ("id")
 );
@@ -326,6 +343,8 @@ CREATE TABLE "invoices" (
     "pdfUrl" TEXT,
     "issuedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "refInvoiceId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "invoices_pkey" PRIMARY KEY ("id")
 );
@@ -336,6 +355,8 @@ CREATE TABLE "invoice_counters" (
     "series" TEXT NOT NULL DEFAULT 'INV',
     "fy" TEXT NOT NULL,
     "nextSeq" INTEGER NOT NULL DEFAULT 1,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "invoice_counters_pkey" PRIMARY KEY ("tenantId","series","fy")
 );
@@ -351,6 +372,8 @@ CREATE TABLE "ledger_entries" (
     "refId" TEXT,
     "note" TEXT,
     "at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "ledger_entries_pkey" PRIMARY KEY ("id")
 );
@@ -368,6 +391,8 @@ CREATE TABLE "payments" (
     "reference" TEXT,
     "note" TEXT,
     "at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "payments_pkey" PRIMARY KEY ("id")
 );
@@ -387,6 +412,8 @@ CREATE TABLE "order_returns" (
     "creditNoteId" TEXT,
     "byStaffId" TEXT,
     "at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "order_returns_pkey" PRIMARY KEY ("id")
 );
@@ -399,6 +426,7 @@ CREATE TABLE "message_templates" (
     "bodyTa" TEXT,
     "bodyEn" TEXT,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "message_templates_pkey" PRIMARY KEY ("id")
 );
@@ -436,6 +464,7 @@ CREATE TABLE "messages" (
     "byStaffId" TEXT,
     "seenAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "messages_pkey" PRIMARY KEY ("id")
 );
@@ -451,6 +480,7 @@ CREATE TABLE "push_subscriptions" (
     "auth" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "lastSentAt" TIMESTAMP(3),
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "push_subscriptions_pkey" PRIMARY KEY ("id")
 );
@@ -462,6 +492,7 @@ CREATE TABLE "product_images" (
     "mime" TEXT NOT NULL,
     "data" BYTEA NOT NULL,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "product_images_pkey" PRIMARY KEY ("productId")
 );
@@ -472,6 +503,7 @@ CREATE TABLE "tenant_logos" (
     "mime" TEXT NOT NULL,
     "data" BYTEA NOT NULL,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "tenant_logos_pkey" PRIMARY KEY ("tenantId")
 );
@@ -486,6 +518,7 @@ CREATE TABLE "otp_codes" (
     "attempts" INTEGER NOT NULL DEFAULT 0,
     "usedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "otp_codes_pkey" PRIMARY KEY ("id")
 );
@@ -498,6 +531,7 @@ CREATE TABLE "closed_days" (
     "slotId" TEXT,
     "note" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "closed_days_pkey" PRIMARY KEY ("id")
 );
@@ -521,6 +555,7 @@ CREATE TABLE "batches" (
     "closedDate" TEXT,
     "note" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "batches_pkey" PRIMARY KEY ("id")
 );
@@ -540,6 +575,7 @@ CREATE TABLE "batch_days" (
     "note" TEXT,
     "byStaffId" TEXT,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "batch_days_pkey" PRIMARY KEY ("id")
 );
@@ -552,6 +588,8 @@ CREATE TABLE "batch_losses" (
     "date" TEXT NOT NULL,
     "cause" TEXT NOT NULL,
     "count" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "batch_losses_pkey" PRIMARY KEY ("id")
 );
@@ -564,6 +602,7 @@ CREATE TABLE "vaccine_schedule" (
     "ageDays" INTEGER NOT NULL,
     "method" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "vaccine_schedule_pkey" PRIMARY KEY ("id")
 );
@@ -582,6 +621,7 @@ CREATE TABLE "batch_vaccinations" (
     "note" TEXT,
     "byStaffId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "batch_vaccinations_pkey" PRIMARY KEY ("id")
 );
@@ -598,6 +638,7 @@ CREATE TABLE "expenses" (
     "note" TEXT,
     "byStaffId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "expenses_pkey" PRIMARY KEY ("id")
 );
@@ -612,6 +653,7 @@ CREATE TABLE "production_entries" (
     "wasted" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "byStaffId" TEXT,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "production_entries_pkey" PRIMARY KEY ("id")
 );

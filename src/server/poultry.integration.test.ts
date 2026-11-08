@@ -132,6 +132,25 @@ describe("a batch from arrival to profit", () => {
     expect((await db.batchLoss.findMany({ where: { batchId: id } })).map((l) => [l.cause, l.count])).toEqual([["disease", 3]])
   })
 
+  it("keeps the time a loss was first entered when the day is saved again, and moves the day's last-changed time", async () => {
+    const db = tenantDb(T1)
+    const first = await db.batchLoss.findFirstOrThrow({ where: { batchId: id, date: "2026-10-02", cause: "disease" } })
+    const dayBefore = await db.batchDay.findFirstOrThrow({ where: { batchId: id, date: "2026-10-02" } })
+    await new Promise((r) => setTimeout(r, 20))
+    await batches.saveBatchDay(T1, "s1", id, day("2026-10-02", { feedKg: 6, losses: [{ cause: "disease", count: 4 }, { cause: "predator", count: 1 }] }), TODAY)
+    const losses = await db.batchLoss.findMany({ where: { batchId: id, date: "2026-10-02" } })
+    const disease = losses.find((l) => l.cause === "disease")!
+    const predator = losses.find((l) => l.cause === "predator")!
+    expect(disease.count).toBe(4)
+    expect(disease.createdAt).toEqual(first.createdAt)
+    expect(predator.createdAt.getTime()).toBeGreaterThan(first.createdAt.getTime())
+    const dayAfter = await db.batchDay.findFirstOrThrow({ where: { batchId: id, date: "2026-10-02" } })
+    expect(dayAfter.createdAt).toEqual(dayBefore.createdAt)
+    expect(dayAfter.updatedAt.getTime()).toBeGreaterThan(dayBefore.updatedAt.getTime())
+    // Back to how the rest of these tests expect the day.
+    await batches.saveBatchDay(T1, "s1", id, day("2026-10-02", { feedKg: 6, losses: [{ cause: "disease", count: 3 }] }), TODAY)
+  })
+
   it("refuses more birds out than the batch has, days before it came and days in the future", async () => {
     expect(await code(batches.saveBatchDay(T1, "s1", id, day("2026-10-04", { sold: 90 }), TODAY))).toBe("more_out_than_birds")
     expect(await code(batches.saveBatchDay(T1, "s1", id, day("2026-09-30"), TODAY))).toBe("batch_before_start")

@@ -180,8 +180,11 @@ export async function saveBatchDay(tenantId: string, staffId: string, batchId: s
       update: { ...day, byStaffId: staffId },
       create: { ...day, tenantId, batchId, byStaffId: staffId },
     })
+    // Losses are rewritten, but a cause already entered that day keeps the time it was first entered.
+    const firstEntered = new Map((await tx.batchLoss.findMany({ where: { batchId, date: input.date }, select: { cause: true, createdAt: true } })).map((l) => [l.cause, l.createdAt]))
     await tx.batchLoss.deleteMany({ where: { batchId, date: input.date } })
-    if (losses.length) await tx.batchLoss.createMany({ data: losses.map((l) => ({ ...l, tenantId, batchId, date: input.date })) })
+    if (losses.length)
+      await tx.batchLoss.createMany({ data: losses.map((l) => ({ ...l, tenantId, batchId, date: input.date, ...(firstEntered.has(l.cause) ? { createdAt: firstEntered.get(l.cause) } : {}) })) })
   })
 }
 
