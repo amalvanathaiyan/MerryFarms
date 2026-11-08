@@ -15,6 +15,8 @@ import { DailySalesChart } from "@/components/farm/daily-sales-chart"
 import { cn } from "@/lib/utils"
 import { tenantDb } from "@/lib/tenant-db"
 import { costs, production, productionTotals, profit } from "@/domain/records"
+import { flockDays, lossesValued } from "@/domain/batches"
+import { batchBook } from "@/server/batches"
 
 const PRESETS = ["today", "week", "month"] as const
 
@@ -29,6 +31,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const tc = await getTranslations("common")
   const tr = await getTranslations("farm.records")
   const tu = await getTranslations("farm.units")
+  const tb = await getTranslations("farm.batches")
   const labels = { today: tc("today"), tomorrow: tc("tomorrow") }
 
   const now = new Date()
@@ -38,12 +41,20 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
 
   const db = tenantDb(tenant.id)
   const inRange = { date: { gte: range.from, lte: range.to } }
-  const [report, dues, dayRows, spendRows] = await Promise.all([
+  const [report, dues, book, spendRows] = await Promise.all([
     loadReport(tenant.id, range.from, range.to),
     features.creditAccounts ? duesList(tenant.id) : Promise.resolve([]),
-    features.farmRecords ? db.dailyRecord.findMany({ where: inRange }) : Promise.resolve([]),
+    features.poultryCare ? batchBook(tenant.id, range.to) : Promise.resolve(null),
     features.farmRecords ? db.expense.findMany({ where: inRange }) : Promise.resolve([]),
   ])
+  // Flock figures per day from all batches; each batch's own profit and the period's losses in ₹.
+  const dayRows = book ? flockDays(book.rows.map((r) => r.info), book.days, book.losses, range.from, range.to) : []
+  const batchRows = (book?.rows ?? []).filter((r) => r.batch.startDate <= range.to && (!r.batch.closedDate || r.batch.closedDate >= range.from))
+  const lossRows = book ? lossesValued(book.losses.filter((l) => l.date >= range.from && l.date <= range.to), new Map(book.rows.map((r) => [r.batch.id, r.money.costPerBirdPaise]))) : []
+  const brokenEggs = (book?.days ?? []).filter((d) => d.date >= range.from && d.date <= range.to)
+  const eggsBroken = brokenEggs.reduce((a, d) => a + (d.eggsBroken ?? 0), 0)
+  const eggsBrokenPaise = brokenEggs.reduce((a, d) => a + (d.eggsBroken ?? 0) * (book?.rows.find((r) => r.batch.id === d.batchId)?.batch.eggValuePaise ?? 0), 0)
+  const birdsLostPaise = lossRows.reduce((a, l) => a + l.valuePaise, 0)
   const made = features.farmRecords ? productionTotals(await db.productionEntry.findMany({ where: inRange })) : []
   const madeProducts = made.length ? await db.product.findMany({ where: { id: { in: made.map((m) => m.productId) } } }) : []
   const prod = production(dayRows)
@@ -297,6 +308,118 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
               </>
             )
           })()}
+        </section>
+      )}
+
+      {batchRows.length > 0 && (
+        <section className="flex flex-col gap-2 rounded-2xl border bg-card p-4">
+          <h2 className="font-semibold">{t("batchesTitle")}</h2>
+          <p className="text-xs text-muted-foreground">{t("batchesHint", { day: shortDay(range.to) })}</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm tabular-nums">
+              <thead>
+                <tr className="border-b text-left text-xs text-muted-foreground">
+                  <th className="py-2 font-semibold">{t("batch")}</th>
+                  <th className="py-2 text-right font-semibold">{tb("aliveShort")}</th>
+                  <th className="py-2 text-right font-semibold">{tb("lostShort")}</th>
+                  <th className="py-2 text-right font-semibold">{t("batchCost")}</th>
+                  <th className="py-2 text-right font-semibold">{t("batchIn")}</th>
+                  <th className="py-2 text-right font-semibold">{t("batchMargin")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {batchRows.map(({ batch, status, money }) => (
+                  <tr key={batch.id} className="border-b border-dashed">
+                    <td className="py-2">
+                      <Link href={`/farm/records/batches/${batch.id}`} className="underline-offset-4 hover:underline">
+                        {batch.name} <span className="text-muted-foreground">· #{batch.number}</span>
+                      </Link>
+                    </td>
+                    <td className="py-2 text-right">{status.alive}</td>
+                    <td className={cn("py-2 text-right", status.lost > 0 && "text-destructive")}>{status.lost}</td>
+                    <td className="py-2 text-right">{formatRupees(money.costPaise)}</td>
+                    <td className="py-2 text-right">{formatRupees(money.inPaise)}</td>
+                    <td className={cn("py-2 text-right font-semibold", money.marginPaise < 0 && "text-destructive")}>
+                      {money.marginPaise < 0 ? "−" : ""}
+                      {formatRupees(Math.abs(money.marginPaise))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {batchRows.some((r) => r.money.feedPaise == null || r.money.eggsValuePaise == null) && <p className="text-xs text-muted-foreground">{t("batchesIncomplete")}</p>}
+        </section>
+      )}
+
+      {features.farmRecords && (lossRows.length > 0 || eggsBroken > 0 || made.some((m) => m.wasted > 0) || s.returnsPaise > 0) && (
+        <section className="flex flex-col gap-2 rounded-2xl border bg-card p-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="font-semibold">{t("lossesTitle")}</h2>
+            <b className="tabular-nums text-destructive">{formatRupees(birdsLostPaise + eggsBrokenPaise + s.returnsPaise)}</b>
+          </div>
+          <p className="text-xs text-muted-foreground">{t("lossesHint")}</p>
+          <ul className="divide-y text-sm tabular-nums">
+            {lossRows.map((l) => (
+              <li key={l.cause} className="flex justify-between gap-3 py-1.5">
+                <span>
+                  {t("birdsLostCause", { cause: tb(`cause_${l.cause}`) })} <span className="text-muted-foreground">· {l.count}</span>
+                </span>
+                <b>{formatRupees(l.valuePaise)}</b>
+              </li>
+            ))}
+            {eggsBroken > 0 && (
+              <li className="flex justify-between gap-3 py-1.5">
+                <span>
+                  {t("eggsBrokenLine")} <span className="text-muted-foreground">· {eggsBroken}</span>
+                </span>
+                <b>{eggsBrokenPaise > 0 ? formatRupees(eggsBrokenPaise) : "—"}</b>
+              </li>
+            )}
+            {made
+              .filter((m) => m.wasted > 0)
+              .map((m) => {
+                const p = madeProducts.find((x) => x.id === m.productId)
+                const unit = p ? (tu.has(p.stockUnit) ? tu(p.stockUnit) : p.stockUnit) : ""
+                return (
+                  <li key={m.productId} className="flex justify-between gap-3 py-1.5">
+                    <span className="min-w-0 truncate">{t("spoiledLine", { product: p ? pick(locale, p.nameTa, p.nameEn) : "—" })}</span>
+                    <span>
+                      {m.wasted} {unit}
+                    </span>
+                  </li>
+                )
+              })}
+            {s.returnsPaise > 0 && (
+              <li className="flex justify-between gap-3 py-1.5">
+                <span>{t("returns")}</span>
+                <b>{formatRupees(s.returnsPaise)}</b>
+              </li>
+            )}
+          </ul>
+        </section>
+      )}
+
+      {book && (book.feed.boughtKg > 0 || book.feed.usedKg > 0) && (
+        <section className="flex flex-col gap-2 rounded-2xl border bg-card p-4">
+          <h2 className="font-semibold">{tb("feedStore")}</h2>
+          <div className="grid grid-cols-2 gap-2 text-sm tabular-nums sm:grid-cols-4">
+            <span>
+              {tb("feedBought")}: <b>{book.feed.boughtKg} kg</b>
+            </span>
+            <span>
+              {tb("feedUsed")}: <b>{book.feed.usedKg} kg</b>
+            </span>
+            <span>
+              {tb("feedLeft")}: <b className={cn(book.feed.leftKg < 0 && "text-destructive")}>{book.feed.leftKg} kg</b>
+            </span>
+            {book.feed.pricePerKgPaise != null && (
+              <span>
+                {tb("feedPrice")}: <b>{formatRupees(book.feed.pricePerKgPaise)}/kg</b>
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">{t("feedStoreAsOf", { day: shortDay(range.to) })}</p>
         </section>
       )}
 

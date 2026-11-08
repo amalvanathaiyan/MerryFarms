@@ -25,7 +25,11 @@ const TENANT_MODELS = new Set([
   "ProductImage",
   "OtpCode",
   "ClosedDay",
-  "DailyRecord",
+  "Batch",
+  "BatchDay",
+  "BatchLoss",
+  "VaccineScheduleItem",
+  "BatchVaccination",
   "Expense",
   "ProductionEntry",
 ])

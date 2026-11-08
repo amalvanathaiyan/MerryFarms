@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { getLocale, getTranslations } from "next-intl/server"
 import { requireStaff } from "@/lib/auth"
+import type { TenantDb } from "@/lib/tenant-db"
 import { dayLabel, pick } from "@/lib/i18n-helpers"
 import { formatRupees } from "@/domain/money"
 import { istDate, istInstant } from "@/domain/ist"
@@ -9,6 +10,18 @@ import { allBalances } from "@/server/billing"
 import { featuresOf } from "@/lib/features"
 import { generatePlanOrders } from "@/server/plans"
 import { EnablePush } from "@/components/push/enable-push"
+import { Syringe } from "lucide-react"
+
+/**
+ * True when a batch on the farm has no entry for today (with poultry care on); otherwise, or with no batches,
+ * when nothing was entered as made.
+ */
+async function recordMissing(db: TenantDb, today: string, poultry: boolean) {
+  const onFarm = poultry ? await db.batch.findMany({ where: { startDate: { lte: today }, OR: [{ closedDate: null }, { closedDate: { gte: today } }] }, select: { id: true } }) : []
+  if (onFarm.length === 0) return !(await db.productionEntry.findFirst({ where: { date: today }, select: { id: true } }))
+  const entered = await db.batchDay.count({ where: { date: today, batchId: { in: onFarm.map((b) => b.id) } } })
+  return entered < onFarm.length
+}
 
 export default async function TodayPage() {
   const { db, tenant, staff } = await requireStaff()
@@ -16,15 +29,25 @@ export default async function TodayPage() {
   const t = await getTranslations("farm.today")
   const tc = await getTranslations("common")
   const tu = await getTranslations("farm.units")
+  const tv = await getTranslations("farm.vaccines")
   const te = await getTranslations("errors")
   const unitName = (u: string) => (tu.has(u) ? tu(u) : u)
   const today = istDate(new Date())
   const features = featuresOf(tenant)
   // Create today's and tomorrow's plan orders (idempotent), before counting anything.
   const planRun = features.subscriptions ? await generatePlanOrders(tenant) : null
-  // Owner and packing staff are reminded to enter the day's eggs, birds and feed.
+  // Owner and packing staff are reminded to enter the day: each batch on the farm, or else what was made.
   const canRecord = features.farmRecords && staff.roles.some((r) => r === "owner" || r === "packing")
-  const needsRecord = canRecord && !(await db.dailyRecord.findFirst({ where: { date: today }, select: { id: true } }))
+  const needsRecord = canRecord && (await recordMissing(db, today, features.poultryCare))
+  // Vaccine doses due today or late, for batches still on the farm.
+  const vaccinesDue =
+    canRecord && features.poultryCare
+      ? await db.batchVaccination.findMany({
+          where: { givenDate: null, dueDate: { lte: today }, batch: { startDate: { lte: today }, OR: [{ closedDate: null }, { closedDate: { gte: today } }] } },
+          include: { batch: { select: { id: true, name: true, number: true } } },
+          orderBy: { dueDate: "asc" },
+        })
+      : []
   const unreadMessages = features.messages ? await db.message.count({ where: { sender: "customer", seenAt: null } }) : 0
   const activePlans = features.subscriptions ? await db.subscription.count({ where: { status: "active" } }) : 0
 
@@ -87,6 +110,26 @@ export default async function TodayPage() {
           </span>
           <span aria-hidden>→</span>
         </Link>
+      )}
+      {vaccinesDue.length > 0 && (
+        <section className="flex flex-col gap-2 rounded-2xl bg-yolk p-4 text-yolk-foreground">
+          <h2 className="flex items-center gap-2 font-semibold">
+            <Syringe className="size-5" /> {tv("todayTitle", { count: vaccinesDue.length })}
+          </h2>
+          <ul className="flex flex-col gap-1">
+            {vaccinesDue.map((v) => (
+              <li key={v.id}>
+                <Link href={`/farm/records/batches/${v.batch.id}`} className="flex items-center justify-between gap-3 rounded-lg bg-card/70 px-3 py-2 text-foreground">
+                  <span className="min-w-0">
+                    <b>{v.vaccine}</b> · {v.batch.name} · #{v.batch.number}
+                    <span className="block text-xs text-muted-foreground">{v.dueDate === today ? tv("dueToday") : tv("overdueSince", { day: dayLabel(v.dueDate!, locale, { today: tc("today"), tomorrow: tc("tomorrow") }) })}</span>
+                  </span>
+                  <span aria-hidden>→</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
       <div className="grid grid-cols-2 gap-3">
         {tiles.map((tile) => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { checkDayRecord, checkProduction, costs, keepsPoultry, production, productionStockDelta, productionTotals, profit } from "./records"
+import { checkProduction, costs, production, productionStockDelta, productionTotals, profit } from "./records"
 
 const day = (date: string, eggs: number | null, birds: number | null, over = {}) => ({ date, eggsCollected: eggs, eggsBroken: 0, birds, birdsLost: 0, feedKg: 6, ...over })
 
@@ -39,16 +39,6 @@ describe("costs and profit", () => {
   })
 })
 
-describe("day entry checks", () => {
-  it("refuse negatives, fractions and more broken than collected", () => {
-    const ok = { eggsCollected: 70, eggsBroken: 2, birds: 100, birdsLost: 0, feedKg: 6.5 }
-    expect(checkDayRecord(ok)).toBeNull()
-    expect(checkDayRecord({ ...ok, eggsCollected: -1 })).toBe("record_invalid")
-    expect(checkDayRecord({ ...ok, birds: 10.5 })).toBe("record_invalid")
-    expect(checkDayRecord({ ...ok, eggsBroken: 80 })).toBe("broken_more_than_collected")
-  })
-})
-
 describe("production for any farm", () => {
   it("moves stock only by the change in good quantity", () => {
     expect(productionStockDelta(null, { made: 40, wasted: 2 })).toBe(38)
@@ -71,11 +61,5 @@ describe("production for any farm", () => {
       { productId: "oil", made: 40, wasted: 2, days: 1 },
       { productId: "milk", made: 37.5, wasted: 0.5, days: 2 },
     ])
-  })
-
-  it("shows poultry figures only to farms with poultry", () => {
-    expect(keepsPoultry(["oil", "pickles"], false)).toBe(false)
-    expect(keepsPoultry(["milk", "egg"], false)).toBe(true)
-    expect(keepsPoultry([null], true)).toBe(true)
   })
 })

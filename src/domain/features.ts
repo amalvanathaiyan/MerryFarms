@@ -26,6 +26,7 @@ export type FeatureKey =
   | "otpLogin"
   | "whatsappAlerts"
   | "farmRecords"
+  | "poultryCare"
   | "whatsappLite"
   | "upiPayments"
   | "subscriptions"
@@ -58,6 +59,8 @@ export const FEATURES: Record<FeatureKey, FeatureDef> = {
   otpLogin: { defaultOn: true, minPlan: "free", requires: ["customerAccounts"], available: true },
   whatsappAlerts: { defaultOn: true, minPlan: "free", requires: [], available: true },
   farmRecords: { defaultOn: true, minPlan: "free", requires: [], available: true },
+  // Batches of birds, feed store, losses, per-batch profit and vaccinations: for farms that keep poultry and pay for it.
+  poultryCare: { defaultOn: false, minPlan: "starter", requires: ["farmRecords"], available: true },
   whatsappLite: { defaultOn: true, minPlan: "free", requires: [], available: true },
   upiPayments: { defaultOn: true, minPlan: "free", requires: [], available: true },
   // Off by default: many small farms can't promise eggs every week.

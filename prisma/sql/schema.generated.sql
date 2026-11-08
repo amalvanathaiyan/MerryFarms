@@ -503,20 +503,87 @@ CREATE TABLE "closed_days" (
 );
 
 -- CreateTable
-CREATE TABLE "daily_records" (
+CREATE TABLE "batches" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
+    "number" INTEGER NOT NULL,
+    "name" TEXT NOT NULL,
+    "breed" TEXT,
+    "purpose" TEXT NOT NULL,
+    "source" TEXT NOT NULL,
+    "supplier" TEXT,
+    "startDate" TEXT NOT NULL,
+    "ageAtStartDays" INTEGER NOT NULL DEFAULT 0,
+    "startCount" INTEGER NOT NULL,
+    "eggsSet" INTEGER,
+    "parentBatchId" TEXT,
+    "eggValuePaise" INTEGER,
+    "closedDate" TEXT,
+    "note" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "batches_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "batch_days" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "batchId" TEXT NOT NULL,
     "date" TEXT NOT NULL,
+    "feedKg" DOUBLE PRECISION,
     "eggsCollected" INTEGER,
     "eggsBroken" INTEGER,
-    "birds" INTEGER,
-    "birdsLost" INTEGER,
-    "feedKg" DOUBLE PRECISION,
+    "sold" INTEGER NOT NULL DEFAULT 0,
+    "soldPaise" INTEGER NOT NULL DEFAULT 0,
+    "given" INTEGER NOT NULL DEFAULT 0,
     "note" TEXT,
     "byStaffId" TEXT,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "daily_records_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "batch_days_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "batch_losses" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "batchId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "cause" TEXT NOT NULL,
+    "count" INTEGER NOT NULL,
+
+    CONSTRAINT "batch_losses_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "vaccine_schedule" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "vaccine" TEXT NOT NULL,
+    "ageDays" INTEGER NOT NULL,
+    "method" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "vaccine_schedule_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "batch_vaccinations" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "batchId" TEXT NOT NULL,
+    "vaccine" TEXT NOT NULL,
+    "method" TEXT,
+    "dueDate" TEXT,
+    "givenDate" TEXT,
+    "birds" INTEGER,
+    "expenseId" TEXT,
+    "note" TEXT,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "batch_vaccinations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -526,6 +593,8 @@ CREATE TABLE "expenses" (
     "date" TEXT NOT NULL,
     "kind" TEXT NOT NULL,
     "amountPaise" INTEGER NOT NULL,
+    "quantityKg" DOUBLE PRECISION,
+    "batchId" TEXT,
     "note" TEXT,
     "byStaffId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -659,10 +728,37 @@ CREATE INDEX "otp_codes_tenantId_phone_createdAt_idx" ON "otp_codes"("tenantId",
 CREATE INDEX "closed_days_tenantId_date_idx" ON "closed_days"("tenantId", "date");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "daily_records_tenantId_date_key" ON "daily_records"("tenantId", "date");
+CREATE INDEX "batches_tenantId_closedDate_idx" ON "batches"("tenantId", "closedDate");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "batches_tenantId_number_key" ON "batches"("tenantId", "number");
+
+-- CreateIndex
+CREATE INDEX "batch_days_tenantId_date_idx" ON "batch_days"("tenantId", "date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "batch_days_batchId_date_key" ON "batch_days"("batchId", "date");
+
+-- CreateIndex
+CREATE INDEX "batch_losses_batchId_date_idx" ON "batch_losses"("batchId", "date");
+
+-- CreateIndex
+CREATE INDEX "batch_losses_tenantId_date_idx" ON "batch_losses"("tenantId", "date");
+
+-- CreateIndex
+CREATE INDEX "vaccine_schedule_tenantId_ageDays_idx" ON "vaccine_schedule"("tenantId", "ageDays");
+
+-- CreateIndex
+CREATE INDEX "batch_vaccinations_batchId_idx" ON "batch_vaccinations"("batchId");
+
+-- CreateIndex
+CREATE INDEX "batch_vaccinations_tenantId_givenDate_dueDate_idx" ON "batch_vaccinations"("tenantId", "givenDate", "dueDate");
 
 -- CreateIndex
 CREATE INDEX "expenses_tenantId_date_idx" ON "expenses"("tenantId", "date");
+
+-- CreateIndex
+CREATE INDEX "expenses_batchId_idx" ON "expenses"("batchId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "production_entries_tenantId_date_productId_key" ON "production_entries"("tenantId", "date", "productId");
@@ -750,4 +846,13 @@ ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_slotId_fkey" FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE "messages" ADD CONSTRAINT "messages_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "batch_days" ADD CONSTRAINT "batch_days_batchId_fkey" FOREIGN KEY ("batchId") REFERENCES "batches"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "batch_losses" ADD CONSTRAINT "batch_losses_batchId_fkey" FOREIGN KEY ("batchId") REFERENCES "batches"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "batch_vaccinations" ADD CONSTRAINT "batch_vaccinations_batchId_fkey" FOREIGN KEY ("batchId") REFERENCES "batches"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
