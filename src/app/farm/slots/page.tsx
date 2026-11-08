@@ -5,10 +5,10 @@ import { ClosedDays } from "@/components/farm/closed-days"
 import { istDate } from "@/domain/ist"
 import { slotRangeLabel } from "@/domain/slots"
 import { dayLabel, pick } from "@/lib/i18n-helpers"
+import { SectionHeader } from "@/components/farm/section-header"
 
 export default async function SlotsPage() {
   const { db, staff } = await requireStaff()
-  const t = await getTranslations("farm.slots")
   const slots = await db.deliverySlot.findMany({ orderBy: { startTime: "asc" } })
   const locale = await getLocale()
   const tc = await getTranslations("common")
@@ -28,7 +28,7 @@ export default async function SlotsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-bold">{t("title")}</h1>
+      <SectionHeader section="slots" back={{ href: "/farm/more" }} />
       <SlotManager
         canEdit={staff.roles.includes("owner")}
         slots={slots.map(({ id, nameTa, nameEn, startTime, endTime, daysOfWeek, cutoffHours, maxOrders, isActive }) => ({

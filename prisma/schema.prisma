@@ -196,7 +196,9 @@ model TenantSettings {
   callRetryMinutes       Int     @default(30)
   maxCallAttempts        Int     @default(3)
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@map("tenant_settings")
 }
@@ -214,7 +216,8 @@ model StaffMember {
   isActive   Boolean     @default(true)
   createdAt  DateTime    @default(now())
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([tenantId, authUserId])
   @@unique([tenantId, staffCode])
@@ -229,6 +232,7 @@ model PlatformAdmin {
   name       String
   email      String?
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
 
   @@map("platform_admins")
 }
@@ -239,6 +243,7 @@ model LoginUsername {
   username   String   @id
   authUserId String   @unique
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
 
   @@map("login_usernames")
 }
@@ -248,48 +253,50 @@ model LoginUsername {
 // ─────────────────────────────────────────────────
 
 model Category {
-  id             String  @id @default(uuid())
+  id             String    @id @default(uuid())
   tenantId       String
   nameTa         String
   nameEn         String
-  sortOrder      Int     @default(0)
-  showOnWhatsApp Boolean @default(true)
+  sortOrder      Int       @default(0)
+  showOnWhatsApp Boolean   @default(true)
   /// What it holds (egg, milk, oil, vegetables, pickles…; see domain/product-art). Picks the drawing.
   kind           String?
   deletedAt      DateTime? // removed by the farm; kept so old products and orders stay readable
 
-  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  products Product[]
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
 
   @@index([tenantId])
   @@map("categories")
 }
 
 model Product {
-  id         String    @id @default(uuid())
-  tenantId   String
-  categoryId String
-  nameTa     String
-  nameEn     String
-  packTa     String // e.g. "30 முட்டை"
-  packEn     String // e.g. "Tray of 30"
-  noteTa     String?
-  noteEn     String?
-  pricePaise Int // GST-inclusive selling price
+  id              String    @id @default(uuid())
+  tenantId        String
+  categoryId      String
+  nameTa          String
+  nameEn          String
+  packTa          String // e.g. "30 முட்டை"
+  packEn          String // e.g. "Tray of 30"
+  noteTa          String?
+  noteEn          String?
+  pricePaise      Int // GST-inclusive selling price
   offerPricePaise Int? // a lower price for a while ("₹390 → ₹360")
   offerEndsOn     String? // last IST day of the offer, "2026-10-25"; null = until removed
-  stockQty   Int       @default(0)
-  stockUnit  String    @default("packs")
-  hsn        String?
-  gstRate    Int       @default(0) // percent; 0 = exempt
-  imageUrl   String?
-  onWeb      Boolean   @default(true)
-  onWhatsApp Boolean   @default(true)
-  isActive   Boolean   @default(true)
-  sortOrder  Int       @default(0)
-  deletedAt  DateTime? // soft delete keeps old orders readable
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  stockQty        Int       @default(0)
+  stockUnit       String    @default("packs")
+  hsn             String?
+  gstRate         Int       @default(0) // percent; 0 = exempt
+  imageUrl        String?
+  onWeb           Boolean   @default(true)
+  onWhatsApp      Boolean   @default(true)
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)
+  deletedAt       DateTime? // soft delete keeps old orders readable
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   category   Category    @relation(fields: [categoryId], references: [id])
@@ -314,6 +321,8 @@ model DeliverySlot {
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orders        Order[]
   subscriptions Subscription[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @default(now()) @updatedAt
 
   @@index([tenantId])
   @@map("delivery_slots")
@@ -348,20 +357,21 @@ model Customer {
   payments      Payment[]
   invoices      Invoice[]
   subscriptions Subscription[]
+  updatedAt     DateTime       @default(now()) @updatedAt
 
   @@unique([tenantId, phone])
   @@map("customers")
 }
 
 model Address {
-  id         String   @id @default(uuid())
-  tenantId   String
-  customerId String
-  line       String
-  landmark   String?
-  pincode    String?
-  lat        Float?
-  lng        Float?
+  id             String   @id @default(uuid())
+  tenantId       String
+  customerId     String
+  line           String
+  landmark       String?
+  pincode        String?
+  lat            Float?
+  lng            Float?
   /// How the location was given: "gps" (where the phone was), "map" (pin placed on the map), "link" (a maps link pasted).
   locationSource String?
   /// The place at the location, looked up when it was given: "Velachery, Chennai 600042".
@@ -369,11 +379,12 @@ model Address {
   /// Delivery to someone else (e.g. ordering for parents): who receives it, and their phone.
   receiverName   String?
   receiverPhone  String?
-  isDefault  Boolean  @default(true)
-  createdAt  DateTime @default(now())
+  isDefault      Boolean  @default(true)
+  createdAt      DateTime @default(now())
 
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  orders   Order[]
+  customer  Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orders    Order[]
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([tenantId, customerId])
   @@map("addresses")
@@ -437,8 +448,10 @@ model OrderItem {
   unitPricePaise Int // copied at order time
   gstRate        Int // copied at order time
 
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([tenantId, orderId])
   @@map("order_items")
@@ -455,7 +468,9 @@ model OrderEvent {
   note       String?
   at         DateTime     @default(now())
 
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([tenantId, orderId])
   @@map("order_events")
@@ -472,7 +487,9 @@ model ConfirmationCall {
   durationSec Int?
   at          DateTime    @default(now())
 
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([tenantId, orderId])
   @@map("confirmation_calls")
@@ -508,6 +525,8 @@ model Invoice {
   refInvoice  Invoice?      @relation("CreditNotes", fields: [refInvoiceId], references: [id])
   creditNotes Invoice[]     @relation("CreditNotes")
   returns     OrderReturn[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
 
   @@unique([tenantId, number])
   @@index([tenantId, customerId])
@@ -517,10 +536,12 @@ model Invoice {
 
 /// Next invoice sequence per tenant per financial year.
 model InvoiceCounter {
-  tenantId String
-  series   String @default("INV") // "INV" for invoices, "CN" for credit notes
-  fy       String
-  nextSeq  Int    @default(1)
+  tenantId  String
+  series    String   @default("INV") // "INV" for invoices, "CN" for credit notes
+  fy        String
+  nextSeq   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@id([tenantId, series, fy])
   @@map("invoice_counters")
@@ -538,7 +559,9 @@ model LedgerEntry {
   note        String?
   at          DateTime   @default(now())
 
-  customer Customer @relation(fields: [customerId], references: [id])
+  customer  Customer @relation(fields: [customerId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([tenantId, customerId])
   @@map("ledger_entries")
@@ -557,8 +580,10 @@ model Payment {
   note          String?
   at            DateTime      @default(now())
 
-  customer Customer @relation(fields: [customerId], references: [id])
-  order    Order?   @relation(fields: [orderId], references: [id])
+  customer  Customer @relation(fields: [customerId], references: [id])
+  order     Order?   @relation(fields: [orderId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([tenantId, customerId])
   @@map("payments")
@@ -584,6 +609,8 @@ model OrderReturn {
 
   order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   creditNote Invoice? @relation(fields: [creditNoteId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
 
   @@index([tenantId, orderId])
   @@map("order_returns")
@@ -598,6 +625,7 @@ model MessageTemplate {
   bodyTa    String?
   bodyEn    String?
   updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
 
   @@unique([tenantId, key])
   @@map("message_templates")
@@ -646,7 +674,8 @@ model Message {
   seenAt     DateTime?
   createdAt  DateTime      @default(now())
 
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer  Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([tenantId, customerId, createdAt])
   @@index([tenantId, sender, seenAt])
@@ -664,6 +693,7 @@ model PushSubscription {
   auth       String
   createdAt  DateTime  @default(now())
   lastSentAt DateTime?
+  updatedAt  DateTime  @default(now()) @updatedAt
 
   @@unique([tenantId, endpoint])
   @@index([tenantId, customerId])
@@ -679,6 +709,7 @@ model ProductImage {
   mime      String
   data      Bytes
   updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
 
   @@index([tenantId])
   @@map("product_images")
@@ -690,6 +721,7 @@ model TenantLogo {
   mime      String
   data      Bytes
   updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
 
   @@map("tenant_logos")
 }
@@ -704,6 +736,7 @@ model OtpCode {
   attempts  Int       @default(0)
   usedAt    DateTime?
   createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
 
   @@index([tenantId, phone, createdAt])
   @@map("otp_codes")
@@ -717,6 +750,7 @@ model ClosedDay {
   slotId    String? // null = the whole day
   note      String? // shown to customers, e.g. "Pongal"
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([tenantId, date])
   @@map("closed_days")
@@ -746,6 +780,7 @@ model Batch {
   days         BatchDay[]
   losses       BatchLoss[]
   vaccinations BatchVaccination[]
+  updatedAt    DateTime           @default(now()) @updatedAt
 
   @@unique([tenantId, number])
   @@index([tenantId, closedDate])
@@ -768,7 +803,8 @@ model BatchDay {
   byStaffId     String?
   updatedAt     DateTime @updatedAt
 
-  batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batch     Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 
   @@unique([batchId, date])
   @@index([tenantId, date])
@@ -784,7 +820,9 @@ model BatchLoss {
   cause    String // disease | predator | heat | weak | injury | unknown | culled
   count    Int
 
-  batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batch     Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([batchId, date])
   @@index([tenantId, date])
@@ -799,6 +837,7 @@ model VaccineScheduleItem {
   ageDays   Int // give at this age
   method    String? // see VACCINE_METHODS in src/domain/vaccinations.ts
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([tenantId, ageDays])
   @@map("vaccine_schedule")
@@ -820,7 +859,8 @@ model BatchVaccination {
   byStaffId String?
   createdAt DateTime @default(now())
 
-  batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batch     Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([batchId])
   @@index([tenantId, givenDate, dueDate])
@@ -840,6 +880,7 @@ model Expense {
   note        String?
   byStaffId   String?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 
   @@index([tenantId, date])
   @@index([batchId])
@@ -857,6 +898,7 @@ model ProductionEntry {
   wasted    Float    @default(0)
   byStaffId String?
   updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
 
   @@unique([tenantId, date, productId])
   @@map("production_entries")

@@ -7,6 +7,7 @@ import { formatIndianMobile } from "@/domain/phone"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { featuresOf } from "@/lib/features"
+import { SectionHeader } from "@/components/farm/section-header"
 
 export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string; dues?: string }> }) {
   const { q = "", dues } = await searchParams
@@ -37,8 +38,8 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <h1 className="text-xl font-bold">{t("title")}</h1>
+      <SectionHeader section="customers" back={{ href: "/farm/more" }} />
+      <div className="flex items-baseline justify-end gap-3">
         {creditAccounts && (
         <Link href={onlyDues ? "/farm/customers" : "/farm/customers?dues=1"} className={cn("rounded-full border px-3 py-1 text-sm font-medium", onlyDues ? "border-primary bg-accent" : "bg-card")}>
           {t("withDues")} · <span className="tabular-nums">{formatRupees(totalDues)}</span>

@@ -1,0 +1,153 @@
+/**
+ * The farm app's menu in one place: the sections, their colours, their tabs, and who sees what.
+ * The bottom menu, the More page and each section's title and tabs all read from here, so a farm
+ * (or a staff member) never sees a button that leads to a page they can't open.
+ *
+ * Every class string is written out in full so Tailwind generates it (see the sec-* colours in globals.css).
+ */
+import type { FeatureSet } from "@/domain/features"
+
+export type SectionKey =
+  | "today"
+  | "orders"
+  | "poultry"
+  | "money"
+  | "more"
+  | "products"
+  | "customers"
+  | "slots"
+  | "messages"
+  | "whatsapp"
+  | "plans"
+  | "staff"
+  | "settings"
+  | "account"
+
+export interface SectionLook {
+  /** Strong colour with readable text on it: active tab, round icon, main button. */
+  strong: string
+  /** Soft panel behind dark text. */
+  tint: string
+  /** The colour as text (an icon on white, a selected label). */
+  text: string
+  border: string
+}
+
+export const SECTION_LOOK: Record<SectionKey, SectionLook> = {
+  today: { strong: "bg-sec-today text-sec-on", tint: "bg-sec-today-tint", text: "text-sec-today", border: "border-sec-today" },
+  orders: { strong: "bg-sec-orders text-sec-on", tint: "bg-sec-orders-tint", text: "text-sec-orders", border: "border-sec-orders" },
+  poultry: { strong: "bg-sec-poultry text-sec-on", tint: "bg-sec-poultry-tint", text: "text-sec-poultry", border: "border-sec-poultry" },
+  money: { strong: "bg-sec-money text-sec-on", tint: "bg-sec-money-tint", text: "text-sec-money", border: "border-sec-money" },
+  more: { strong: "bg-sec-more text-sec-on", tint: "bg-sec-more-tint", text: "text-sec-more", border: "border-sec-more" },
+  products: { strong: "bg-sec-products text-sec-on", tint: "bg-sec-products-tint", text: "text-sec-products", border: "border-sec-products" },
+  customers: { strong: "bg-sec-customers text-sec-on", tint: "bg-sec-customers-tint", text: "text-sec-customers", border: "border-sec-customers" },
+  slots: { strong: "bg-sec-slots text-sec-on", tint: "bg-sec-slots-tint", text: "text-sec-slots", border: "border-sec-slots" },
+  messages: { strong: "bg-sec-messages text-sec-on", tint: "bg-sec-messages-tint", text: "text-sec-messages", border: "border-sec-messages" },
+  whatsapp: { strong: "bg-sec-whatsapp text-sec-on", tint: "bg-sec-whatsapp-tint", text: "text-sec-whatsapp", border: "border-sec-whatsapp" },
+  plans: { strong: "bg-sec-plans text-sec-on", tint: "bg-sec-plans-tint", text: "text-sec-plans", border: "border-sec-plans" },
+  staff: { strong: "bg-sec-staff text-sec-on", tint: "bg-sec-staff-tint", text: "text-sec-staff", border: "border-sec-staff" },
+  settings: { strong: "bg-sec-more text-sec-on", tint: "bg-sec-more-tint", text: "text-sec-more", border: "border-sec-more" },
+  account: { strong: "bg-sec-account text-sec-on", tint: "bg-sec-account-tint", text: "text-sec-account", border: "border-sec-account" },
+}
+
+export type Role = "owner" | "order_desk" | "packing" | "delivery"
+
+export interface Who {
+  roles: readonly string[]
+  features: FeatureSet
+}
+
+const has = (who: Who, ...roles: Role[]) => who.roles.some((r) => (roles as string[]).includes(r))
+
+export interface Tab {
+  key: string
+  href: string
+  /** Words already translated (otherwise farm.tabs.<section>.<key>). */
+  label?: string
+  /** Picture name for SectionIcon (otherwise the key). */
+  icon?: string
+  /** A number shown on the tab (orders waiting). */
+  count?: number
+}
+
+/** Poultry care's tabs. Profit shows money, so it is the owner's. */
+export function poultryTabs(who: Who): Tab[] {
+  if (!who.features.poultryCare || !has(who, "owner", "packing")) return []
+  return [
+    { key: "batches", href: "/farm/poultry" },
+    { key: "vaccines", href: "/farm/poultry/vaccines" },
+    { key: "feed", href: "/farm/poultry/feed" },
+    ...(has(who, "owner") ? [{ key: "profit", href: "/farm/poultry/profit" }] : []),
+  ]
+}
+
+/** Money's tabs: packing staff only enter what was made; the rest is the owner's. */
+export function moneyTabs(who: Who): Tab[] {
+  const owner = has(who, "owner")
+  const tabs: Tab[] = []
+  if (owner && who.features.reports) tabs.push({ key: "sales", href: "/farm/money" })
+  if (owner && who.features.farmRecords) tabs.push({ key: "spending", href: "/farm/money/spending" })
+  if (who.features.farmRecords && has(who, "owner", "packing")) tabs.push({ key: "made", href: "/farm/money/made" })
+  if (owner && who.features.farmRecords) tabs.push({ key: "profit", href: "/farm/money/profit" })
+  return tabs
+}
+
+/** Settings' tabs (owner only; the pages check that). */
+export function settingsTabs(): Tab[] {
+  return [
+    { key: "shop", href: "/farm/settings" },
+    { key: "delivery", href: "/farm/settings/delivery" },
+    { key: "look", href: "/farm/settings/look" },
+    { key: "switches", href: "/farm/settings/switches" },
+  ]
+}
+
+export interface MenuItem {
+  key: "today" | "orders" | "poultry" | "money" | "more"
+  href: string
+  /** Paths that light this button up. */
+  prefixes: string[]
+}
+
+/** Pages reached from More: they light up the More button. */
+const MORE_PATHS = ["/farm/more", "/farm/catalogue", "/farm/customers", "/farm/slots", "/farm/messages", "/farm/whatsapp", "/farm/plans", "/farm/staff", "/farm/settings", "/farm/account"]
+
+/** The bottom menu for this person: at most five big buttons. */
+export function mainMenu(who: Who): MenuItem[] {
+  const poultry = poultryTabs(who)
+  const money = moneyTabs(who)
+  return [
+    { key: "today" as const, href: "/farm", prefixes: [] },
+    { key: "orders" as const, href: "/farm/orders", prefixes: ["/farm/orders", "/farm/invoices"] },
+    ...(poultry.length ? [{ key: "poultry" as const, href: poultry[0].href, prefixes: ["/farm/poultry"] }] : []),
+    ...(money.length ? [{ key: "money" as const, href: money[0].href, prefixes: ["/farm/money"] }] : []),
+    { key: "more" as const, href: "/farm/more", prefixes: MORE_PATHS },
+  ]
+}
+
+export const menuItemActive = (item: MenuItem, path: string) => (item.key === "today" ? path === "/farm" : item.prefixes.some((p) => path === p || path.startsWith(`${p}/`)))
+
+export type MoreKey = "products" | "customers" | "slots" | "messages" | "whatsapp" | "plans" | "staff" | "settings" | "account"
+
+export interface MoreTile {
+  key: MoreKey
+  href: string
+}
+
+/** The More page's tiles for this person. */
+export function moreTiles(who: Who): MoreTile[] {
+  const desk = has(who, "owner", "order_desk")
+  const f = who.features
+  const tiles: (MoreTile | false)[] = [
+    has(who, "owner", "order_desk", "packing") && { key: "products", href: "/farm/catalogue" },
+    desk && { key: "customers", href: "/farm/customers" },
+    desk && { key: "slots", href: "/farm/slots" },
+    desk && f.messages && { key: "messages", href: "/farm/messages" },
+    desk && f.whatsappLite && { key: "whatsapp", href: "/farm/whatsapp" },
+    desk && f.subscriptions && { key: "plans", href: "/farm/plans" },
+    has(who, "owner") && { key: "staff", href: "/farm/staff" },
+    has(who, "owner") && { key: "settings", href: "/farm/settings" },
+    { key: "account", href: "/farm/account" },
+  ]
+  return tiles.filter((t): t is MoreTile => !!t)
+}

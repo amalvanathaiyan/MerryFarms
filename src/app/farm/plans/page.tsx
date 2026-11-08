@@ -11,6 +11,7 @@ import { formatIndianMobile } from "@/domain/phone"
 import { Button } from "@/components/ui/button"
 import { PlanActions } from "@/components/farm/plan-actions"
 import { cn } from "@/lib/utils"
+import { SectionHeader } from "@/components/farm/section-header"
 
 const WEEK = [1, 2, 3, 4, 5, 6, 0]
 
@@ -33,8 +34,8 @@ export default async function PlansPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl font-bold">{t("title")}</h1>
+      <SectionHeader section="plans" back={{ href: "/farm/more" }} />
+      <div className="flex items-center justify-end gap-3">
         {canEdit && (
           <Button asChild>
             <Link href="/farm/plans/new">{t("newPlan")}</Link>
