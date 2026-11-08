@@ -1125,7 +1125,9 @@
     },
     "more": {
       "newMessages": "{count, plural, one {# new message} other {# new messages}}",
-      "signOut": "Sign out"
+      "signOut": "Sign out",
+      "display": "Easy on the eyes",
+      "displayHint": "Soft colours, dark or light, larger text"
     },
     "feed": {
       "buyTitle": "Feed bought",
@@ -1550,5 +1552,18 @@
     "addOwner": "Add an owner",
     "save": "Save",
     "saved": "Saved."
+  },
+  "display": {
+    "title": "Easy on the eyes",
+    "hint": "Choose colours and text size that are comfortable for you.",
+    "colours": "Colours",
+    "theme_auto": "Like my phone",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
+    "soft": "Soft colours",
+    "softHint": "Calmer, less bright colours and no glaring white. Gentler for sensitive eyes and long use.",
+    "large": "Larger text",
+    "largeHint": "Every word and number a size bigger.",
+    "thisPhone": "Saved on this phone. Each person can choose on their own phone."
   }
 }

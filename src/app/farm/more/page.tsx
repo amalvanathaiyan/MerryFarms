@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { getTranslations } from "next-intl/server"
-import { LogOut } from "lucide-react"
+import { Eye, LogOut } from "lucide-react"
 import { requireStaff } from "@/lib/auth"
 import { featuresOf } from "@/lib/features"
 import { moreTiles, SECTION_LOOK } from "@/lib/farm-sections"
@@ -40,6 +40,16 @@ export default async function MorePage() {
           )
         })}
       </ul>
+      <Link href="/farm/account#display" className="flex items-center gap-3 rounded-2xl border-2 bg-card p-3 hover:bg-accent">
+        <span className="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-primary">
+          <Eye className="size-6" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-lg leading-tight font-bold">{tm("display")}</span>
+          <span className="block text-sm text-muted-foreground">{tm("displayHint")}</span>
+        </span>
+        <span aria-hidden>→</span>
+      </Link>
       <InstallApp variant="panel" />
       <form action={signOut}>
         <button type="submit" className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl border-2 border-destructive/30 bg-card text-base font-bold text-destructive hover:bg-destructive/10">

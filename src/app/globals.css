@@ -7,7 +7,17 @@
    Large type by default: many customers are older and read Tamil.
 ───────────────────────────────────────────────── */
 
-@custom-variant dark (&:where(.dark, .dark *));
+/* Dark styles follow the phone's setting unless the person chose Light or Dark in the app (Display). */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
 
 @theme inline {
   --color-background: hsl(var(--background));
@@ -151,7 +161,7 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --background: 150 14% 8%;
       --foreground: 120 12% 88%;
       --card: 150 12% 11%;
@@ -210,6 +220,252 @@
       --sec-on: 150 30% 8%;
       color-scheme: dark;
     }
+  }
+
+  /* Dark chosen in the app (Display), whatever the phone says. */
+  :root[data-theme="dark"] {
+    --background: 150 14% 8%;
+    --foreground: 120 12% 88%;
+    --card: 150 12% 11%;
+    --card-foreground: 120 12% 88%;
+    --popover: 150 12% 11%;
+    --popover-foreground: 120 12% 88%;
+    --primary: 150 42% 52%;
+    --primary-foreground: 150 30% 8%;
+    --secondary: 150 10% 15%;
+    --secondary-foreground: 120 12% 88%;
+    --muted: 150 8% 15%;
+    --muted-foreground: 130 8% 62%;
+    --accent: 145 16% 18%;
+    --accent-foreground: 120 12% 88%;
+    --destructive: 6 55% 62%;
+    --destructive-foreground: 150 30% 8%;
+    --border: 145 8% 21%;
+    --input: 145 8% 27%;
+    --ring: 150 42% 52%;
+    --lime: 84 30% 52%;
+    --lime-foreground: 90 40% 8%;
+    --yolk: 45 35% 18%;
+    --yolk-foreground: 46 70% 86%;
+    --sun: 45 95% 55%;
+    --sun-foreground: 150 30% 8%;
+    --header: 150 12% 13%;
+    --header-foreground: 120 12% 88%;
+    --chart-1: #3fa66a; /* validated on the dark surface */
+    /* Menu sections: lighter strong colours with dark text on them, dark tints. */
+    --sec-today: 42 85% 62%;
+    --sec-today-tint: 42 35% 17%;
+    --sec-orders: 213 70% 70%;
+    --sec-orders-tint: 213 30% 18%;
+    --sec-poultry: 22 75% 66%;
+    --sec-poultry-tint: 20 30% 17%;
+    --sec-money: 150 42% 58%;
+    --sec-money-tint: 150 22% 16%;
+    --sec-more: 130 10% 68%;
+    --sec-more-tint: 140 8% 17%;
+    --sec-products: 178 50% 58%;
+    --sec-products-tint: 180 30% 15%;
+    --sec-customers: 267 60% 76%;
+    --sec-customers-tint: 267 22% 19%;
+    --sec-slots: 214 45% 72%;
+    --sec-slots-tint: 214 22% 18%;
+    --sec-messages: 330 60% 72%;
+    --sec-messages-tint: 330 25% 18%;
+    --sec-whatsapp: 149 50% 58%;
+    --sec-whatsapp-tint: 149 28% 15%;
+    --sec-staff: 28 50% 68%;
+    --sec-staff-tint: 26 25% 17%;
+    --sec-account: 231 60% 76%;
+    --sec-account-tint: 231 25% 19%;
+    --sec-plans: 202 55% 68%;
+    --sec-plans-tint: 202 28% 17%;
+    --sec-on: 150 30% 8%;
+    color-scheme: dark;
+  }
+
+
+  /* Soft colours (Display → Soft colours), for sensitive eyes: calmer, less saturated colours, an off-white
+     ground instead of bright white, and gentler text contrast (still at least 7:1 for body text). */
+  :root[data-soft="on"] {
+    --background: 60 18% 92%;
+    --foreground: 140 18% 22%;
+    --card: 60 22% 96%;
+    --card-foreground: 140 18% 22%;
+    --popover: 60 22% 96%;
+    --popover-foreground: 140 18% 22%;
+    --primary: 150 32% 33%;
+    --primary-foreground: 60 30% 97%;
+    --secondary: 80 12% 88%;
+    --secondary-foreground: 140 18% 22%;
+    --muted: 75 12% 88%;
+    --muted-foreground: 140 10% 36%;
+    --accent: 120 16% 86%;
+    --accent-foreground: 140 18% 22%;
+    --destructive: 9 40% 45%;
+    --destructive-foreground: 60 30% 97%;
+    --border: 80 12% 82%;
+    --input: 90 10% 74%;
+    --ring: 150 32% 33%;
+    --lime: 84 22% 60%;
+    --lime-foreground: 90 30% 16%;
+    --yolk: 45 40% 86%;
+    --yolk-foreground: 40 55% 22%;
+    --sun: 45 60% 56%;
+    --sun-foreground: 140 18% 22%;
+    --header: 60 18% 92%;
+    --header-foreground: 140 18% 22%;
+    --sec-today: 39 55% 30%;
+    --sec-today-tint: 45 40% 88%;
+    --sec-orders: 213 35% 38%;
+    --sec-orders-tint: 213 25% 89%;
+    --sec-poultry: 20 40% 38%;
+    --sec-poultry-tint: 24 30% 89%;
+    --sec-money: 150 30% 31%;
+    --sec-money-tint: 124 14% 87%;
+    --sec-more: 138 8% 35%;
+    --sec-more-tint: 90 8% 88%;
+    --sec-products: 180 35% 28%;
+    --sec-products-tint: 178 18% 87%;
+    --sec-customers: 267 25% 42%;
+    --sec-customers-tint: 267 20% 90%;
+    --sec-slots: 214 22% 38%;
+    --sec-slots-tint: 215 16% 89%;
+    --sec-messages: 330 30% 40%;
+    --sec-messages-tint: 331 22% 90%;
+    --sec-whatsapp: 149 32% 32%;
+    --sec-whatsapp-tint: 146 18% 88%;
+    --sec-staff: 26 28% 34%;
+    --sec-staff-tint: 29 20% 88%;
+    --sec-account: 231 25% 40%;
+    --sec-account-tint: 232 20% 90%;
+    --sec-plans: 202 28% 38%;
+    --sec-plans-tint: 202 20% 89%;
+    --sec-on: 60 30% 97%;
+    --chart-1: #4f8a6a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root[data-soft="on"]:not([data-theme="light"]) {
+      --background: 150 6% 14%;
+      --foreground: 100 6% 78%;
+      --card: 150 6% 17%;
+      --card-foreground: 100 6% 78%;
+      --popover: 150 6% 17%;
+      --popover-foreground: 100 6% 78%;
+      --primary: 150 25% 55%;
+      --primary-foreground: 150 20% 10%;
+      --secondary: 150 5% 20%;
+      --secondary-foreground: 100 6% 78%;
+      --muted: 150 5% 20%;
+      --muted-foreground: 120 5% 62%;
+      --accent: 145 10% 22%;
+      --accent-foreground: 100 6% 78%;
+      --destructive: 6 38% 67%;
+      --destructive-foreground: 150 20% 10%;
+      --border: 145 5% 25%;
+      --input: 145 5% 30%;
+      --ring: 150 25% 55%;
+      --lime: 84 18% 48%;
+      --lime-foreground: 90 30% 8%;
+      --yolk: 45 18% 22%;
+      --yolk-foreground: 45 35% 80%;
+      --sun: 45 45% 58%;
+      --sun-foreground: 150 20% 10%;
+      --header: 150 6% 16%;
+      --header-foreground: 100 6% 78%;
+      --sec-today: 42 35% 60%;
+      --sec-today-tint: 42 14% 20%;
+      --sec-orders: 213 30% 65%;
+      --sec-orders-tint: 213 14% 21%;
+      --sec-poultry: 22 35% 62%;
+      --sec-poultry-tint: 20 14% 20%;
+      --sec-money: 150 25% 55%;
+      --sec-money-tint: 150 12% 19%;
+      --sec-more: 130 6% 62%;
+      --sec-more-tint: 140 5% 20%;
+      --sec-products: 178 25% 55%;
+      --sec-products-tint: 180 14% 19%;
+      --sec-customers: 267 25% 70%;
+      --sec-customers-tint: 267 12% 22%;
+      --sec-slots: 214 22% 66%;
+      --sec-slots-tint: 214 12% 21%;
+      --sec-messages: 330 25% 66%;
+      --sec-messages-tint: 330 12% 21%;
+      --sec-whatsapp: 149 25% 55%;
+      --sec-whatsapp-tint: 149 12% 19%;
+      --sec-staff: 28 25% 62%;
+      --sec-staff-tint: 26 12% 20%;
+      --sec-account: 231 25% 70%;
+      --sec-account-tint: 231 12% 22%;
+      --sec-plans: 202 25% 63%;
+      --sec-plans-tint: 202 12% 20%;
+      --sec-on: 150 20% 10%;
+      --chart-1: #5f9a7a;
+    }
+  }
+  :root[data-soft="on"][data-theme="dark"] {
+    --background: 150 6% 14%;
+    --foreground: 100 6% 78%;
+    --card: 150 6% 17%;
+    --card-foreground: 100 6% 78%;
+    --popover: 150 6% 17%;
+    --popover-foreground: 100 6% 78%;
+    --primary: 150 25% 55%;
+    --primary-foreground: 150 20% 10%;
+    --secondary: 150 5% 20%;
+    --secondary-foreground: 100 6% 78%;
+    --muted: 150 5% 20%;
+    --muted-foreground: 120 5% 62%;
+    --accent: 145 10% 22%;
+    --accent-foreground: 100 6% 78%;
+    --destructive: 6 38% 67%;
+    --destructive-foreground: 150 20% 10%;
+    --border: 145 5% 25%;
+    --input: 145 5% 30%;
+    --ring: 150 25% 55%;
+    --lime: 84 18% 48%;
+    --lime-foreground: 90 30% 8%;
+    --yolk: 45 18% 22%;
+    --yolk-foreground: 45 35% 80%;
+    --sun: 45 45% 58%;
+    --sun-foreground: 150 20% 10%;
+    --header: 150 6% 16%;
+    --header-foreground: 100 6% 78%;
+    --sec-today: 42 35% 60%;
+    --sec-today-tint: 42 14% 20%;
+    --sec-orders: 213 30% 65%;
+    --sec-orders-tint: 213 14% 21%;
+    --sec-poultry: 22 35% 62%;
+    --sec-poultry-tint: 20 14% 20%;
+    --sec-money: 150 25% 55%;
+    --sec-money-tint: 150 12% 19%;
+    --sec-more: 130 6% 62%;
+    --sec-more-tint: 140 5% 20%;
+    --sec-products: 178 25% 55%;
+    --sec-products-tint: 180 14% 19%;
+    --sec-customers: 267 25% 70%;
+    --sec-customers-tint: 267 12% 22%;
+    --sec-slots: 214 22% 66%;
+    --sec-slots-tint: 214 12% 21%;
+    --sec-messages: 330 25% 66%;
+    --sec-messages-tint: 330 12% 21%;
+    --sec-whatsapp: 149 25% 55%;
+    --sec-whatsapp-tint: 149 12% 19%;
+    --sec-staff: 28 25% 62%;
+    --sec-staff-tint: 26 12% 20%;
+    --sec-account: 231 25% 70%;
+    --sec-account-tint: 231 12% 22%;
+    --sec-plans: 202 25% 63%;
+    --sec-plans-tint: 202 12% 20%;
+    --sec-on: 150 20% 10%;
+    --chart-1: #5f9a7a;
+  }
+
+  /* Larger text (Display → Larger text): every size one step up. */
+  :root[data-text="large"] {
+    font-size: 112.5%;
+  }
+  :root[data-text="large"] body {
+    font-size: 18px;
   }
 
   * {
