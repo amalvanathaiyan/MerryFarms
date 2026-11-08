@@ -4,7 +4,8 @@ import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { CheckCircle2, ChevronDown, ChevronRight, Save } from "lucide-react"
+import { ArrowRightLeft, CheckCircle2, ChevronRight, Egg, Save, TriangleAlert, Wheat } from "lucide-react"
+import { EntryBlock } from "./entry-block"
 import { saveAllBatchDaysAction } from "@/app/actions/batches"
 import { LOSS_CAUSES } from "@/domain/batches"
 import { NumberStepper } from "./number-stepper"
@@ -31,7 +32,7 @@ export interface DayBatch {
   lastFeedKg: number | null
 }
 
-type Row = { feed: string; eggs: string; broken: string; sold: string; soldFor: string; given: string; losses: Record<string, string>; openLost: boolean; openBroken: boolean; openSold: boolean; touched: boolean }
+type Row = { feed: string; eggs: string; broken: string; sold: string; soldFor: string; given: string; losses: Record<string, string>; openLost: boolean; openSold: boolean; touched: boolean }
 
 const s = (v: number | null | undefined) => (v == null || v === 0 ? "" : String(v))
 const n = (v: string) => (v.trim() === "" ? null : Number(v))
@@ -48,7 +49,6 @@ function startRow(b: DayBatch): Row {
     given: s(e?.given),
     losses,
     openLost: Object.values(losses).some(Boolean),
-    openBroken: !!e?.eggsBroken,
     openSold: !!(e?.sold || e?.given),
     touched: false,
   }
@@ -103,7 +103,7 @@ export function AllBatchesDay({ date, today, minDate, batches }: { date: string;
             {/* A thin, light bar pinned under the app header while this batch is on screen, so the numbers below
                 always say which batch they're for. */}
             <div className="sticky z-10 -mx-4 -mt-4 flex items-center justify-between gap-2 rounded-t-2xl border-b bg-sec-poultry-tint/95 px-4 py-2 backdrop-blur" style={{ top: "var(--app-header-h, 66px)" }}>
-              <Link href={`/farm/poultry/batches/${b.id}`} className="min-w-0 truncate">
+              <Link href={`/farm/poultry/batches/${b.id}`} className="line-clamp-2 min-w-0 leading-snug">
                 <span className="font-bold">{b.name}</span>
                 <span className="text-sm text-muted-foreground">
                   {" "}
@@ -124,49 +124,52 @@ export function AllBatchesDay({ date, today, minDate, batches }: { date: string;
               </p>
             )}
 
-            <div className="flex flex-col gap-1.5">
-              <NumberStepper label={tb("feedKg")} value={r.feed} onChange={(v) => edit(b.id, { feed: v })} decimal />
+            <EntryBlock icon={Wheat} title={t("blockFeed")}>
+              <NumberStepper label={t("feedKgGiven")} value={r.feed} onChange={(v) => edit(b.id, { feed: v })} decimal />
               {b.lastFeedKg != null && r.feed !== String(b.lastFeedKg) && (
                 <button type="button" onClick={() => edit(b.id, { feed: String(b.lastFeedKg) })} className="self-start rounded-full border-2 border-dashed border-primary px-3 py-1 text-sm font-semibold text-primary">
                   {t("sameAsLast", { kg: b.lastFeedKg })}
                 </button>
               )}
-            </div>
+            </EntryBlock>
 
-            {b.showEggs && <NumberStepper label={tb("eggsCollected")} value={r.eggs} onChange={(v) => edit(b.id, { eggs: v })} />}
+            {b.showEggs && (
+              <EntryBlock icon={Egg} title={t("blockEggs")}>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+                  <NumberStepper size="sm" label={t("eggsGot")} value={r.eggs} onChange={(v) => edit(b.id, { eggs: v })} />
+                  <NumberStepper size="sm" label={t("eggsBrokenShort")} value={r.broken} onChange={(v) => edit(b.id, { broken: v })} />
+                </div>
+              </EntryBlock>
+            )}
 
-            <div className="flex flex-wrap gap-2">
-              <button type="button" aria-expanded={r.openLost} onClick={() => setRows((x) => ({ ...x, [b.id]: { ...r, openLost: !r.openLost } }))} className={cn("flex items-center gap-1 rounded-full border-2 px-3 py-1.5 text-sm font-bold", r.openLost ? "border-destructive/40 bg-destructive/10 text-destructive" : "bg-card")}>
-                {lostCount > 0 ? t("lostCount", { count: lostCount }) : t("anyLost")} <ChevronDown className={cn("size-4 transition-transform", r.openLost && "rotate-180")} aria-hidden />
-              </button>
-              {b.showEggs && (
-                <button type="button" aria-expanded={r.openBroken} onClick={() => setRows((x) => ({ ...x, [b.id]: { ...r, openBroken: !r.openBroken } }))} className={cn("flex items-center gap-1 rounded-full border-2 px-3 py-1.5 text-sm font-bold", r.openBroken ? "border-primary bg-accent" : "bg-card")}>
-                  {t("anyBroken")} <ChevronDown className={cn("size-4 transition-transform", r.openBroken && "rotate-180")} aria-hidden />
-                </button>
-              )}
-              <button type="button" aria-expanded={r.openSold} onClick={() => setRows((x) => ({ ...x, [b.id]: { ...r, openSold: !r.openSold } }))} className={cn("flex items-center gap-1 rounded-full border-2 px-3 py-1.5 text-sm font-bold", r.openSold ? "border-primary bg-accent" : "bg-card")}>
-                {t("anySold")} <ChevronDown className={cn("size-4 transition-transform", r.openSold && "rotate-180")} aria-hidden />
-              </button>
-            </div>
-
-            {r.openLost && (
-              <div className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl bg-destructive/5 p-3">
+            <EntryBlock
+              icon={TriangleAlert}
+              title={t("blockLost")}
+              tone={lostCount > 0 ? "bad" : undefined}
+              summary={lostCount > 0 ? t("lostCount", { count: lostCount }) : t("noneTapToAdd")}
+              open={r.openLost}
+              onToggle={() => setRows((x) => ({ ...x, [b.id]: { ...r, openLost: !r.openLost } }))}
+            >
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2">
                 {LOSS_CAUSES.map((c) => (
                   <NumberStepper key={c} size="sm" label={tb(`cause_${c}`)} value={r.losses[c]} onChange={(v) => edit(b.id, { losses: { ...r.losses, [c]: v } })} />
                 ))}
               </div>
-            )}
-            {r.openBroken && b.showEggs && <NumberStepper size="sm" label={tb("eggsBroken")} value={r.broken} onChange={(v) => edit(b.id, { broken: v })} />}
-            {r.openSold && (
-              <div className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl bg-muted/50 p-3">
+            </EntryBlock>
+
+            <EntryBlock
+              icon={ArrowRightLeft}
+              title={t("blockOut")}
+              summary={(Number(r.sold) || 0) + (Number(r.given) || 0) > 0 ? t("outSummary", { sold: Number(r.sold) || 0, given: Number(r.given) || 0 }) : t("noneTapToAdd")}
+              open={r.openSold}
+              onToggle={() => setRows((x) => ({ ...x, [b.id]: { ...r, openSold: !r.openSold } }))}
+            >
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2">
                 <NumberStepper size="sm" label={tb("sold")} value={r.sold} onChange={(v) => edit(b.id, { sold: v })} />
                 <NumberStepper size="sm" label={tb("given")} value={r.given} onChange={(v) => edit(b.id, { given: v })} />
-                <label className="col-span-2 flex flex-col gap-1 text-xs font-semibold">
-                  {tb("soldFor")}
-                  <input type="number" min={0} inputMode="decimal" value={r.soldFor} onChange={(e) => edit(b.id, { soldFor: e.target.value })} className="h-10 rounded-xl border-2 border-input bg-background px-3 text-lg font-bold tabular-nums" />
-                </label>
               </div>
-            )}
+              <p className="text-xs text-muted-foreground">{t("outHint")}</p>
+            </EntryBlock>
 
             <Link href={`/farm/poultry/batches/${b.id}`} className="flex items-center gap-1 self-end text-sm font-semibold text-primary">
               {t("moreOnBatch")} <ChevronRight className="size-4" aria-hidden />

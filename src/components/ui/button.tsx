@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils"
 const buttonVariants = cva(
   // Hover: deeper colour, a soft shadow and a 1px lift (pointer devices only). Press: settles back and shrinks a little.
   // Focus: a thick ring with a gap, so keyboard users always see where they are.
-  "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform] duration-200 ease-out outline-none hover:-translate-y-px active:translate-y-0 active:scale-[0.97] focus-visible:ring-[3px] focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  // Words wrap and the height grows (min-h, not h): long Tamil labels stay inside the button and the screen.
+  "inline-flex max-w-full min-w-0 cursor-pointer items-center justify-center gap-2 rounded-md text-center text-sm leading-tight font-medium whitespace-normal transition-[color,background-color,border-color,box-shadow,transform] duration-200 ease-out outline-none hover:-translate-y-px active:translate-y-0 active:scale-[0.97] focus-visible:ring-[3px] focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -23,14 +24,14 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-        icon: "size-9",
-        "icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm": "size-8",
-        "icon-lg": "size-10",
+        default: "min-h-9 px-4 py-2 has-[>svg]:px-3",
+        xs: "min-h-6 gap-1 rounded-md px-2 py-0.5 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
+        sm: "min-h-8 gap-1.5 rounded-md px-3 py-1.5 has-[>svg]:px-2.5",
+        lg: "min-h-10 rounded-md px-6 py-2 has-[>svg]:px-4",
+        icon: "size-9 shrink-0",
+        "icon-xs": "size-6 shrink-0 rounded-md [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm": "size-8 shrink-0",
+        "icon-lg": "size-10 shrink-0",
       },
     },
     defaultVariants: {
