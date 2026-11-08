@@ -5,8 +5,10 @@ import { requireFeature } from "@/lib/require-feature"
 import { inbox } from "@/server/chat"
 import { chatTime, hoursSince } from "@/lib/chat-time"
 import { cn } from "@/lib/utils"
+import { AutoRefresh } from "@/components/auto-refresh"
+import { SectionHeader } from "@/components/farm/section-header"
 
-/** Every conversation, newest first; unread and long-waiting ones stand out. */
+/** Every conversation, newest first; unread and long-waiting ones stand out. New messages appear by themselves. */
 export default async function FarmMessagesPage() {
   const { tenant } = await requireStaff()
   requireFeature(tenant, "messages")
@@ -16,7 +18,8 @@ export default async function FarmMessagesPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-bold">{t("title")}</h1>
+      <AutoRefresh />
+      <SectionHeader section="messages" back={{ href: "/farm/more" }} />
       {rows.length === 0 && <p className="rounded-2xl border bg-card p-6 text-center text-muted-foreground">{t("inboxEmpty")}</p>}
       <ul className="divide-y rounded-2xl border bg-card">
         {rows.map((r) => {

@@ -1,9 +1,9 @@
-import Link from "next/link"
 import { getTranslations } from "next-intl/server"
 import { OWNER_ONLY, requireStaff } from "@/lib/auth"
 import { requireFeature } from "@/lib/require-feature"
 import { istDate } from "@/domain/ist"
 import { BatchForm } from "@/components/farm/batch-form"
+import { SectionHeader } from "@/components/farm/section-header"
 
 /** Owner: a new batch of birds, bought in or hatched here. */
 export default async function NewBatchPage() {
@@ -15,13 +15,7 @@ export default async function NewBatchPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Link href="/farm/records" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
-        ← {t("backToRecords")}
-      </Link>
-      <div>
-        <h1 className="text-xl font-bold">{t("newTitle")}</h1>
-        <p className="text-sm text-muted-foreground">{t("newHint")}</p>
-      </div>
+      <SectionHeader section="poultry" back={{ href: "/farm/poultry", label: t("backToPoultry") }} title={t("newTitle")} hint={t("newHint")} />
       <BatchForm
         today={today}
         parents={parents.map((p) => ({ id: p.id, name: `${p.name} · #${p.number}` }))}

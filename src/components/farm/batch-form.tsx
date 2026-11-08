@@ -101,7 +101,7 @@ export function BatchForm({
           }
           const r = id ? await editBatch(id, input) : await addBatch({ ...input, chicksCostRupees: bought ? num(cost) : null })
           if (!r.ok) return setError(te.has(r.error) ? te(r.error) : te("generic"))
-          router.push(`/farm/records/batches/${id ?? r.id}`)
+          router.push(`/farm/poultry/batches/${id ?? r.id}`)
         })
       }}
     >

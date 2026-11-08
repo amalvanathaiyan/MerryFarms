@@ -116,7 +116,7 @@ export function BatchVaccinations({
           <Syringe className="size-5" /> {t("title")}
         </h2>
         {isOwner && (
-          <Link href="/farm/records/vaccines" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+          <Link href="/farm/poultry/vaccines/plan" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
             {t("farmPlan")} →
           </Link>
         )}

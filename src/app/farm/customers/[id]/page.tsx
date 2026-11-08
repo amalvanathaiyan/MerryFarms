@@ -20,6 +20,7 @@ import { fillTemplate, templateText } from "@/domain/templates"
 import { ensureToken } from "@/server/customers"
 import { absoluteUrl } from "@/lib/urls"
 import { PersonalLink } from "@/components/farm/personal-link"
+import { BackLink } from "@/components/farm/section-header"
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -60,6 +61,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="flex flex-col gap-4">
+      <BackLink href="/farm/customers" label={(await getTranslations("farm.sections"))("customers.title")} />
       <section className="flex flex-col gap-3 rounded-2xl border bg-card p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

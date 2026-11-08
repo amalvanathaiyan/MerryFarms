@@ -8,7 +8,8 @@ import { isOpen, orderCode } from "@/domain/orders"
 import { formatIndianMobile } from "@/domain/phone"
 import { liteOrderMessage, waMeLink, type LiteMessageKind } from "@/domain/whatsapp-lite"
 import { OrderActions } from "@/components/farm/order-actions"
-import { cn } from "@/lib/utils"
+import { AutoRefresh } from "@/components/auto-refresh"
+import { SectionHeader } from "@/components/farm/section-header"
 import { Button } from "@/components/ui/button"
 import { templateOverrides } from "@/server/messages"
 import { directionsLink } from "@/domain/delivery-area"
@@ -64,6 +65,8 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="flex flex-col gap-4">
+      <AutoRefresh seconds={30} />
+      <SectionHeader section="orders" tabs={tabs.map((k) => ({ key: k, href: `/farm/orders?tab=${k}`, label: t(`tab_${k}`), count: countFor(k) }))} active={tab} />
       {isDesk && (
         <div className="flex gap-2">
           <Button asChild size="lg" className="flex-1">
@@ -76,18 +79,6 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           )}
         </div>
       )}
-      <nav className="flex gap-2" aria-label="Order status">
-        {tabs.map((k) => (
-          <Link
-            key={k}
-            href={`/farm/orders?tab=${k}`}
-            aria-current={tab === k ? "page" : undefined}
-            className={cn("rounded-full border px-4 py-2 text-sm font-medium", tab === k ? "border-primary bg-accent" : "bg-card")}
-          >
-            {t(`tab_${k}`)} <span className="tabular-nums">{countFor(k)}</span>
-          </Link>
-        ))}
-      </nav>
 
       {orders.length === 0 && <p className="py-10 text-center text-muted-foreground">{t("empty")}</p>}
 

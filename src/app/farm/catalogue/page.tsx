@@ -1,13 +1,12 @@
-import { getTranslations } from "next-intl/server"
 import { requireStaff } from "@/lib/auth"
 import { CatalogueManager } from "@/components/farm/catalogue-manager"
 import { featuresOf } from "@/lib/features"
 import { offerActive } from "@/domain/offers"
 import { istDate } from "@/domain/ist"
+import { SectionHeader } from "@/components/farm/section-header"
 
 export default async function CataloguePage() {
   const { db, staff, tenant } = await requireStaff()
-  const t = await getTranslations("farm.catalogue")
   const [categories, products] = await Promise.all([
     db.category.findMany({ where: { deletedAt: null }, orderBy: { sortOrder: "asc" } }),
     db.product.findMany({ where: { deletedAt: null }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
@@ -17,7 +16,7 @@ export default async function CataloguePage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-bold">{t("title")}</h1>
+      <SectionHeader section="products" back={{ href: "/farm/more" }} />
       <CatalogueManager
         canEdit={staff.roles.includes("owner")}
         tracksStock={featuresOf(tenant).stockTracking}

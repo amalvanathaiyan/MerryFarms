@@ -1,10 +1,10 @@
-import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getTranslations } from "next-intl/server"
 import { OWNER_ONLY, requireStaff } from "@/lib/auth"
 import { requireFeature } from "@/lib/require-feature"
 import { istDate } from "@/domain/ist"
 import { BatchForm } from "@/components/farm/batch-form"
+import { SectionHeader } from "@/components/farm/section-header"
 
 const s = (v: number | null) => (v == null ? "" : String(v))
 
@@ -20,10 +20,7 @@ export default async function EditBatchPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="flex flex-col gap-4">
-      <Link href={`/farm/records/batches/${id}`} className="text-sm font-medium text-primary underline-offset-4 hover:underline">
-        ← {batch.name} · {t("batchNo", { number: batch.number })}
-      </Link>
-      <h1 className="text-xl font-bold">{t("editTitle")}</h1>
+      <SectionHeader section="poultry" back={{ href: `/farm/poultry/batches/${id}`, label: `${batch.name} · ${t("batchNo", { number: batch.number })}` }} title={t("editTitle")} hint={null} />
       <BatchForm
         id={id}
         today={istDate(new Date())}
