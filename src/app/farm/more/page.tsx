@@ -32,7 +32,7 @@ export default async function MorePage() {
                 <span className={cn("grid size-11 place-items-center rounded-full", look.strong)}>
                   <SectionIcon name={tile.key} className="size-6" />
                 </span>
-                <span className="text-lg leading-tight font-bold">{t(`${tile.key}.title`)}</span>
+                <span className="text-lg leading-tight font-bold wrap-anywhere">{t(`${tile.key}.title`)}</span>
                 <span className="text-sm leading-snug text-muted-foreground">{badge > 0 ? tm("newMessages", { count: badge }) : t(`${tile.key}.hint`)}</span>
                 {badge > 0 && <span className="absolute top-3 right-3 min-w-6 rounded-full bg-destructive px-1.5 text-center text-xs leading-6 font-bold text-destructive-foreground tabular-nums">{badge}</span>}
               </Link>

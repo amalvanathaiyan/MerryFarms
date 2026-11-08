@@ -43,7 +43,7 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
             )}
             <div className="min-w-0">
               <div className="font-display line-clamp-2 text-lg leading-snug font-bold break-words">{pick(locale, tenant.nameTa, tenant.nameEn)}</div>
-              <div className="truncate text-sm opacity-80">{staff.name}</div>
+              <div className="line-clamp-2 text-sm leading-snug break-words opacity-80">{staff.name}</div>
             </div>
           </div>
           <LanguageToggle compact />
