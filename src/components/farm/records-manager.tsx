@@ -28,7 +28,13 @@ export function RecordsManager({
   production,
   periodLabel,
   footer,
+  showTotals = true,
+  canSpreadCosts = true,
 }: {
+  /** A manager adds expenses but sees no totals; the list is only their own entries. */
+  showTotals?: boolean
+  /** Spreading changes profit, so only the owner may. */
+  canSpreadCosts?: boolean
   today: string
   /** Heading for the list's total ("This month", "October 2026"). */
   periodLabel?: string
@@ -59,7 +65,7 @@ export function RecordsManager({
 
   const monthTotal = expenses.reduce((a, e) => a + e.amountPaise, 0)
   const isFeed = poultry && spend.kind === "feed"
-  const canSpread = SPREADABLE.includes(spend.kind)
+  const canSpread = canSpreadCosts && SPREADABLE.includes(spend.kind)
   const spreads = canSpread && spend.spread != null
   const amountNow = Number(spend.amount)
 
@@ -79,9 +85,11 @@ export function RecordsManager({
         <section className="flex flex-col gap-3 rounded-2xl border bg-card p-4">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="text-lg font-semibold">{t("expenses")}</h2>
-            <span className="text-sm text-muted-foreground tabular-nums">
-              {periodLabel ?? t("thisMonth")}: <b className="text-foreground">{formatRupees(monthTotal)}</b>
-            </span>
+            {showTotals && (
+              <span className="text-sm text-muted-foreground tabular-nums">
+                {periodLabel ?? t("thisMonth")}: <b className="text-foreground">{formatRupees(monthTotal)}</b>
+              </span>
+            )}
           </div>
           <form
             className="flex flex-col gap-3 rounded-xl border border-dashed p-3"
@@ -104,7 +112,7 @@ export function RecordsManager({
           >
             <div className="flex flex-wrap gap-2">
               {EXPENSE_KINDS.map((k) => (
-                <button key={k} type="button" aria-pressed={spend.kind === k} onClick={() => setSpend({ ...spend, kind: k, spread: defaultSpread(k) })} className={cn("rounded-full border px-3 py-1.5 text-sm font-medium", spend.kind === k ? "border-primary bg-accent" : "bg-card")}>
+                <button key={k} type="button" aria-pressed={spend.kind === k} onClick={() => setSpend({ ...spend, kind: k, spread: canSpreadCosts ? defaultSpread(k) : null })} className={cn("rounded-full border px-3 py-1.5 text-sm font-medium", spend.kind === k ? "border-primary bg-accent" : "bg-card")}>
                   {t(`kind_${k}`)}
                 </button>
               ))}
@@ -166,7 +174,8 @@ export function RecordsManager({
               {t("addExpense")}
             </Button>
           </form>
-          {expenses.length === 0 && <p className="text-sm text-muted-foreground">{t("noExpenses")}</p>}
+          {!showTotals && <p className="text-sm text-muted-foreground">{t("managerHint")}</p>}
+          {expenses.length === 0 && <p className="text-sm text-muted-foreground">{showTotals ? t("noExpenses") : t("noOwnExpenses")}</p>}
           <ul className="divide-y">
             {expenses.map((e) => (
               <li key={e.id} className="flex items-center justify-between gap-3 py-2">

@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import { farmKnownFromAddress, getTenant } from "@/lib/tenant"
 import { LoginForm } from "./login-form"
@@ -6,6 +7,9 @@ import { tenantDb } from "@/lib/tenant-db"
 import { prisma } from "@/lib/prisma"
 import { demoSignIn } from "@/app/actions/auth"
 import { AuthShell } from "@/components/auth-shell"
+
+/** Staff sign in here, so installing from this page gives the farm app's icon (it opens /farm). */
+export const metadata: Metadata = { manifest: "/app-manifest?app=farm" }
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
   const { next, error } = await searchParams

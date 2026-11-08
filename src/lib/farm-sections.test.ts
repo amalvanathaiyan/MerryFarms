@@ -27,6 +27,16 @@ describe("the bottom menu", () => {
     expect(keys(poultryTabs({ roles: ["packing"], features: withPoultry }))).toEqual(["batches", "vaccines", "feed"])
   })
 
+  it("gives a manager only Spending under Money: no sales, no profit, no poultry, no settings", () => {
+    const menu = mainMenu({ roles: ["manager"], features: withPoultry })
+    expect(keys(menu)).toEqual(["today", "orders", "money", "more"])
+    expect(menu.find((m) => m.key === "money")?.href).toBe("/farm/money/spending")
+    expect(keys(moneyTabs({ roles: ["manager"], features: withPoultry }))).toEqual(["spending"])
+    expect(keys(moreTiles({ roles: ["manager"], features: plain }))).toEqual(["account"])
+    // Combined with packing, they also get Poultry and Made.
+    expect(keys(moneyTabs({ roles: ["manager", "packing"], features: withPoultry }))).toEqual(["spending", "made"])
+  })
+
   it("lights up the right button for every page", () => {
     const menu = mainMenu({ roles: ["owner"], features: withPoultry })
     const lit = (path: string) => menu.filter((m) => menuItemActive(m, path)).map((m) => m.key)

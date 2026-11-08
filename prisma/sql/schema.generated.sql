@@ -14,7 +14,7 @@ CREATE TYPE "WhatsAppMode" AS ENUM ('lite', 'cloud');
 CREATE TYPE "Language" AS ENUM ('ta', 'en');
 
 -- CreateEnum
-CREATE TYPE "StaffRole" AS ENUM ('owner', 'order_desk', 'packing', 'delivery');
+CREATE TYPE "StaffRole" AS ENUM ('owner', 'manager', 'order_desk', 'packing', 'delivery');
 
 -- CreateEnum
 CREATE TYPE "OrderStatus" AS ENUM ('to_confirm', 'confirmed', 'packed', 'out_for_delivery', 'delivered', 'cancelled');

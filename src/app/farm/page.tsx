@@ -17,6 +17,7 @@ import { SectionIcon } from "@/components/farm/section-icon"
 import { SECTION_LOOK, type SectionKey } from "@/lib/farm-sections"
 import { batchStatus } from "@/domain/batches"
 import { asDay, asInfo, asLoss, loadBatches } from "@/server/batches"
+import { InstallApp } from "@/components/install-app"
 
 /**
  * True when a batch on the farm has no entry for today (with poultry care on); otherwise, or with no batches,
@@ -175,6 +176,8 @@ export default async function TodayPage() {
           )
         })}
       </section>
+
+      <InstallApp variant="banner" />
 
       <div className="grid grid-cols-2 gap-3">
         {tiles.map((tile) => {

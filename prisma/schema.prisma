@@ -41,6 +41,8 @@ enum Language {
 
 enum StaffRole {
   owner
+  /// Adds farm expenses (labour, electricity…) but sees no totals, sales or profit.
+  manager
   order_desk
   packing
   delivery
