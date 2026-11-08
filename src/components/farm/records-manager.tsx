@@ -6,11 +6,15 @@ import { Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { addExpense, deleteExpense } from "@/app/actions/records"
-import { EXPENSE_KINDS, type ExpenseKind } from "@/domain/records"
+import { EXPENSE_KINDS, SPREAD_CHOICES, type ExpenseKind } from "@/domain/records"
 import { formatRupees } from "@/domain/money"
 import { cn } from "@/lib/utils"
 
-type ExpenseRow = { id: string; dayText: string; kind: string; amountPaise: number; quantityKg: number | null; batchName: string | null; note: string | null }
+type ExpenseRow = { id: string; dayText: string; kind: string; amountPaise: number; quantityKg: number | null; batchName: string | null; spreadMonths: number | null; note: string | null }
+
+/** Kinds that are often one big payment for something that lasts: offer to spread them. */
+const SPREADABLE: readonly string[] = ["infrastructure", "repairs"]
+const defaultSpread = (kind: string) => (kind === "infrastructure" ? 12 : null)
 type BatchOption = { id: string; name: string }
 
 /** Production (any farm), batches of birds (poultry farms only) and expenses (owner). */
@@ -22,8 +26,14 @@ export function RecordsManager({
   poultry,
   batchOptions,
   production,
+  periodLabel,
+  footer,
 }: {
   today: string
+  /** Heading for the list's total ("This month", "October 2026"). */
+  periodLabel?: string
+  /** Below the list: month picker, download. */
+  footer?: React.ReactNode
   expenses: ExpenseRow[]
   canSpend: boolean
   batches: React.ReactNode
@@ -36,7 +46,7 @@ export function RecordsManager({
   const te = useTranslations("errors")
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const empty = { date: today, kind: "feed" as ExpenseKind, amount: "", kg: "", batchId: "", note: "" }
+  const empty = { date: today, kind: "feed" as ExpenseKind, amount: "", kg: "", batchId: "", note: "", spread: null as number | null }
   const [spend, setSpend] = useState(empty)
 
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>, after?: () => void) =>
@@ -49,6 +59,9 @@ export function RecordsManager({
 
   const monthTotal = expenses.reduce((a, e) => a + e.amountPaise, 0)
   const isFeed = poultry && spend.kind === "feed"
+  const canSpread = SPREADABLE.includes(spend.kind)
+  const spreads = canSpread && spend.spread != null
+  const amountNow = Number(spend.amount)
 
   return (
     <div className="flex flex-col gap-4">
@@ -67,7 +80,7 @@ export function RecordsManager({
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="text-lg font-semibold">{t("expenses")}</h2>
             <span className="text-sm text-muted-foreground tabular-nums">
-              {t("thisMonth")}: <b className="text-foreground">{formatRupees(monthTotal)}</b>
+              {periodLabel ?? t("thisMonth")}: <b className="text-foreground">{formatRupees(monthTotal)}</b>
             </span>
           </div>
           <form
@@ -81,16 +94,17 @@ export function RecordsManager({
                     kind: spend.kind,
                     amountRupees: Number(spend.amount),
                     quantityKg: isFeed && spend.kg ? Number(spend.kg) : null,
-                    batchId: !isFeed && spend.batchId ? spend.batchId : null,
+                    batchId: !isFeed && spend.batchId && !spreads ? spend.batchId : null,
+                    spreadMonths: spreads ? spend.spread : null,
                     note: spend.note || undefined,
                   }),
-                () => setSpend({ ...empty, date: spend.date, kind: spend.kind, batchId: spend.batchId })
+                () => setSpend({ ...empty, date: spend.date, kind: spend.kind, batchId: spend.batchId, spread: spend.spread })
               )
             }}
           >
             <div className="flex flex-wrap gap-2">
               {EXPENSE_KINDS.map((k) => (
-                <button key={k} type="button" aria-pressed={spend.kind === k} onClick={() => setSpend({ ...spend, kind: k })} className={cn("rounded-full border px-3 py-1.5 text-sm font-medium", spend.kind === k ? "border-primary bg-accent" : "bg-card")}>
+                <button key={k} type="button" aria-pressed={spend.kind === k} onClick={() => setSpend({ ...spend, kind: k, spread: defaultSpread(k) })} className={cn("rounded-full border px-3 py-1.5 text-sm font-medium", spend.kind === k ? "border-primary bg-accent" : "bg-card")}>
                   {t(`kind_${k}`)}
                 </button>
               ))}
@@ -112,7 +126,7 @@ export function RecordsManager({
                 <span className="text-xs font-normal text-muted-foreground">{t("feedKgHint")}</span>
               </label>
             ) : (
-              poultry && batchOptions.length > 0 && (
+              poultry && batchOptions.length > 0 && !spreads && (
                 <label className="flex flex-col gap-1.5 text-sm font-semibold">
                   {t("forBatch")}
                   <select value={spend.batchId} onChange={(e) => setSpend({ ...spend, batchId: e.target.value })} className="h-11 rounded-md border bg-background px-3 font-normal">
@@ -125,6 +139,27 @@ export function RecordsManager({
                   </select>
                 </label>
               )
+            )}
+            {canSpread && (
+              <fieldset className="flex flex-col gap-2">
+                <legend className="mb-1 text-sm font-semibold">{t("spreadTitle")}</legend>
+                <div className="flex flex-wrap gap-2">
+                  {[null, ...SPREAD_CHOICES].map((m) => (
+                    <button
+                      key={m ?? 0}
+                      type="button"
+                      aria-pressed={spend.spread === m}
+                      onClick={() => setSpend({ ...spend, spread: m })}
+                      className={cn("rounded-full border px-3 py-1.5 text-sm font-medium", spend.spread === m ? "border-primary bg-accent" : "bg-card")}
+                    >
+                      {m == null ? t("spreadNone") : m % 12 === 0 ? t("spreadYears", { count: m / 12 }) : t("spreadMonths", { count: m })}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {spreads && amountNow > 0 ? t("spreadHintAmount", { amount: formatRupees(Math.round((amountNow * 100) / spend.spread!)) }) : t("spreadHint")}
+                </p>
+              </fieldset>
             )}
             <Input value={spend.note} maxLength={120} onChange={(e) => setSpend({ ...spend, note: e.target.value })} placeholder={t("expenseNote")} />
             <Button type="submit" disabled={pending || !(Number(spend.amount) > 0)}>
@@ -142,6 +177,11 @@ export function RecordsManager({
                   {(e.quantityKg != null || e.batchName || e.note) && (
                     <div className="truncate text-sm text-muted-foreground">{[e.quantityKg != null && `${e.quantityKg} kg`, e.batchName, e.note].filter(Boolean).join(" · ")}</div>
                   )}
+                  {e.spreadMonths != null && (
+                    <div className="text-sm font-medium text-primary">
+                      {t("spreadLine", { months: e.spreadMonths, amount: formatRupees(Math.round(e.amountPaise / e.spreadMonths)) })}
+                    </div>
+                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <b className="tabular-nums">{formatRupees(e.amountPaise)}</b>
@@ -152,6 +192,7 @@ export function RecordsManager({
               </li>
             ))}
           </ul>
+          {footer}
         </section>
       )}
     </div>

@@ -869,18 +869,21 @@ model BatchVaccination {
 
 /// Money spent running the farm (feed, medicine, chicks, labour…), for profit.
 /// batchId: spent on one batch (chicks, medicine). quantityKg: feed bought, which fills the feed store.
+/// spreadMonths: see src/domain/records.ts costInPeriod.
 model Expense {
-  id          String   @id @default(uuid())
-  tenantId    String
-  date        String // IST
-  kind        String // see EXPENSE_KINDS in src/domain/records.ts
-  amountPaise Int
-  quantityKg  Float?
-  batchId     String?
-  note        String?
-  byStaffId   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
+  id           String   @id @default(uuid())
+  tenantId     String
+  date         String // IST
+  kind         String // see EXPENSE_KINDS in src/domain/records.ts
+  amountPaise  Int
+  quantityKg   Float?
+  batchId      String?
+  /// A big cost (building, equipment) shared out over this many months in profit; null = counted on the day paid.
+  spreadMonths Int?
+  note         String?
+  byStaffId    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
 
   @@index([tenantId, date])
   @@index([batchId])

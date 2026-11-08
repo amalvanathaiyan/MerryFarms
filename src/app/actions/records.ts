@@ -6,7 +6,7 @@ import { OWNER_ONLY, requireStaff } from "@/lib/auth"
 import { featuresOf } from "@/lib/features"
 import { istDate } from "@/domain/ist"
 import { rupeesToPaise } from "@/domain/money"
-import { EXPENSE_KINDS } from "@/domain/records"
+import { EXPENSE_KINDS, MAX_SPREAD_MONTHS } from "@/domain/records"
 import { saveProduction } from "@/server/production"
 import { OrderError } from "@/server/orders"
 
@@ -16,7 +16,8 @@ const ymd = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 /**
  * Owner: money spent. Feed can carry its kg, which fills the feed store and prices the feed each batch eats.
  * Other spending can be put on one batch (chicks, medicine); feed never is, because a batch's feed cost comes
- * from what it ate, and counting the purchase too would count it twice.
+ * from what it ate, and counting the purchase too would count it twice. A big cost (a shed, equipment) can be
+ * spread over months, so profit counts a share of it each month instead of all of it on the day it was paid.
  */
 export async function addExpense(raw: unknown): Promise<Result> {
   const parsed = z
@@ -26,6 +27,7 @@ export async function addExpense(raw: unknown): Promise<Result> {
       amountRupees: z.number().positive().max(10_000_000),
       quantityKg: z.number().positive().max(1_000_000).nullable().optional(),
       batchId: z.string().uuid().nullable().optional(),
+      spreadMonths: z.number().int().min(2).max(MAX_SPREAD_MONTHS).nullable().optional(),
       note: z.string().trim().max(120).optional(),
     })
     .safeParse(raw)
@@ -36,7 +38,9 @@ export async function addExpense(raw: unknown): Promise<Result> {
   if (d.date > istDate(new Date())) return { ok: false, error: "record_future" }
   // Feed kg and batches belong to poultry care; without it, an expense is just an amount.
   const poultry = featuresOf(tenant).poultryCare
-  const batchId = !poultry || d.kind === "feed" ? null : (d.batchId ?? null)
+  // Feed is never spread: it is priced by what each batch eats. A spread cost is the whole farm's, never one batch's.
+  const spreadMonths = d.kind === "feed" ? null : (d.spreadMonths ?? null)
+  const batchId = !poultry || d.kind === "feed" || spreadMonths ? null : (d.batchId ?? null)
   if (batchId && !(await db.batch.findFirst({ where: { id: batchId }, select: { id: true } }))) return { ok: false, error: "batch_not_found" }
   await db.expense.create({
     data: {
@@ -46,6 +50,7 @@ export async function addExpense(raw: unknown): Promise<Result> {
       amountPaise: rupeesToPaise(d.amountRupees),
       quantityKg: poultry && d.kind === "feed" ? (d.quantityKg ?? null) : null,
       batchId,
+      spreadMonths,
       note: d.note || null,
       byStaffId: staff.id,
     },

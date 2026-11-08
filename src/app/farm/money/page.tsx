@@ -177,7 +177,7 @@ export default async function MoneySalesPage({ searchParams }: { searchParams: P
         <h2 className="text-lg font-bold">{t("downloads")}</h2>
         <p className="text-sm text-muted-foreground">{t("downloadsHint")}</p>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {(["sales", "payments", "products", ...(features.creditAccounts ? ["dues"] : [])] as const).map((type) => (
+          {(["sales", "payments", "products", ...(features.creditAccounts ? ["dues"] : []), ...(features.farmRecords ? ["expenses"] : [])] as const).map((type) => (
             <Button key={type} asChild variant="outline" className="h-12 justify-start text-base">
               <a href={exportHref(type)}>
                 <Download /> {t(`export_${type}`)}
