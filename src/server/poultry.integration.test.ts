@@ -170,7 +170,8 @@ describe("a batch from arrival to profit", () => {
   })
 
   it("won't delete a batch with days entered, or close it before its last entry", async () => {
-    expect(await code(batches.deleteBatch(T1, id))).toBe("batch_has_entries")
+    expect(await code(batches.deleteBatch(T1, id))).toBe("batch_confirm_name")
+    expect(await code(batches.deleteBatch(T1, id, { confirmName: "Batch 1" }))).toBe("batch_confirm_name")
     expect(await code(batches.setBatchClosed(T1, id, "2026-10-02", TODAY))).toBe("batch_entries_after_close")
   })
 })
@@ -256,5 +257,40 @@ describe("vaccinations", () => {
     await vacc.deleteDose(T1, lasota)
     expect(await tenantDb(T1).batchVaccination.count({ where: { id: lasota } })).toBe(0)
     expect(await tenantDb(T1).expense.count({ where: { kind: "medicine" } })).toBe(0)
+  })
+})
+
+describe("deleting a wrong batch", () => {
+  const withEntries = async (name: string, cost: number) => {
+    const b = await batches.createBatch(T1, "s1", { ...input({ name }), chicksCostPaise: cost }, TODAY)
+    await batches.saveBatchDay(T1, "s1", b.id, day("2026-10-02", { feedKg: 3, losses: [{ cause: "weak", count: 1 }] }), TODAY)
+    return b.id
+  }
+
+  it("takes the days, losses, doses and its own costs once its name is typed (spaces and capitals don't matter)", async () => {
+    const id = await withEntries("Test lot", 300_000)
+    const db = tenantDb(T1)
+    expect(await db.batchVaccination.count({ where: { batchId: id } })).toBeGreaterThan(0)
+    await batches.deleteBatch(T1, id, { confirmName: "  test   LOT " })
+    expect(await db.batch.count({ where: { id } })).toBe(0)
+    expect(await db.batchDay.count({ where: { batchId: id } })).toBe(0)
+    expect(await db.batchLoss.count({ where: { batchId: id } })).toBe(0)
+    expect(await db.batchVaccination.count({ where: { batchId: id } })).toBe(0)
+    expect(await db.expense.count({ where: { batchId: id } })).toBe(0)
+    expect(await db.expense.count({ where: { kind: "chicks", amountPaise: 300_000 } })).toBe(0)
+  })
+
+  it("can keep its costs as the farm's when asked", async () => {
+    const id = await withEntries("Duplicate", 250_000)
+    await batches.deleteBatch(T1, id, { confirmName: "Duplicate", keepCosts: true })
+    const kept = await tenantDb(T1).expense.findMany({ where: { kind: "chicks", amountPaise: 250_000 } })
+    expect(kept).toHaveLength(1)
+    expect(kept[0].batchId).toBeNull()
+  })
+
+  it("leaves another farm's batch alone", async () => {
+    const id = await withEntries("Mine", 0)
+    expect(await code(batches.deleteBatch(T2, id, { confirmName: "Mine" }))).toBe("batch_not_found")
+    expect(await tenantDb(T1).batch.count({ where: { id } })).toBe(1)
   })
 })

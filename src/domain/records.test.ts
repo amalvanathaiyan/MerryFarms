@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { checkProduction, costs, production, productionStockDelta, productionTotals, profit } from "./records"
+import { checkProduction, costInPeriod, costs, costsInPeriod, production, spreadEnd, productionStockDelta, productionTotals, profit } from "./records"
+import { addDays, addMonths } from "./ist"
 
 const day = (date: string, eggs: number | null, birds: number | null, over = {}) => ({ date, eggsCollected: eggs, eggsBroken: 0, birds, birdsLost: 0, feedKg: 6, ...over })
 
@@ -61,5 +62,41 @@ describe("production for any farm", () => {
       { productId: "oil", made: 40, wasted: 2, days: 1 },
       { productId: "milk", made: 37.5, wasted: 0.5, days: 2 },
     ])
+  })
+})
+
+describe("big costs spread over time", () => {
+  const shed = { date: "2026-01-01", kind: "infrastructure", amountPaise: 12_000_000, spreadMonths: 12 } // ₹1,20,000 over a year
+
+  it("counts a one-off cost wholly on the day it was paid", () => {
+    const oneOff = { ...shed, spreadMonths: null }
+    expect(costInPeriod(oneOff, "2026-01-01", "2026-01-31")).toBe(12_000_000)
+    expect(costInPeriod(oneOff, "2026-02-01", "2026-02-28")).toBe(0)
+  })
+
+  it("shares a spread cost out by day: about a twelfth a month, nothing outside the year", () => {
+    expect(costInPeriod(shed, "2026-01-01", "2026-01-31")).toBe(Math.round((12_000_000 * 31) / 365))
+    expect(costInPeriod(shed, "2025-12-01", "2025-12-31")).toBe(0)
+    expect(costInPeriod(shed, "2027-01-01", "2027-01-31")).toBe(0)
+  })
+
+  it("adds up to exactly the amount paid over the whole spread, month by month", () => {
+    const months = Array.from({ length: 12 }, (_, i) => {
+      const from = addMonths("2026-01-01", i)
+      return costInPeriod(shed, from, addDays(addMonths(from, 1), -1))
+    })
+    expect(months.reduce((a, b) => a + b, 0)).toBe(12_000_000)
+  })
+
+  it("ends the day before the same date months later, also at month ends", () => {
+    expect(spreadEnd("2026-01-01", 12)).toBe("2026-12-31")
+    expect(spreadEnd("2026-01-31", 1)).toBe("2026-02-27")
+    expect(addMonths("2026-01-31", 1)).toBe("2026-02-28")
+    expect(addMonths("2028-01-31", 1)).toBe("2028-02-29")
+  })
+
+  it("keeps only the costs with a share in the period", () => {
+    const rows = costsInPeriod([shed, { date: "2026-03-05", kind: "labour", amountPaise: 500_000, spreadMonths: null }], "2026-02-01", "2026-02-28")
+    expect(rows.map((r) => r.kind)).toEqual(["infrastructure"])
   })
 })

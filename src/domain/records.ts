@@ -3,9 +3,10 @@
  * flock figures for poultry, expenses, and what they add up to (production, costs, profit).
  * Pure; money in paise, dates IST.
  */
+import { addDays, addMonths, daysBetween } from "./ist"
 
-/** "chicks" covers any animals bought (chicks, calves, goats). */
-export const EXPENSE_KINDS = ["raw_materials", "feed", "seeds", "medicine", "chicks", "labour", "transport", "electricity", "packing", "rent", "repairs", "other"] as const
+/** "chicks" covers any animals bought (chicks, calves, goats); "infrastructure" is building and equipment (a shed, cages, a borewell). */
+export const EXPENSE_KINDS = ["raw_materials", "feed", "seeds", "medicine", "chicks", "labour", "transport", "electricity", "packing", "rent", "repairs", "infrastructure", "other"] as const
 export type ExpenseKind = (typeof EXPENSE_KINDS)[number]
 
 export interface DayRecord {
@@ -83,6 +84,38 @@ export function costs(expenses: ExpenseRow[], prod: Pick<Production, "eggsCollec
     feedPerEggPaise: good > 0 && feed > 0 ? Math.round(feed / good) : null,
     costPerEggPaise: good > 0 && total > 0 ? Math.round(total / good) : null,
   }
+}
+
+// ── Big costs spread over time ────────────────────────────────────────────────
+
+/** How long a big cost can be spread: whole months, up to 10 years. */
+export const SPREAD_CHOICES = [6, 12, 24, 36, 60] as const
+export const MAX_SPREAD_MONTHS = 120
+
+/** The last day a spread cost covers: from the day it was paid, for that many months. */
+export const spreadEnd = (date: string, months: number) => addDays(addMonths(date, months), -1)
+
+/**
+ * The part of an expense that belongs to the period from–to. A one-off cost belongs wholly to the day it was paid;
+ * a spread cost is shared out by day over its months, so a ₹1,20,000 shed spread over a year counts about
+ * ₹10,000 a month in profit. The money paid out is still the full amount on the day it was paid.
+ */
+export function costInPeriod(e: { date: string; amountPaise: number; spreadMonths: number | null }, from: string, to: string): number {
+  if (!e.spreadMonths || e.spreadMonths < 2) return e.date >= from && e.date <= to ? e.amountPaise : 0
+  const end = spreadEnd(e.date, e.spreadMonths)
+  const start = e.date > from ? e.date : from
+  const stop = end < to ? end : to
+  if (stop < start) return 0
+  const total = daysBetween(e.date, end) + 1
+  // Count in whole paise, and make the shares of the whole spread add up to exactly the amount paid.
+  const before = Math.round((e.amountPaise * daysBetween(e.date, start)) / total)
+  const upTo = Math.round((e.amountPaise * (daysBetween(e.date, stop) + 1)) / total)
+  return upTo - before
+}
+
+/** Expenses as they count in a period's profit: one-off costs in it, plus each spread cost's share of it. */
+export function costsInPeriod<E extends { date: string; kind: string; amountPaise: number; spreadMonths: number | null }>(expenses: E[], from: string, to: string): (E & { amountPaise: number })[] {
+  return expenses.map((e) => ({ ...e, amountPaise: costInPeriod(e, from, to) })).filter((e) => e.amountPaise > 0)
 }
 
 /** Profit for the period: net sales (after returns) minus everything spent. */

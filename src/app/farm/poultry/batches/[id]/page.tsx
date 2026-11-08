@@ -222,7 +222,8 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
           startDate={batch.startDate}
           closedDate={batch.closedDate}
           closedText={batch.closedDate ? dayLabel(batch.closedDate, locale, labels) : null}
-          canDelete={dates.length === 0}
+          name={batch.name}
+          footprint={{ days: dates.length, lost: row.status.lost, doses: vaccinations.length, costPaise: row.money.chicksPaise + row.money.otherPaise }}
         />
       )}
     </div>

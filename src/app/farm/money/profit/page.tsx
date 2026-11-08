@@ -7,7 +7,7 @@ import { moneyTabs } from "@/lib/farm-sections"
 import { pick } from "@/lib/i18n-helpers"
 import { tenantDb } from "@/lib/tenant-db"
 import { formatRupees } from "@/domain/money"
-import { costs, production, productionTotals, profit } from "@/domain/records"
+import { costs, costsInPeriod, production, productionTotals, profit } from "@/domain/records"
 import { flockDays, lossesValued } from "@/domain/batches"
 import { loadReport } from "@/server/reports"
 import { batchBook } from "@/server/batches"
@@ -36,13 +36,16 @@ export default async function MoneyProfitPage({ searchParams }: { searchParams: 
   const [report, book, spendRows, entries] = await Promise.all([
     loadReport(tenant.id, range.from, range.to),
     features.poultryCare ? batchBook(tenant.id, range.to) : Promise.resolve(null),
-    db.expense.findMany({ where: inRange }),
+    // One-off costs paid in the period, and every spread cost that started before its end (its share is worked out below).
+    db.expense.findMany({ where: { date: { lte: range.to }, OR: [{ date: { gte: range.from } }, { spreadMonths: { not: null } }] } }),
     db.productionEntry.findMany({ where: inRange }),
   ])
   const made = productionTotals(entries)
   const madeProducts = made.length ? await db.product.findMany({ where: { id: { in: made.map((m) => m.productId) } } }) : []
   const prod = production(book ? flockDays(book.rows.map((r) => r.info), book.days, book.losses, range.from, range.to) : [])
-  const spent = costs(spendRows, prod)
+  const counted = costsInPeriod(spendRows, range.from, range.to)
+  const spent = costs(counted, prod)
+  const spreadShare = counted.filter((e) => e.spreadMonths).reduce((a, e) => a + e.amountPaise, 0)
   const s = report.summary
   const p = profit(s.netPaise, spent.totalPaise)
 
@@ -111,6 +114,7 @@ export default async function MoneyProfitPage({ searchParams }: { searchParams: 
               </div>
             </div>
           ))}
+          {spreadShare > 0 && <p className="text-sm text-muted-foreground">{tp("spreadIncluded", { amount: formatRupees(spreadShare) })}</p>}
           <Link href="/farm/money/spending" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
             {tp("seeSpending")} →
           </Link>
@@ -191,7 +195,7 @@ export default async function MoneyProfitPage({ searchParams }: { searchParams: 
         </section>
       )}
 
-      {spendRows.length === 0 && made.length === 0 && s.netPaise === 0 && <p className="rounded-2xl border bg-card p-4 text-muted-foreground">{t("noRecords")}</p>}
+      {counted.length === 0 && made.length === 0 && s.netPaise === 0 && <p className="rounded-2xl border bg-card p-4 text-muted-foreground">{t("noRecords")}</p>}
     </div>
   )
 }

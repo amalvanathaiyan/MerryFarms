@@ -501,7 +501,7 @@
       },
       "farmRecords": {
         "title": "Farm records and profit",
-        "hint": "What you make or collect each day, expenses, and profit in Reports."
+        "hint": "What you make or collect each day, expenses, and profit, under Money."
       },
       "poultryCare": {
         "title": "Poultry care",
@@ -703,7 +703,8 @@
       "eggsBrokenLine": "Eggs broken",
       "spoiledLine": "Spoiled: {product}",
       "feedStoreAsOf": "As on {day}.",
-      "otherDates": "Other dates"
+      "otherDates": "Other dates",
+      "export_expenses": "Expenses"
     },
     "area": {
       "title": "Delivery area",
@@ -760,7 +761,7 @@
     },
     "records": {
       "title": "Farm records",
-      "hint": "What you made or collected each day, and what the farm spends. Reports turn this into profit.",
+      "hint": "What you made or collected each day, and what the farm spends. Money → Profit turns this into profit.",
       "saved": "Saved",
       "date": "Date",
       "expenses": "Expenses",
@@ -768,7 +769,7 @@
       "amount": "Amount (₹)",
       "expenseNote": "Note (optional), e.g. 50 kg groundnuts",
       "addExpense": "Add expense",
-      "noExpenses": "No expenses this month yet.",
+      "noExpenses": "No expenses in this month.",
       "deleteExpense": "Delete expense",
       "kind_feed": "Animal feed",
       "kind_medicine": "Medicine / vet",
@@ -793,7 +794,20 @@
       "forBatch": "For which batch?",
       "wholeFarm": "Whole farm",
       "noProducts": "No products yet.",
-      "addProducts": "Add products"
+      "addProducts": "Add products",
+      "kind_infrastructure": "Building & equipment",
+      "spreadTitle": "Count it in profit",
+      "spreadNone": "All on the day paid",
+      "spreadMonths": "{count} months",
+      "spreadYears": "{count, plural, one {1 year} other {# years}}",
+      "spreadHint": "A shed or a machine lasts years. Spread its cost so one month doesn't look like a big loss.",
+      "spreadHintAmount": "Profit will count about {amount} a month. The full amount is still recorded as paid today.",
+      "spreadLine": "Spread over {months} months · about {amount} a month in profit",
+      "prevMonth": "Earlier",
+      "nextMonth": "Later",
+      "pickMonth": "Or pick a month",
+      "showMonth": "Show",
+      "downloadMonth": "Expenses Excel: {month}"
     },
     "batches": {
       "title": "Batches of birds",
@@ -901,7 +915,7 @@
       "feedTotal": "Feed so far",
       "goodEggs": "Good eggs",
       "moneyTitle": "This batch's money",
-      "moneyHint": "Only what was spent on this batch and what came from it. Labour, electricity and other farm costs are in Reports.",
+      "moneyHint": "Only what was spent on this batch and what came from it. Labour, electricity and other farm costs are under Money.",
       "moneyChicks": "Chicks bought",
       "moneyFeed": "Feed ({kg} kg)",
       "feedPriceUnknown": "Add feed bought with its kg",
@@ -919,7 +933,19 @@
       "batchCount": "{count, plural, =0 {No batches} one {# batch} other {# batches}}",
       "lookingAtFarm": "Showing the farm as it was on {day}.",
       "changeToday": "Change today's entry",
-      "enterTodayButton": "Enter today: feed, eggs, losses"
+      "enterTodayButton": "Enter today: feed, eggs, losses",
+      "deleteTitle": "Delete “{name}” for good?",
+      "deleteDays": "{count, plural, one {# day entered} other {# days entered}} will be removed",
+      "deleteLost": "{count, plural, one {# bird lost} other {# birds lost}} will be removed from the records",
+      "deleteDoses": "{count, plural, one {# vaccination} other {# vaccinations}} will be removed",
+      "deleteCosts": "Its costs ({amount}) will be removed from expenses",
+      "deleteCostsKept": "Its costs ({amount}) stay, as costs of the whole farm",
+      "deleteNoUndo": "This can't be undone. If the batch was real and is now over, use “Batch finished” instead.",
+      "deleteKeepCosts": "Keep its costs (the money was really spent)",
+      "deleteType": "To confirm, type the batch name: {name}",
+      "deleteForGood": "Delete for good",
+      "deleteConfirmCosts": "Delete this batch? Its chick cost ({amount}) will be removed from expenses too.",
+      "deleteOrFinish": "A batch that has ended: use “Batch finished”. A wrong one (a test, a duplicate): Delete."
     },
     "vaccines": {
       "title": "Vaccinations",
@@ -1134,7 +1160,8 @@
       "profit": "Profit",
       "whereWent": "Where the money went",
       "seeSpending": "See all spending",
-      "birdsLost": "{count, plural, one {# bird lost} other {# birds lost}}"
+      "birdsLost": "{count, plural, one {# bird lost} other {# birds lost}}",
+      "spreadIncluded": "Includes {amount}: this period's share of costs spread over months (buildings, equipment)."
     }
   },
   "login": {
@@ -1289,12 +1316,12 @@
     "batch_count_below_out": "More birds have already left this batch than that. Check the number.",
     "batch_start_after_entries": "There are entries before that day. Pick an earlier first day.",
     "batch_entries_after_close": "There are entries after that day. Pick a later last day.",
-    "batch_has_entries": "This batch has days entered, so it can't be deleted. Finish it instead.",
     "vaccine_name_required": "Write the vaccine's name.",
     "vaccine_day_required": "Pick the day it was given or is to be given.",
     "vaccine_birds_invalid": "Birds given can't be more than the batch had.",
     "vaccine_not_found": "That vaccination wasn't found.",
-    "vaccine_in_plan": "That vaccine is already in the plan at that age."
+    "vaccine_in_plan": "That vaccine is already in the plan at that age.",
+    "batch_confirm_name": "Type the batch's name exactly to delete it."
   },
   "my": {
     "connectTitle": "Connect with the farm",
