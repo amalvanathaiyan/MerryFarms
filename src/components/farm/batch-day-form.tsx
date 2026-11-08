@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input"
 import { saveBatchDayAction } from "@/app/actions/batches"
 import { LOSS_CAUSES } from "@/domain/batches"
 import { NumberStepper } from "./number-stepper"
+import { EntryBlock } from "./entry-block"
+import { ArrowRightLeft, Egg, TriangleAlert, Wheat } from "lucide-react"
 
 export interface DayEntry {
   date: string
@@ -67,21 +69,10 @@ export function BatchDayForm({
   const td = useTranslations("farm.dayAll")
 
   const edit = (patch: Partial<typeof v>) => (setSaved(false), setV({ ...v, ...patch }))
-  const box = (label: string, value: string, onChange: (s: string) => void, decimal = false) => (
-    <label className="flex flex-col gap-1.5 text-sm font-semibold">
-      {label}
-      <Input
-        type="number"
-        min={0}
-        step={decimal ? "0.5" : "1"}
-        inputMode={decimal ? "decimal" : "numeric"}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-12 text-lg font-normal tabular-nums"
-      />
-    </label>
-  )
-
+  const lostCount = Object.values(v.losses).reduce((a, x) => a + (Number(x) || 0), 0)
+  const outCount = (Number(v.sold) || 0) + (Number(v.given) || 0)
+  const [openLost, setOpenLost] = useState(() => lostCount > 0)
+  const [openOut, setOpenOut] = useState(() => outCount > 0)
   return (
     <form
       className="flex flex-col gap-4 rounded-2xl border bg-card p-4"
@@ -117,46 +108,52 @@ export function BatchDayForm({
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="col-span-2 flex flex-col gap-1.5">
-          <NumberStepper label={t("feedKg")} value={v.feedKg} onChange={(s) => edit({ feedKg: s })} decimal />
-          {lastFeed != null && v.feedKg !== String(lastFeed) && (
-            <button type="button" onClick={() => edit({ feedKg: String(lastFeed) })} className="self-start rounded-full border-2 border-dashed border-primary px-3 py-1 text-sm font-semibold text-primary">
-              {td("sameAsLast", { kg: lastFeed })}
-            </button>
-          )}
-        </div>
-        {showEggs && <NumberStepper label={t("eggsCollected")} value={v.eggsCollected} onChange={(s) => edit({ eggsCollected: s })} />}
-        {showEggs && <NumberStepper label={t("eggsBroken")} value={v.eggsBroken} onChange={(s) => edit({ eggsBroken: s })} />}
-      </div>
+      <EntryBlock icon={Wheat} title={td("blockFeed")}>
+        <NumberStepper label={td("feedKgGiven")} value={v.feedKg} onChange={(s) => edit({ feedKg: s })} decimal />
+        {lastFeed != null && v.feedKg !== String(lastFeed) && (
+          <button type="button" onClick={() => edit({ feedKg: String(lastFeed) })} className="self-start rounded-full border-2 border-dashed border-primary px-3 py-1 text-sm font-semibold text-primary">
+            {td("sameAsLast", { kg: lastFeed })}
+          </button>
+        )}
+      </EntryBlock>
 
-      <fieldset className="flex flex-col gap-2 rounded-xl border border-dashed p-3">
-        <legend className="px-1 text-sm font-semibold">{t("lostToday")}</legend>
-        <p className="text-xs text-muted-foreground">{t("lostTodayHint")}</p>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4">
+      {showEggs && (
+        <EntryBlock icon={Egg} title={td("blockEggs")}>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+            <NumberStepper size="sm" label={td("eggsGot")} value={v.eggsCollected} onChange={(s) => edit({ eggsCollected: s })} />
+            <NumberStepper size="sm" label={td("eggsBrokenShort")} value={v.eggsBroken} onChange={(s) => edit({ eggsBroken: s })} />
+          </div>
+        </EntryBlock>
+      )}
+
+      <EntryBlock
+        icon={TriangleAlert}
+        title={td("blockLost")}
+        tone={lostCount > 0 ? "bad" : undefined}
+        summary={lostCount > 0 ? td("lostCount", { count: lostCount }) : td("noneTapToAdd")}
+        open={openLost}
+        onToggle={() => setOpenLost(!openLost)}
+      >
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
           {LOSS_CAUSES.map((c) => (
-            <label key={c} className="flex flex-col gap-1 text-sm font-medium">
-              {t(`cause_${c}`)}
-              <Input
-                type="number"
-                min={0}
-                step="1"
-                inputMode="numeric"
-                value={v.losses[c]}
-                onChange={(e) => edit({ losses: { ...v.losses, [c]: e.target.value } })}
-                className="h-11 font-normal tabular-nums"
-              />
-            </label>
+            <NumberStepper key={c} size="sm" label={t(`cause_${c}`)} value={v.losses[c]} onChange={(s) => edit({ losses: { ...v.losses, [c]: s } })} />
           ))}
         </div>
-      </fieldset>
+      </EntryBlock>
 
-      <div className="grid grid-cols-3 gap-3">
-        {box(t("sold"), v.sold, (s) => edit({ sold: s }))}
-        {box(t("soldFor"), v.soldRupees, (s) => edit({ soldRupees: s }), true)}
-        {box(t("given"), v.given, (s) => edit({ given: s }))}
-      </div>
-      <p className="-mt-2 text-xs text-muted-foreground">{t("soldHint")}</p>
+      <EntryBlock
+        icon={ArrowRightLeft}
+        title={td("blockOut")}
+        summary={outCount > 0 ? td("outSummary", { sold: Number(v.sold) || 0, given: Number(v.given) || 0 }) : td("noneTapToAdd")}
+        open={openOut}
+        onToggle={() => setOpenOut(!openOut)}
+      >
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+          <NumberStepper size="sm" label={t("sold")} value={v.sold} onChange={(s) => edit({ sold: s })} />
+          <NumberStepper size="sm" label={t("given")} value={v.given} onChange={(s) => edit({ given: s })} />
+        </div>
+        <p className="text-xs text-muted-foreground">{td("outHint")}</p>
+      </EntryBlock>
 
       <label className="flex flex-col gap-1.5 text-sm font-semibold">
         {t("note")}

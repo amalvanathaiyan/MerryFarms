@@ -58,8 +58,8 @@ export function ProductionSection({ today, products, entries, toStock }: { today
         {products.map((p) => (
           <div key={p.id} className="contents">
             <div className="min-w-0 self-center">
-              <div className="truncate text-sm font-medium">{p.name}</div>
-              <div className="truncate text-xs text-muted-foreground">
+              <div className="text-sm leading-snug font-medium wrap-anywhere">{p.name}</div>
+              <div className="text-xs leading-snug text-muted-foreground wrap-anywhere">
                 {p.pack} · {unitName(p.unit)}
               </div>
             </div>

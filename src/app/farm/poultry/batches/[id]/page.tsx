@@ -122,7 +122,7 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
 
       {/* A thin, light bar that stays pinned under the app header: which batch this page is about, while scrolling. */}
       <div className="sticky z-10 -mx-4 -my-2 flex items-center gap-2 border-b bg-sec-poultry-tint/95 px-4 py-2 text-sm backdrop-blur sm:-mx-6 sm:px-6 lg:mx-0 lg:rounded-xl lg:border" style={{ top: "var(--app-header-h, 66px)" }}>
-        <span className="min-w-0 truncate">
+        <span className="line-clamp-2 min-w-0 leading-snug">
           <b className="text-base">{batch.name}</b> · {t("batchNo", { number: batch.number })} · {t("ageDays", { days: Math.max(0, s.ageDays) })} · {t("aliveCount", { count: s.alive })}
         </span>
       </div>
