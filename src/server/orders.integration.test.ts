@@ -308,6 +308,7 @@ describe("farm-side orders and edits", () => {
     expect(o.status).toBe("to_confirm") // WhatsApp orders wait for a call
     await db().product.updateMany({ where: { id: "p-eggs" }, data: { pricePaise: 45_000 } }) // price rises afterwards
     const stockBefore = await eggsStock()
+    const firstAdded = (await db().orderItem.findFirstOrThrow({ where: { orderId: o.id } })).createdAt
 
     const totals = await svc.editOrder(merry, o.id, { items: [{ productId: "p-eggs", qty: 3 }], slotKey: "2026-10-23|slot-am", address: {}, paymentMethod: "cash_on_delivery", note: "3 trays" }, "staff-1", NOW)
     expect(totals).toMatchObject({ subtotalPaise: 117_000, deliveryFeePaise: 0, totalPaise: 117_000 }) // 3 × the agreed ₹390
@@ -315,6 +316,7 @@ describe("farm-side orders and edits", () => {
     const after = (await db().order.findFirst({ where: { id: o.id }, include: { items: true, events: true } }))!
     expect(after).toMatchObject({ status: "to_confirm", paymentMethod: "cash_on_delivery", note: "3 trays" })
     expect(after.items).toHaveLength(1)
+    expect(after.items[0].createdAt).toEqual(firstAdded) // the item keeps the time it was first added
     expect(after.events.map((e) => e.note)).toContain("edited")
 
     // Fewer items put stock back.
