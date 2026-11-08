@@ -35,6 +35,18 @@ export async function createSSRClient() {
 }
 
 /**
+ * Asks for emailed links that work in any browser. The default kind only opens in the browser that asked for it,
+ * and people often read their email somewhere else.
+ */
+export function createEmailLinkClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { flowType: "implicit", autoRefreshToken: false, persistSession: false } }
+  )
+}
+
+/**
  * Service-role Supabase client for privileged server-only operations (creating staff logins).
  * Never expose this to the client.
  */

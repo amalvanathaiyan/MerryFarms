@@ -87,11 +87,6 @@ export function LoginForm({ next, forAdmin, farmKnown }: { next: string; forAdmi
           <Link href="/forgot-password" className="font-medium text-primary underline underline-offset-2">
             {t("forgot")}
           </Link>
-          {!forAdmin && (
-            <Link href="/register" className="font-medium text-primary underline underline-offset-2">
-              {t("registerLink")}
-            </Link>
-          )}
         </div>
       ) : (
         <p className="text-center text-sm text-muted-foreground">{t("staffForgot")}</p>
