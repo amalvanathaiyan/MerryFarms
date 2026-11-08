@@ -1,18 +1,23 @@
 import { getTenant } from "@/lib/tenant"
 
 /**
- * The install manifest, per farm: a customer who adds the shop to their Home Screen gets
- * the farm's own name, not the platform's.
+ * The install manifest, per farm. Two apps can be installed from one farm's address:
+ *   /app-manifest          the shop, for customers (opens the shop);
+ *   /app-manifest?app=farm the farm app, for the owner and staff (opens straight into /farm).
+ * Each has its own id, so a phone can have both icons, and each carries the farm's own name.
  */
-export async function GET() {
+export async function GET(request: Request) {
   const tenant = await getTenant()
+  const farmApp = new URL(request.url).searchParams.get("app") === "farm"
   const tamil = !tenant || tenant.defaultLanguage === "ta"
-  const name = tenant ? (tamil ? tenant.nameTa : tenant.nameEn) : "FarmForYou"
+  const farmName = tenant ? (tamil ? tenant.nameTa : tenant.nameEn) : "FarmForYou"
   const manifest = {
-    name,
-    short_name: tenant ? tenant.nameEn : "FarmForYou",
-    description: tenant ? `${tenant.nameEn} — farm-fresh orders` : "Farm-fresh orders from local farms",
-    start_url: "/",
+    id: farmApp ? "/farm" : "/",
+    name: farmApp ? `${farmName} · ${tamil ? "பண்ணை ஆப்" : "Farm app"}` : farmName,
+    short_name: farmApp ? `${tenant ? tenant.nameEn : "FarmForYou"} Farm` : tenant ? tenant.nameEn : "FarmForYou",
+    description: farmApp ? `${tenant?.nameEn ?? "FarmForYou"} — orders, birds and money` : tenant ? `${tenant.nameEn} — farm-fresh orders` : "Farm-fresh orders from local farms",
+    start_url: farmApp ? "/farm" : "/",
+    scope: "/",
     display: "standalone",
     background_color: "#f4f6ee",
     theme_color: "#f4f6ee",

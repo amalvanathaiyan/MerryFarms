@@ -757,7 +757,9 @@
       "passwordFor": "Temporary password for {name}",
       "copy": "Copy",
       "passwordHint": "Send it to them privately (e.g. on WhatsApp). It is shown only now; you can make a new one any time.",
-      "done": "Done"
+      "done": "Done",
+      "role_manager": "Manager",
+      "roleHint_manager": "Add farm expenses like labour and electricity. Can't see totals, sales or profit."
     },
     "records": {
       "title": "Farm records",
@@ -807,7 +809,10 @@
       "nextMonth": "Later",
       "pickMonth": "Or pick a month",
       "showMonth": "Show",
-      "downloadMonth": "Expenses Excel: {month}"
+      "downloadMonth": "Expenses Excel: {month}",
+      "managerHint": "You see only the expenses you entered. The owner sees all of them.",
+      "noOwnExpenses": "You haven't added any expenses in this month.",
+      "managerTitleHint": "Add what the farm spends"
     },
     "batches": {
       "title": "Batches of birds",
@@ -1162,6 +1167,16 @@
       "seeSpending": "See all spending",
       "birdsLost": "{count, plural, one {# bird lost} other {# birds lost}}",
       "spreadIncluded": "Includes {amount}: this period's share of costs spread over months (buildings, equipment)."
+    },
+    "install": {
+      "title": "Keep the farm app one tap away",
+      "hint": "Install it once: it then opens from its own icon on your phone or computer, like any app. No need to look for the link again.",
+      "button": "Install the app",
+      "close": "Not now",
+      "iosStep1": "Tap <icon></icon> Share at the bottom of the screen",
+      "iosStep2": "Choose <icon></icon> Add to Home Screen",
+      "shareIcon": "Share",
+      "menuHint": "Open your browser's menu (⋮ or …) and choose “Install app” or “Add to Home screen”."
     }
   },
   "login": {
@@ -1321,7 +1336,8 @@
     "vaccine_birds_invalid": "Birds given can't be more than the batch had.",
     "vaccine_not_found": "That vaccination wasn't found.",
     "vaccine_in_plan": "That vaccine is already in the plan at that age.",
-    "batch_confirm_name": "Type the batch's name exactly to delete it."
+    "batch_confirm_name": "Type the batch's name exactly to delete it.",
+    "not_your_expense": "You can only delete expenses you entered."
   },
   "my": {
     "connectTitle": "Connect with the farm",

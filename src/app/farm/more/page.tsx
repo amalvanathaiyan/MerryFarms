@@ -8,6 +8,7 @@ import { signOut } from "@/app/actions/auth"
 import { SectionHeader } from "@/components/farm/section-header"
 import { SectionIcon } from "@/components/farm/section-icon"
 import { cn } from "@/lib/utils"
+import { InstallApp } from "@/components/install-app"
 
 /** Everything that isn't a daily job, as big coloured tiles: one picture, one word, one line of help. */
 export default async function MorePage() {
@@ -39,6 +40,7 @@ export default async function MorePage() {
           )
         })}
       </ul>
+      <InstallApp variant="panel" />
       <form action={signOut}>
         <button type="submit" className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl border-2 border-destructive/30 bg-card text-base font-bold text-destructive hover:bg-destructive/10">
           <LogOut className="size-5" aria-hidden /> {tm("signOut")}

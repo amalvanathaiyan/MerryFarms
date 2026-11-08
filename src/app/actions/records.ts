@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-import { OWNER_ONLY, requireStaff } from "@/lib/auth"
+import { requireStaff } from "@/lib/auth"
 import { featuresOf } from "@/lib/features"
 import { istDate } from "@/domain/ist"
 import { rupeesToPaise } from "@/domain/money"
@@ -32,14 +32,16 @@ export async function addExpense(raw: unknown): Promise<Result> {
     })
     .safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_form" }
-  const { db, tenant, staff } = await requireStaff(OWNER_ONLY)
+  const { db, tenant, staff } = await requireStaff(["owner", "manager"])
   if (!featuresOf(tenant).farmRecords) return { ok: false, error: "feature_off" }
+  const isOwner = staff.roles.includes("owner")
   const d = parsed.data
   if (d.date > istDate(new Date())) return { ok: false, error: "record_future" }
   // Feed kg and batches belong to poultry care; without it, an expense is just an amount.
   const poultry = featuresOf(tenant).poultryCare
   // Feed is never spread: it is priced by what each batch eats. A spread cost is the whole farm's, never one batch's.
-  const spreadMonths = d.kind === "feed" ? null : (d.spreadMonths ?? null)
+  // Spreading changes how profit counts a cost, so only the owner decides it.
+  const spreadMonths = d.kind === "feed" || !isOwner ? null : (d.spreadMonths ?? null)
   const batchId = !poultry || d.kind === "feed" || spreadMonths ? null : (d.batchId ?? null)
   if (batchId && !(await db.batch.findFirst({ where: { id: batchId }, select: { id: true } }))) return { ok: false, error: "batch_not_found" }
   await db.expense.create({
@@ -59,9 +61,12 @@ export async function addExpense(raw: unknown): Promise<Result> {
   return { ok: true }
 }
 
+/** The owner can delete any expense; a manager only the ones they entered. */
 export async function deleteExpense(id: string): Promise<Result> {
-  const { db } = await requireStaff(OWNER_ONLY)
-  await db.expense.deleteMany({ where: { id } })
+  const { db, staff } = await requireStaff(["owner", "manager"])
+  const isOwner = staff.roles.includes("owner")
+  const { count } = await db.expense.deleteMany({ where: isOwner ? { id } : { id, byStaffId: staff.id } })
+  if (count === 0 && !isOwner) return { ok: false, error: "not_your_expense" }
   revalidatePath("/farm", "layout")
   return { ok: true }
 }
