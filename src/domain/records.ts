@@ -91,14 +91,6 @@ export function profit(netSalesPaise: number, expensesPaise: number) {
   return { profitPaise: p, marginPct: netSalesPaise > 0 ? Math.round((p / netSalesPaise) * 100) : null }
 }
 
-/** Basic sense checks on a day's entry. */
-export function checkDayRecord(r: Omit<DayRecord, "date">): string | null {
-  for (const v of [r.eggsCollected, r.eggsBroken, r.birds, r.birdsLost]) if (v != null && (!Number.isInteger(v) || v < 0)) return "record_invalid"
-  if (r.feedKg != null && (r.feedKg < 0 || r.feedKg > 100_000)) return "record_invalid"
-  if (r.eggsBroken != null && r.eggsCollected != null && r.eggsBroken > r.eggsCollected) return "broken_more_than_collected"
-  return null
-}
-
 // ── Production per product (any farm) ─────────────────────────────────────────
 
 export interface ProductionRow {
@@ -135,5 +127,3 @@ export function productionTotals(rows: ProductionRow[]): { productId: string; ma
   return [...by.values()].map((t) => ({ ...t, made: round(t.made), wasted: round(t.wasted) })).sort((a, b) => b.made - a.made)
 }
 
-/** Poultry figures matter for farms with eggs or birds on their categories (or old flock records). */
-export const keepsPoultry = (categoryKinds: (string | null)[], hasFlockRecords: boolean) => hasFlockRecords || categoryKinds.some((k) => k === "egg" || k === "chicken")
