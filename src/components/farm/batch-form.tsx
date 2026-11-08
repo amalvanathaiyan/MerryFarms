@@ -29,12 +29,15 @@ const num = (v: string) => (v.trim() === "" ? null : Number(v))
 /** Adds a batch (bought in or hatched here), or changes one. */
 export function BatchForm({
   id,
+  number,
   today,
   initial,
   parents,
 }: {
   /** Set when changing a batch. */
   id?: string
+  /** The batch's number, when changing it (it can be renumbered). */
+  number?: number
   today: string
   initial: BatchFormValues
   parents: { id: string; name: string }[]
@@ -46,6 +49,7 @@ export function BatchForm({
   const [error, setError] = useState<string | null>(null)
   const [v, setV] = useState(initial)
   const [cost, setCost] = useState("")
+  const [batchNo, setBatchNo] = useState(number != null ? String(number) : "")
   const set = (k: keyof BatchFormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setV({ ...v, [k]: e.target.value })
   const bought = v.source === "bought"
 
@@ -99,7 +103,7 @@ export function BatchForm({
             eggValueRupees: num(v.eggValueRupees),
             note: v.note || undefined,
           }
-          const r = id ? await editBatch(id, input) : await addBatch({ ...input, chicksCostRupees: bought ? num(cost) : null })
+          const r = id ? await editBatch(id, { ...input, number: num(batchNo) ?? undefined }) : await addBatch({ ...input, chicksCostRupees: bought ? num(cost) : null })
           if (!r.ok) return setError(te.has(r.error) ? te(r.error) : te("generic"))
           router.push(`/farm/poultry/batches/${id ?? r.id}`)
         })
@@ -119,6 +123,8 @@ export function BatchForm({
         <span className="text-sm font-semibold">{t("whatFor")}</span>
         {chips("purpose", BATCH_PURPOSES)}
       </div>
+
+      {id && field(t("batchNumber"), <Input required type="number" min={1} max={9999} inputMode="numeric" value={batchNo} onChange={(e) => setBatchNo(e.target.value)} className="h-12 w-32 text-lg font-normal tabular-nums" />, t("batchNumberHint"))}
 
       <div className="grid gap-3 sm:grid-cols-2">
         {field(t("name"), <Input value={v.name} maxLength={60} onChange={set("name")} placeholder={t("namePlaceholder")} className="h-12 font-normal" />)}

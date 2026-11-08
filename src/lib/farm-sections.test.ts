@@ -43,6 +43,7 @@ describe("the bottom menu", () => {
     expect(lit("/farm")).toEqual(["today"])
     expect(lit("/farm/orders/abc/edit")).toEqual(["orders"])
     expect(lit("/farm/poultry/batches/abc")).toEqual(["poultry"])
+    expect(lit("/farm/poultry/costs")).toEqual(["poultry"])
     expect(lit("/farm/money/profit")).toEqual(["money"])
     expect(lit("/farm/customers/abc")).toEqual(["more"])
     expect(lit("/farm/settings/look")).toEqual(["more"])

@@ -294,3 +294,20 @@ describe("deleting a wrong batch", () => {
     expect(await tenantDb(T1).batch.count({ where: { id } })).toBe(1)
   })
 })
+
+describe("renumbering a batch", () => {
+  it("lets a batch take a number freed by deleting a test batch, and refuses one in use", async () => {
+    const db = tenantDb(T2)
+    const test = await batches.createBatch(T2, "s1", { ...input({ name: "Test" }), chicksCostPaise: null }, TODAY)
+    const real = await batches.createBatch(T2, "s1", { ...input(), chicksCostPaise: null }, TODAY)
+    expect([test.number, real.number, real.name]).toEqual([1, 2, "#2"])
+    const asInput = (b: typeof real) => ({ name: b.name, breed: b.breed, purpose: b.purpose, source: b.source, supplier: b.supplier, startDate: b.startDate, ageAtStartDays: b.ageAtStartDays, startCount: b.startCount, eggsSet: b.eggsSet, parentBatchId: b.parentBatchId, eggValuePaise: b.eggValuePaise, note: b.note })
+    expect(await code(batches.updateBatch(T2, real.id, asInput(real), TODAY, 1))).toBe("batch_number_taken")
+    await batches.deleteBatch(T2, test.id)
+    await batches.updateBatch(T2, real.id, asInput(real), TODAY, 1)
+    const after = await db.batch.findFirstOrThrow({ where: { id: real.id } })
+    expect([after.number, after.name]).toEqual([1, "#1"])
+    const next = await batches.createBatch(T2, "s1", { ...input({ name: "Next" }), chicksCostPaise: null }, TODAY)
+    expect(next.number).toBe(2)
+  })
+})

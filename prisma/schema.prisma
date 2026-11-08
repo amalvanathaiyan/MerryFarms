@@ -136,6 +136,9 @@ model Tenant {
   nameEn          String
   status          TenantStatus @default(trial)
   plan            Plan         @default(free)
+  /// Eggs in store: one count shared by every egg product (tray of 30, pack of 12). Each egg product's stockQty
+  /// is always floor(eggStore / eggsPerUnit); see src/server/stock.ts.
+  eggStore        Int          @default(0)
   trialEndsAt     DateTime?
   defaultLanguage Language     @default(ta)
   phone           String // farm contact number shown to customers
@@ -289,6 +292,9 @@ model Product {
   offerEndsOn     String? // last IST day of the offer, "2026-10-25"; null = until removed
   stockQty        Int       @default(0)
   stockUnit       String    @default("packs")
+  /// Eggs in one unit of this product (30 in a tray, 12 in a pack); set only for egg products, which then take
+  /// their stock from the farm's egg store.
+  eggsPerUnit     Int?
   hsn             String?
   gstRate         Int       @default(0) // percent; 0 = exempt
   imageUrl        String?

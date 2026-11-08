@@ -284,7 +284,12 @@
       "art_spices": "Spices",
       "art_pickles": "Pickles & homemade",
       "art_plants": "Plants & seeds",
-      "art_basket": "Other"
+      "art_basket": "Other",
+      "eggsPerUnit": "Eggs in one (for egg trays and packs)",
+      "notEggs": "Not eggs",
+      "eggsPerUnitHint": "{count} eggs in one. Its stock comes from the egg store: selling one takes {count} eggs out.",
+      "eggsPerUnitOff": "For eggs, pick how many are in one. Its stock then comes from the shared egg store.",
+      "fromEggStore": "from the egg store"
     },
     "slots": {
       "title": "Delivery slots",
@@ -812,7 +817,8 @@
       "downloadMonth": "Expenses Excel: {month}",
       "managerHint": "You see only the expenses you entered. The owner sees all of them.",
       "noOwnExpenses": "You haven't added any expenses in this month.",
-      "managerTitleHint": "Add what the farm spends"
+      "managerTitleHint": "Add what the farm spends",
+      "eggsFromBatches": "Eggs come in from Poultry care: enter them on each batch's day, and they go into the egg store."
     },
     "batches": {
       "title": "Batches of birds",
@@ -869,7 +875,7 @@
       "parentBatch": "Eggs from batch (optional)",
       "parentNone": "Not known",
       "eggValue": "Value of one egg (₹, optional)",
-      "eggValueHint": "Used to count this batch's eggs in its profit.",
+      "eggValueHint": "Used to put a value on broken eggs in Losses.",
       "note": "Note (optional)",
       "notePlaceholder": "e.g. birds looked dull, rain",
       "saveBatch": "Save changes",
@@ -919,18 +925,13 @@
       "hatchLine": "{hatched} hatched from {set} eggs ({rate}%)",
       "feedTotal": "Feed so far",
       "goodEggs": "Good eggs",
-      "moneyTitle": "This batch's money",
-      "moneyHint": "Only what was spent on this batch and what came from it. Labour, electricity and other farm costs are under Money.",
+      "moneyTitle": "This batch's costs",
+      "moneyHint": "What was spent on this batch. Labour, electricity and other farm costs are under Money.",
       "moneyChicks": "Chicks bought",
       "moneyFeed": "Feed ({kg} kg)",
       "feedPriceUnknown": "Add feed bought with its kg",
       "moneyOther": "Medicine and other",
-      "moneyCost": "Spent",
-      "moneySold": "Birds sold ({count})",
-      "moneyEggs": "Eggs ({count})",
-      "eggValueUnknown": "Set an egg value",
-      "moneyIn": "Came in",
-      "moneyMargin": "Profit",
+      "moneyCost": "Spent so far",
       "costPerBird": "Cost per chick so far: {amount}",
       "costPerEgg": "Cost per good egg: {amount}",
       "lostValue": "Birds lost are worth {amount}",
@@ -950,7 +951,11 @@
       "deleteType": "To confirm, type the batch name: {name}",
       "deleteForGood": "Delete for good",
       "deleteConfirmCosts": "Delete this batch? Its chick cost ({amount}) will be removed from expenses too.",
-      "deleteOrFinish": "A batch that has ended: use “Batch finished”. A wrong one (a test, a duplicate): Delete."
+      "deleteOrFinish": "A batch that has ended: use “Batch finished”. A wrong one (a test, a duplicate): Delete.",
+      "enterAllToday": "Enter today for all batches",
+      "changeAllToday": "Change today's entries",
+      "batchNumber": "Batch number",
+      "batchNumberHint": "Change it if a deleted test batch left a gap (e.g. make Batch 2 into Batch 1)."
     },
     "vaccines": {
       "title": "Vaccinations",
@@ -1103,7 +1108,7 @@
         "batches": "Batches",
         "vaccines": "Vaccines",
         "feed": "Feed",
-        "profit": "Profit"
+        "costs": "Costs"
       },
       "money": {
         "sales": "Sales",
@@ -1145,20 +1150,6 @@
       "history": "Feed bought",
       "noKg": "Kg not given"
     },
-    "poultryProfit": {
-      "none": "No batches in this period.",
-      "chicks": "Chicks bought",
-      "feed": "Feed eaten ({kg} kg)",
-      "feedUnknown": "Add feed bought with its kg",
-      "medicine": "Medicine and vaccines",
-      "spent": "Spent",
-      "cameIn": "Came in (birds and eggs)",
-      "profitSoFar": "Profit so far",
-      "perChick": "Each chick has cost {amount} so far.",
-      "lostTitle": "Birds lost",
-      "noLosses": "No birds lost in this period.",
-      "lostHint": "Each bird at what its batch had cost per chick."
-    },
     "moneyProfit": {
       "sales": "Sales",
       "spent": "Spent",
@@ -1177,6 +1168,55 @@
       "iosStep2": "Choose <icon></icon> Add to Home Screen",
       "shareIcon": "Share",
       "menuHint": "Open your browser's menu (⋮ or …) and choose “Install app” or “Add to Home screen”."
+    },
+    "dayAll": {
+      "title": "Enter today",
+      "titleDay": "Enter {day}",
+      "hint": "Every batch on one screen. Only what you change is saved.",
+      "backToBatches": "Batches",
+      "day": "Day",
+      "none": "No batches were on the farm on this day.",
+      "alive": "{count, plural, one {# bird} other {# birds}} at the start of the day",
+      "saved": "Saved",
+      "alreadyEntered": "Entered",
+      "sameAsLast": "Same as last time: {kg} kg",
+      "anyLost": "Any birds lost?",
+      "lostCount": "{count, plural, one {# bird lost} other {# birds lost}}",
+      "anyBroken": "Some eggs broken?",
+      "anySold": "Sold or gave birds?",
+      "moreOnBatch": "Note, history and vaccines on the batch",
+      "saving": "Saving…",
+      "saveCount": "{count, plural, one {Save # batch} other {Save # batches}}",
+      "allSaved": "All saved",
+      "save": "Save"
+    },
+    "eggStore": {
+      "title": "Eggs in store",
+      "eggs": "{count, plural, one {# egg} other {# eggs}}",
+      "canPack": "{count} can be packed",
+      "hint": "Selling a tray or pack takes its eggs out of the store. Count the eggs now and then and set the number here.",
+      "hintBatches": "Good eggs entered on the batches come in here by themselves; selling a tray or pack takes its eggs out. Count now and then and set the number if it's different.",
+      "counted": "Eggs counted in the store",
+      "save": "Save",
+      "count": "I counted the eggs"
+    },
+    "poultryCosts": {
+      "none": "No batches in this period.",
+      "chicks": "Chicks bought",
+      "feed": "Feed eaten ({kg} kg)",
+      "feedUnknown": "Add feed bought with its kg",
+      "medicine": "Medicine and vaccines",
+      "spent": "Spent so far",
+      "perBird": "Cost per bird",
+      "perBirdHint": "{count, plural, one {for the # bird alive} other {for the # birds alive}}",
+      "perEgg": "Cost per egg",
+      "perEggHint": "{count, plural, one {over # good egg} other {over # good eggs}}",
+      "lost": "Birds lost",
+      "lostHintShort": "at what each had cost",
+      "lostTitle": "Birds lost in this period",
+      "noLosses": "No birds lost in this period.",
+      "lostHint": "Each bird at what its batch had cost per chick.",
+      "profitIsFarms": "The farm's real profit, from actual sales, is under Money → Profit"
     }
   },
   "login": {
@@ -1337,7 +1377,8 @@
     "vaccine_not_found": "That vaccination wasn't found.",
     "vaccine_in_plan": "That vaccine is already in the plan at that age.",
     "batch_confirm_name": "Type the batch's name exactly to delete it.",
-    "not_your_expense": "You can only delete expenses you entered."
+    "not_your_expense": "You can only delete expenses you entered.",
+    "batch_number_taken": "Another batch already has that number. Pick a different one."
   },
   "my": {
     "connectTitle": "Connect with the farm",
