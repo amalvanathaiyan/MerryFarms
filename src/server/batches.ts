@@ -3,6 +3,8 @@ import { tenantDb } from "@/lib/tenant-db"
 import { batchMoney, batchStatus, checkBatch, checkBatchDay, feedStore, outOnDay, type BatchDayRow, type BatchInfo, type BatchLossRow } from "@/domain/batches"
 import { OrderError } from "./orders"
 import { planNewBatch } from "./vaccinations"
+import { addEggs } from "./stock"
+import { eggsChange, goodEggs } from "@/domain/eggs"
 
 /** Everything about a farm's batches; a small farm has a few batches and a few hundred day rows, so all of it at once. */
 export async function loadBatches(tenantId: string) {
@@ -113,7 +115,11 @@ export async function createBatch(tenantId: string, staffId: string, input: Batc
   }
 }
 
-export async function updateBatch(tenantId: string, id: string, input: BatchInput, today: string) {
+/**
+ * Changes a batch's details. `number` renumbers it (after a test batch was deleted, say): it must be free on the
+ * farm, and a batch still called by its number ("#2") takes the new one.
+ */
+export async function updateBatch(tenantId: string, id: string, input: BatchInput, today: string, number?: number) {
   const db = tenantDb(tenantId)
   const batch = await db.batch.findFirst({ where: { id } })
   if (!batch) throw new OrderError("batch_not_found")
@@ -121,7 +127,11 @@ export async function updateBatch(tenantId: string, id: string, input: BatchInpu
   const problem = checkBatch(input, today, existing)
   if (problem) throw new OrderError(problem)
   if (input.parentBatchId === id) throw new OrderError("record_invalid")
-  await db.batch.updateMany({ where: { id }, data: { ...input, name: input.name || `#${batch.number}` } })
+  const newNumber = number ?? batch.number
+  if (!Number.isInteger(newNumber) || newNumber < 1 || newNumber > 9999) throw new OrderError("record_invalid")
+  if (newNumber !== batch.number && (await db.batch.findFirst({ where: { number: newNumber, id: { not: id } }, select: { id: true } }))) throw new OrderError("batch_number_taken")
+  const autoName = !input.name || input.name === `#${batch.number}`
+  await db.batch.updateMany({ where: { id }, data: { ...input, number: newNumber, name: autoName ? `#${newNumber}` : input.name } })
 }
 
 /** Closing marks the batch finished from that day (all sold or gone); entries after it are refused. Null reopens. */
@@ -147,12 +157,18 @@ export const namesMatch = (typed: string, name: string) => typed.trim().replace(
  * duplicate) needs its name typed to confirm, and takes its days, losses and vaccinations with it. Its own costs
  * (chicks, its medicine) go too, or stay as farm-wide costs when `keepCosts`.
  */
-export async function deleteBatch(tenantId: string, id: string, opts: { confirmName?: string; keepCosts?: boolean } = {}) {
+export async function deleteBatch(tenantId: string, id: string, opts: { confirmName?: string; keepCosts?: boolean; eggsFromStore?: boolean } = {}) {
   const db = tenantDb(tenantId)
   const batch = await db.batch.findFirst({ where: { id } })
   if (!batch) throw new OrderError("batch_not_found")
   const { count } = await entriesOf(tenantId, id)
   if (count > 0 && !namesMatch(opts.confirmName ?? "", batch.name)) throw new OrderError("batch_confirm_name")
+  // A wrong batch's eggs never existed: take them back out of the egg store.
+  if (opts.eggsFromStore) {
+    const days = await db.batchDay.findMany({ where: { batchId: id }, select: { eggsCollected: true, eggsBroken: true } })
+    const eggs = days.reduce((a, d) => a + goodEggs(d), 0)
+    if (eggs) await db.$transaction((tx) => addEggs(tx, tenantId, -eggs))
+  }
   await db.$transaction([
     opts.keepCosts ? db.expense.updateMany({ where: { batchId: id }, data: { batchId: null } }) : db.expense.deleteMany({ where: { batchId: id } }),
     // Batches hatched from this one's eggs keep their birds; they just no longer point to it.
@@ -173,8 +189,11 @@ export interface BatchDayInput {
   losses: { cause: string; count: number }[]
 }
 
-/** Saves one day of one batch; saving the same day again replaces it, losses included. */
-export async function saveBatchDay(tenantId: string, staffId: string, batchId: string, input: BatchDayInput, today: string) {
+/**
+ * Saves one day of one batch; saving the same day again replaces it, losses included. With `eggsToStore` (the farm
+ * tracks stock), the day's good eggs go into the farm's egg store; saving it again moves only the difference.
+ */
+export async function saveBatchDay(tenantId: string, staffId: string, batchId: string, input: BatchDayInput, today: string, eggsToStore = false) {
   const db = tenantDb(tenantId)
   const losses = mergeLosses(input.losses)
   await db.$transaction(async (tx) => {
@@ -190,6 +209,8 @@ export async function saveBatchDay(tenantId: string, staffId: string, batchId: s
 
     const { losses: _ignored, ...day } = input
     void _ignored
+    const before = await tx.batchDay.findFirst({ where: { batchId, date: input.date }, select: { eggsCollected: true, eggsBroken: true } })
+    if (eggsToStore) await addEggs(tx, tenantId, eggsChange(before, input))
     await tx.batchDay.upsert({
       where: { batchId_date: { batchId, date: input.date } },
       update: { ...day, byStaffId: staffId },
@@ -201,6 +222,24 @@ export async function saveBatchDay(tenantId: string, staffId: string, batchId: s
     if (losses.length)
       await tx.batchLoss.createMany({ data: losses.map((l) => ({ ...l, tenantId, batchId, date: input.date, ...(firstEntered.has(l.cause) ? { createdAt: firstEntered.get(l.cause) } : {}) })) })
   })
+}
+
+/**
+ * Saves the same day for several batches at once (the "Enter today" screen). Each batch is saved on its own, so one
+ * with a mistake doesn't stop the others; the result says which were saved and why any weren't.
+ */
+export async function saveBatchDays(tenantId: string, staffId: string, rows: { batchId: string; input: BatchDayInput }[], today: string, eggsToStore = false) {
+  const results: { batchId: string; ok: boolean; error?: string }[] = []
+  for (const r of rows) {
+    try {
+      await saveBatchDay(tenantId, staffId, r.batchId, r.input, today, eggsToStore)
+      results.push({ batchId: r.batchId, ok: true })
+    } catch (e) {
+      if (!(e instanceof OrderError)) throw e
+      results.push({ batchId: r.batchId, ok: false, error: e.code })
+    }
+  }
+  return results
 }
 
 /** One row per cause, zero counts dropped. */

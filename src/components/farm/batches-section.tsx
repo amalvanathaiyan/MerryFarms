@@ -72,6 +72,12 @@ export async function BatchesSection({
         </p>
       )}
 
+      {isToday && cards.length > 0 && (
+        <Link href="/farm/poultry/today" className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-sec-poultry text-lg font-bold text-sec-on">
+          <PencilLine className="size-5" aria-hidden /> {cards.every((c) => c.enteredToday) ? t("changeAllToday") : t("enterAllToday")}
+        </Link>
+      )}
+
       {cards.length === 0 && <p className="rounded-2xl border bg-card p-4 text-muted-foreground">{isToday ? t("none") : t("noneOn", { day: asOfText })}</p>}
 
       <ul className="grid gap-3 md:grid-cols-2">

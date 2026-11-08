@@ -7,7 +7,7 @@ import { featuresOf } from "@/lib/features"
 import { istDate } from "@/domain/ist"
 import { rupeesToPaise } from "@/domain/money"
 import { BATCH_PURPOSES, BATCH_SOURCES, LOSS_CAUSES } from "@/domain/batches"
-import { createBatch, deleteBatch, saveBatchDay, setBatchClosed, updateBatch } from "@/server/batches"
+import { createBatch, deleteBatch, saveBatchDay, saveBatchDays, setBatchClosed, updateBatch } from "@/server/batches"
 import { OrderError } from "@/server/orders"
 
 type Result = { ok: true; id?: string } | { ok: false; error: string }
@@ -78,11 +78,11 @@ export async function addBatch(raw: unknown): Promise<Result> {
 }
 
 export async function editBatch(id: string, raw: unknown): Promise<Result> {
-  const parsed = batchInput.safeParse(raw)
+  const parsed = batchInput.extend({ number: z.number().int().min(1).max(9999).optional() }).safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_form" }
   return run(async () => {
     const { tenant } = await farm(OWNER_ONLY)
-    await updateBatch(tenant.id, id, toBatch(parsed.data), istDate(new Date()))
+    await updateBatch(tenant.id, id, toBatch(parsed.data), istDate(new Date()), parsed.data.number)
   })
 }
 
@@ -100,7 +100,7 @@ export async function removeBatch(id: string, raw: unknown = {}): Promise<Result
   if (!parsed.success) return { ok: false, error: "invalid_form" }
   return run(async () => {
     const { tenant } = await farm(OWNER_ONLY)
-    await deleteBatch(tenant.id, id, parsed.data)
+    await deleteBatch(tenant.id, id, { ...parsed.data, eggsFromStore: featuresOf(tenant).stockTracking })
   })
 }
 
@@ -123,6 +123,23 @@ export async function saveBatchDayAction(batchId: string, raw: unknown): Promise
   return run(async () => {
     const { tenant, staff } = await farm(["owner", "packing"])
     const { soldRupees, note, ...d } = parsed.data
-    await saveBatchDay(tenant.id, staff.id, batchId, { ...d, soldPaise: rupeesToPaise(soldRupees), note: orNull(note) }, istDate(new Date()))
+    await saveBatchDay(tenant.id, staff.id, batchId, { ...d, soldPaise: rupeesToPaise(soldRupees), note: orNull(note) }, istDate(new Date()), featuresOf(tenant).stockTracking)
   })
 }
+
+/** Owner and packing staff: the same day for every batch at once. Each batch saves on its own; the reply says which did. */
+export async function saveAllBatchDaysAction(raw: unknown): Promise<{ ok: true; results: { batchId: string; ok: boolean; error?: string }[] } | { ok: false; error: string }> {
+  const parsed = z.object({ date: ymd, rows: z.array(dayInput.omit({ date: true }).extend({ batchId: z.string().uuid() })).min(1).max(100) }).safeParse(raw)
+  if (!parsed.success) return { ok: false, error: "record_invalid" }
+  try {
+    const { tenant, staff } = await farm(["owner", "packing"])
+    const rows = parsed.data.rows.map(({ batchId, soldRupees, note, ...d }) => ({ batchId, input: { ...d, date: parsed.data.date, soldPaise: rupeesToPaise(soldRupees), note: orNull(note) } }))
+    const results = await saveBatchDays(tenant.id, staff.id, rows, istDate(new Date()), featuresOf(tenant).stockTracking)
+    revalidatePath("/farm", "layout")
+    return { ok: true, results }
+  } catch (e) {
+    if (e instanceof OrderError) return { ok: false, error: e.code }
+    throw e
+  }
+}
+

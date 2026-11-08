@@ -7,6 +7,7 @@ import { rupeesToPaise } from "@/domain/money"
 import { MAX_PHOTO_BYTES, sniffImage } from "@/domain/product-art"
 import { adjustPrice } from "@/domain/offers"
 import { ART_KINDS } from "@/domain/product-art"
+import { addEggs, putStock, removeStockUpTo, setEggStore, syncEggStock, type Tx } from "@/server/stock"
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
 
@@ -43,6 +44,8 @@ const productSchema = z.object({
   priceRupees: z.number().positive().max(1_000_000),
   stockQty: z.number().int().min(0).max(1_000_000),
   stockUnit: z.string().trim().min(1).max(20),
+  /** Egg products: eggs in one unit (30 in a tray). Their stock then comes from the farm's egg store. */
+  eggsPerUnit: z.number().int().min(1).max(1000).nullable().optional(),
   gstRate: z.union([z.literal(0), z.literal(5), z.literal(12), z.literal(18)]),
   hsn: z.string().trim().max(10).optional(),
   isActive: z.boolean(),
@@ -56,7 +59,7 @@ export async function saveProduct(raw: unknown): Promise<ActionResult> {
   const parsed = productSchema.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "product_invalid" }
   const { db, tenant } = await requireStaff(OWNER_ONLY)
-  const { id, priceRupees, offerRupees, offerEndsOn, ...rest } = parsed.data
+  const { id, priceRupees, offerRupees, offerEndsOn, stockQty, eggsPerUnit = null, ...rest } = parsed.data
   const offerPricePaise = offerRupees ? rupeesToPaise(offerRupees) : null
   if (offerPricePaise != null && offerPricePaise >= rupeesToPaise(priceRupees)) return { ok: false, error: "offer_not_lower" }
 
@@ -72,13 +75,40 @@ export async function saveProduct(raw: unknown): Promise<ActionResult> {
     offerPricePaise,
     offerEndsOn: offerPricePaise != null && offerEndsOn ? offerEndsOn : null,
   }
-  if (id) {
-    const r = await db.product.updateMany({ where: { id, deletedAt: null }, data })
-    if (r.count !== 1) return { ok: false, error: "product_not_found" }
-  } else {
-    await db.product.create({ data: { ...data, tenantId: tenant.id } })
-  }
+  // An egg product's stock is the egg store's: a changed count moves eggs in the store (+1 tray = +30 eggs).
+  const ok = await db.$transaction(async (tx) => {
+    let productId = id
+    if (id) {
+      const before = await tx.product.findFirst({ where: { id, deletedAt: null }, select: { stockQty: true, eggsPerUnit: true } })
+      if (!before) return false
+      await tx.product.updateMany({ where: { id }, data: { ...data, eggsPerUnit, ...(eggsPerUnit ? {} : { stockQty }) } })
+      if (eggsPerUnit && !before.eggsPerUnit) await joinEggStore(tx, tenant.id, stockQty, eggsPerUnit)
+      else if (eggsPerUnit && before.eggsPerUnit !== eggsPerUnit) await syncEggStock(tx, tenant.id)
+      else if (eggsPerUnit) await moveTo(tx, tenant.id, id, before.stockQty, stockQty)
+    } else {
+      const created = await tx.product.create({ data: { ...data, eggsPerUnit, stockQty: eggsPerUnit ? 0 : stockQty, tenantId: tenant.id } })
+      productId = created.id
+      if (eggsPerUnit) await joinEggStore(tx, tenant.id, stockQty, eggsPerUnit)
+    }
+    return !!productId
+  })
+  if (!ok) return { ok: false, error: "product_not_found" }
   return done()
+}
+
+/**
+ * A product that becomes an egg product brings its packed stock into the egg store: 14 trays of 30 are 420 real
+ * eggs. Every egg product's count then follows the store.
+ */
+async function joinEggStore(tx: Tx, tenantId: string, packed: number, eggsPerUnit: number) {
+  if (packed > 0) await addEggs(tx, tenantId, packed * eggsPerUnit)
+  else await syncEggStock(tx, tenantId)
+}
+
+/** Brings an egg product to `wanted` units by moving eggs in the store (+1 tray = +30 eggs). */
+async function moveTo(tx: Tx, tenantId: string, productId: string, current: number, wanted: number) {
+  if (wanted > current) await putStock(tx, tenantId, productId, wanted - current)
+  if (wanted < current) await removeStockUpTo(tx, tenantId, productId, current - wanted)
 }
 
 const quickSchema = z.object({
@@ -95,16 +125,31 @@ export async function quickUpdateProduct(raw: unknown): Promise<ActionResult> {
   const { id, priceRupees, stockQty, isActive } = parsed.data
   // Packing staff may update stock; price and visibility are the owner's call.
   const ownerOnly = priceRupees !== undefined || isActive !== undefined
-  const { db } = await requireStaff(ownerOnly ? OWNER_ONLY : ["owner", "packing"])
-  const r = await db.product.updateMany({
-    where: { id, deletedAt: null },
-    data: {
-      ...(priceRupees !== undefined && { pricePaise: rupeesToPaise(priceRupees) }),
-      ...(stockQty !== undefined && { stockQty }),
-      ...(isActive !== undefined && { isActive }),
-    },
+  const { db, tenant } = await requireStaff(ownerOnly ? OWNER_ONLY : ["owner", "packing"])
+  const ok = await db.$transaction(async (tx) => {
+    const p = await tx.product.findFirst({ where: { id, deletedAt: null }, select: { stockQty: true, eggsPerUnit: true } })
+    if (!p) return false
+    await tx.product.updateMany({
+      where: { id },
+      data: {
+        ...(priceRupees !== undefined && { pricePaise: rupeesToPaise(priceRupees) }),
+        ...(stockQty !== undefined && !p.eggsPerUnit && { stockQty }),
+        ...(isActive !== undefined && { isActive }),
+      },
+    })
+    if (stockQty !== undefined && p.eggsPerUnit) await moveTo(tx, tenant.id, id, p.stockQty, stockQty)
+    return true
   })
-  if (r.count !== 1) return { ok: false, error: "product_not_found" }
+  if (!ok) return { ok: false, error: "product_not_found" }
+  return done()
+}
+
+/** Owner and packing staff: the eggs counted in the store; every egg product's stock follows. */
+export async function setEggStoreAction(raw: unknown): Promise<ActionResult> {
+  const parsed = z.object({ eggs: z.number().int().min(0).max(10_000_000) }).safeParse(raw)
+  if (!parsed.success) return { ok: false, error: "invalid" }
+  const { db, tenant } = await requireStaff(["owner", "packing"])
+  await db.$transaction((tx) => setEggStore(tx, tenant.id, parsed.data.eggs))
   return done()
 }
 

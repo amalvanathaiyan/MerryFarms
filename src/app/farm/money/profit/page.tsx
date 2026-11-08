@@ -162,7 +162,7 @@ export default async function MoneyProfitPage({ searchParams }: { searchParams: 
           <ul className="divide-y tabular-nums">
             {birdsLost > 0 && (
               <li className="flex justify-between gap-3 py-2">
-                <Link href="/farm/poultry/profit" className="underline-offset-4 hover:underline">
+                <Link href="/farm/poultry/costs" className="underline-offset-4 hover:underline">
                   {tp("birdsLost", { count: birdsLost })}
                 </Link>
                 <b>{formatRupees(birdsLostPaise)}</b>

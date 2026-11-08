@@ -9,6 +9,7 @@ import { orderCode } from "@/domain/orders"
 import { planReturn, ReturnError, type DeliveredLine, type ReturnPlan } from "@/domain/returns"
 import { nextSeq, readSnapshot } from "./billing"
 import { OrderError } from "./orders"
+import { putStock } from "./stock"
 
 export interface ReturnInput {
   items: { productId: string; qty: number }[]
@@ -66,7 +67,7 @@ export async function processReturn(tenantId: string, orderId: string, input: Re
 
         const restock = input.restock && features.stockTracking
         if (restock) {
-          for (const l of plan.lines) await tx.product.updateMany({ where: { id: l.productId }, data: { stockQty: { increment: l.qty } } })
+          for (const l of plan.lines) await putStock(tx, tenantId, l.productId, l.qty)
         }
 
         const invoice = order.invoices[0]

@@ -49,6 +49,7 @@ const tenantRow = (id: string, slug: string, features: Record<string, boolean> =
   logoUrl: null as string | null,
   shopArt: [] as string[],
   trialEndsAt: null,
+  eggStore: 0,
   createdAt: NOW,
   updatedAt: NOW,
 })

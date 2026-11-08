@@ -18,7 +18,6 @@ import { cn } from "@/lib/utils"
 import { ChevronLeft, Syringe } from "lucide-react"
 
 const ymd = /^\d{4}-\d{2}-\d{2}$/
-const rupees = (p: number) => `${p < 0 ? "−" : ""}${formatRupees(Math.abs(p))}`
 
 /** One batch: how it stands (on any day), the day's entry, its history, its money and (owner) its settings. */
 export default async function BatchPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ date?: string }> }) {
@@ -199,13 +198,10 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
             {line(t("moneyChicks"), formatRupees(m.chicksPaise))}
             {line(t("moneyFeed", { kg: s.feedKg }), m.feedPaise == null ? t("feedPriceUnknown") : formatRupees(m.feedPaise))}
             {line(t("moneyOther"), formatRupees(m.otherPaise))}
-            {line(t("moneyCost"), formatRupees(m.costPaise), true)}
-            {line(t("moneySold", { count: s.sold }), formatRupees(m.birdsSoldPaise))}
-            {showEggs && line(t("moneyEggs", { count: goodEggs }), m.eggsValuePaise == null ? t("eggValueUnknown") : formatRupees(m.eggsValuePaise))}
-            {line(t("moneyIn"), formatRupees(m.inPaise), true)}
           </ul>
-          <div className={cn("rounded-xl px-3 py-2 text-lg font-bold tabular-nums", m.marginPaise < 0 ? "bg-destructive/10 text-destructive" : "bg-accent")}>
-            {t("moneyMargin")}: {rupees(m.marginPaise)}
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-sec-poultry-tint px-3 py-2 text-lg font-bold tabular-nums">
+            <span>{t("moneyCost")}</span>
+            <span>{formatRupees(m.costPaise)}</span>
           </div>
           <ul className="flex flex-col gap-0.5 text-sm text-muted-foreground tabular-nums">
             {m.costPaise > 0 && <li>{t("costPerBird", { amount: formatRupees(m.costPerBirdPaise) })}</li>}

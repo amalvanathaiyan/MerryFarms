@@ -70,14 +70,14 @@ export interface Tab {
   count?: number
 }
 
-/** Poultry care's tabs. Profit shows money, so it is the owner's. */
+/** Poultry care's tabs. Costs shows money, so it is the owner's. */
 export function poultryTabs(who: Who): Tab[] {
   if (!who.features.poultryCare || !has(who, "owner", "packing")) return []
   return [
     { key: "batches", href: "/farm/poultry" },
     { key: "vaccines", href: "/farm/poultry/vaccines" },
     { key: "feed", href: "/farm/poultry/feed" },
-    ...(has(who, "owner") ? [{ key: "profit", href: "/farm/poultry/profit" }] : []),
+    ...(has(who, "owner") ? [{ key: "costs", href: "/farm/poultry/costs" }] : []),
   ]
 }
 

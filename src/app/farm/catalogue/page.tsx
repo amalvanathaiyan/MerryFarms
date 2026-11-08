@@ -4,6 +4,9 @@ import { featuresOf } from "@/lib/features"
 import { offerActive } from "@/domain/offers"
 import { istDate } from "@/domain/ist"
 import { SectionHeader } from "@/components/farm/section-header"
+import { EggStoreCard } from "@/components/farm/egg-store-card"
+import { getLocale } from "next-intl/server"
+import { pick } from "@/lib/i18n-helpers"
 
 export default async function CataloguePage() {
   const { db, staff, tenant } = await requireStaff()
@@ -13,13 +16,24 @@ export default async function CataloguePage() {
   ])
 
   const today = istDate(new Date())
+  const features = featuresOf(tenant)
+  const locale = await getLocale()
+  // Egg products share the farm's egg store (shown when stock is tracked and the farm has any).
+  const eggProducts = features.stockTracking ? products.filter((p) => p.eggsPerUnit && p.isActive) : []
 
   return (
     <div className="flex flex-col gap-4">
       <SectionHeader section="products" back={{ href: "/farm/more" }} />
+      {eggProducts.length > 0 && staff.roles.some((r) => r === "owner" || r === "packing") && (
+        <EggStoreCard
+          eggs={tenant.eggStore}
+          fromBatches={features.poultryCare}
+          products={eggProducts.map((p) => ({ id: p.id, name: `${pick(locale, p.nameTa, p.nameEn)} · ${pick(locale, p.packTa, p.packEn)}`, eggsPerUnit: p.eggsPerUnit! }))}
+        />
+      )}
       <CatalogueManager
         canEdit={staff.roles.includes("owner")}
-        tracksStock={featuresOf(tenant).stockTracking}
+        tracksStock={features.stockTracking}
         today={today}
         categories={categories.map(({ id, nameTa, nameEn, kind }) => ({ id, nameTa, nameEn, kind }))}
         products={products.map((p) => ({
@@ -34,6 +48,7 @@ export default async function CataloguePage() {
           priceRupees: p.pricePaise / 100,
           stockQty: p.stockQty,
           stockUnit: p.stockUnit,
+          eggsPerUnit: p.eggsPerUnit,
           gstRate: p.gstRate as 0 | 5 | 12 | 18,
           hsn: p.hsn ?? "",
           isActive: p.isActive,
