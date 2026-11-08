@@ -15,7 +15,7 @@ import { AgeText } from "@/components/farm/batches-section"
 import { BatchDayPanel, type HistoryRow } from "@/components/farm/batch-day-panel"
 import { BatchActions } from "@/components/farm/batch-actions"
 import { cn } from "@/lib/utils"
-import { Syringe } from "lucide-react"
+import { ChevronLeft, Syringe } from "lucide-react"
 
 const ymd = /^\d{4}-\d{2}-\d{2}$/
 const rupees = (p: number) => `${p < 0 ? "−" : ""}${formatRupees(Math.abs(p))}`
@@ -117,8 +117,8 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
 
   return (
     <div className="flex flex-col gap-4">
-      <Link href={asOf === today ? "/farm/records" : `/farm/records?on=${asOf}`} className="text-sm font-medium text-primary underline-offset-4 hover:underline">
-        ← {t("backToRecords")}
+      <Link href={asOf === today ? "/farm/poultry" : `/farm/poultry?on=${asOf}`} className="flex h-9 items-center gap-1 self-start rounded-lg pr-2 font-semibold text-primary underline-offset-4 hover:underline">
+        <ChevronLeft className="size-5" aria-hidden /> {t("backToPoultry")}
       </Link>
 
       <section className="flex flex-col gap-2 rounded-2xl border bg-card p-4">

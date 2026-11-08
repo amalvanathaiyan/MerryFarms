@@ -67,7 +67,7 @@ export function BatchActions({ id, today, startDate, closedDate, closedText, can
 
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="outline">
-          <Link href={`/farm/records/batches/${id}/edit`}>
+          <Link href={`/farm/poultry/batches/${id}/edit`}>
             <Pencil className="size-4" /> {t("edit")}
           </Link>
         </Button>
@@ -81,7 +81,7 @@ export function BatchActions({ id, today, startDate, closedDate, closedText, can
             variant="outline"
             className="text-destructive"
             disabled={pending}
-            onClick={() => window.confirm(t("deleteConfirm")) && run(() => removeBatch(id), () => router.push("/farm/records"))}
+            onClick={() => window.confirm(t("deleteConfirm")) && run(() => removeBatch(id), () => router.push("/farm/poultry"))}
           >
             <Trash2 className="size-4" /> {t("delete")}
           </Button>

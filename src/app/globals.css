@@ -39,6 +39,35 @@
   --color-sun: hsl(var(--sun));
   --color-sun-foreground: hsl(var(--sun-foreground));
 
+  /* Menu sections: each part of the farm app has its own colour (strong for buttons, tint for panels). */
+  --color-sec-today: hsl(var(--sec-today));
+  --color-sec-today-tint: hsl(var(--sec-today-tint));
+  --color-sec-orders: hsl(var(--sec-orders));
+  --color-sec-orders-tint: hsl(var(--sec-orders-tint));
+  --color-sec-poultry: hsl(var(--sec-poultry));
+  --color-sec-poultry-tint: hsl(var(--sec-poultry-tint));
+  --color-sec-money: hsl(var(--sec-money));
+  --color-sec-money-tint: hsl(var(--sec-money-tint));
+  --color-sec-more: hsl(var(--sec-more));
+  --color-sec-more-tint: hsl(var(--sec-more-tint));
+  --color-sec-products: hsl(var(--sec-products));
+  --color-sec-products-tint: hsl(var(--sec-products-tint));
+  --color-sec-customers: hsl(var(--sec-customers));
+  --color-sec-customers-tint: hsl(var(--sec-customers-tint));
+  --color-sec-slots: hsl(var(--sec-slots));
+  --color-sec-slots-tint: hsl(var(--sec-slots-tint));
+  --color-sec-messages: hsl(var(--sec-messages));
+  --color-sec-messages-tint: hsl(var(--sec-messages-tint));
+  --color-sec-whatsapp: hsl(var(--sec-whatsapp));
+  --color-sec-whatsapp-tint: hsl(var(--sec-whatsapp-tint));
+  --color-sec-staff: hsl(var(--sec-staff));
+  --color-sec-staff-tint: hsl(var(--sec-staff-tint));
+  --color-sec-account: hsl(var(--sec-account));
+  --color-sec-account-tint: hsl(var(--sec-account-tint));
+  --color-sec-plans: hsl(var(--sec-plans));
+  --color-sec-plans-tint: hsl(var(--sec-plans-tint));
+  --color-sec-on: hsl(var(--sec-on));
+
   --font-sans: var(--font-body), "Noto Sans Tamil", system-ui, sans-serif;
   --font-display: var(--font-heading), var(--font-body), "Noto Sans Tamil", system-ui, sans-serif;
 
@@ -90,6 +119,34 @@
     /* Chart series colour: a touch more colourful than --primary so bars don't read grey.
        Validated with the dataviz palette checks on the light surface (#2e8b57). */
     --chart-1: #2e8b57;
+    /* Menu sections (strong colours pass 4.5:1 with white; tints sit behind ink text). */
+    --sec-today: 39 100% 27%;
+    --sec-today-tint: 45 100% 89%;
+    --sec-orders: 213 62% 37%;
+    --sec-orders-tint: 213 60% 92%;
+    --sec-poultry: 20 73% 37%;
+    --sec-poultry-tint: 24 79% 92%;
+    --sec-money: 150 56% 27%;
+    --sec-money-tint: 124 27% 89%;
+    --sec-more: 138 12% 33%;
+    --sec-more-tint: 90 13% 91%;
+    --sec-products: 180 76% 25%;
+    --sec-products-tint: 178 45% 89%;
+    --sec-customers: 267 43% 44%;
+    --sec-customers-tint: 267 57% 93%;
+    --sec-slots: 214 35% 37%;
+    --sec-slots-tint: 215 37% 92%;
+    --sec-messages: 330 53% 42%;
+    --sec-messages-tint: 331 65% 93%;
+    --sec-whatsapp: 149 66% 30%;
+    --sec-whatsapp-tint: 146 48% 91%;
+    --sec-staff: 26 46% 33%;
+    --sec-staff-tint: 29 45% 90%;
+    --sec-account: 231 45% 42%;
+    --sec-account-tint: 232 57% 93%;
+    --sec-plans: 202 53% 38%;
+    --sec-plans-tint: 202 55% 92%;
+    --sec-on: 0 0% 100%;
     --radius: 0.85rem;
   }
 
@@ -123,6 +180,34 @@
       --header: 150 12% 13%;
       --header-foreground: 120 12% 88%;
       --chart-1: #3fa66a; /* validated on the dark surface */
+      /* Menu sections: lighter strong colours with dark text on them, dark tints. */
+      --sec-today: 42 85% 62%;
+      --sec-today-tint: 42 35% 17%;
+      --sec-orders: 213 70% 70%;
+      --sec-orders-tint: 213 30% 18%;
+      --sec-poultry: 22 75% 66%;
+      --sec-poultry-tint: 20 30% 17%;
+      --sec-money: 150 42% 58%;
+      --sec-money-tint: 150 22% 16%;
+      --sec-more: 130 10% 68%;
+      --sec-more-tint: 140 8% 17%;
+      --sec-products: 178 50% 58%;
+      --sec-products-tint: 180 30% 15%;
+      --sec-customers: 267 60% 76%;
+      --sec-customers-tint: 267 22% 19%;
+      --sec-slots: 214 45% 72%;
+      --sec-slots-tint: 214 22% 18%;
+      --sec-messages: 330 60% 72%;
+      --sec-messages-tint: 330 25% 18%;
+      --sec-whatsapp: 149 50% 58%;
+      --sec-whatsapp-tint: 149 28% 15%;
+      --sec-staff: 28 50% 68%;
+      --sec-staff-tint: 26 25% 17%;
+      --sec-account: 231 60% 76%;
+      --sec-account-tint: 231 25% 19%;
+      --sec-plans: 202 55% 68%;
+      --sec-plans-tint: 202 28% 17%;
+      --sec-on: 150 30% 8%;
       color-scheme: dark;
     }
   }

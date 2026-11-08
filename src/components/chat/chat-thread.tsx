@@ -6,12 +6,14 @@ import { useTranslations } from "next-intl"
 import { SendHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { AutoRefresh } from "@/components/auto-refresh"
 
 export type ChatMessage = { id: string; mine: boolean; body: string; time: string; seen: boolean }
 
 /**
  * One conversation, used by both the customer and the farm.
- * Refreshes every 20 seconds while the page is visible, so new replies appear without reloading.
+ * Refreshes every 15 seconds while the page is on screen, and as soon as the person comes back to it,
+ * so new replies appear without reloading.
  */
 export function ChatThread({ messages, send, placeholder }: { messages: ChatMessage[]; send: (body: string) => Promise<{ ok: boolean; error?: string }>; placeholder: string }) {
   const t = useTranslations("chat")
@@ -26,15 +28,9 @@ export function ChatThread({ messages, send, placeholder }: { messages: ChatMess
     end.current?.scrollIntoView({ block: "end" })
   }, [messages.length])
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      if (document.visibilityState === "visible") router.refresh()
-    }, 20_000)
-    return () => clearInterval(id)
-  }, [router])
-
   return (
     <div className="flex flex-col gap-3">
+      <AutoRefresh />
       <div className="flex flex-col gap-2" aria-live="polite">
         {messages.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">{t("empty")}</p>}
         {messages.map((m) => (

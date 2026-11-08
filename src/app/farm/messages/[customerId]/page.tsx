@@ -16,6 +16,7 @@ import { formatIndianMobile } from "@/domain/phone"
 import { waMeLink } from "@/domain/whatsapp-lite"
 import { Button } from "@/components/ui/button"
 import { ChatThread } from "@/components/chat/chat-thread"
+import { BackLink } from "@/components/farm/section-header"
 
 /** One customer's conversation, with fallbacks when a reply goes unseen. */
 export default async function FarmThreadPage({ params }: { params: Promise<{ customerId: string }> }) {
@@ -46,6 +47,7 @@ export default async function FarmThreadPage({ params }: { params: Promise<{ cus
 
   return (
     <div className="flex flex-col gap-3 pb-24">
+      <BackLink href="/farm/messages" label={(await getTranslations("farm.sections"))("messages.title")} />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link href={`/farm/customers/${customer.id}`} className="text-lg font-bold underline-offset-4 hover:underline">

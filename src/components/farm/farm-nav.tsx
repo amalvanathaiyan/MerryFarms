@@ -3,46 +3,44 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { CalendarClock, ClipboardList, MessagesSquare, Package, Sun, Users } from "lucide-react"
+import { menuItemActive, SECTION_LOOK, type MenuItem } from "@/lib/farm-sections"
+import { SectionIcon } from "./section-icon"
 import { cn } from "@/lib/utils"
 
-const ITEMS = [
-  { href: "/farm", key: "today", icon: Sun },
-  { href: "/farm/orders", key: "orders", icon: ClipboardList },
-  { href: "/farm/customers", key: "customers", icon: Users },
-  { href: "/farm/catalogue", key: "catalogue", icon: Package },
-] as const
-const SLOTS = { href: "/farm/slots", key: "slots", icon: CalendarClock } as const
-const MESSAGES = { href: "/farm/messages", key: "messages", icon: MessagesSquare } as const
-
-export function FarmNav({ toConfirm, unread, messagesOn }: { toConfirm: number; unread: number; messagesOn: boolean }) {
+/**
+ * The main menu: up to five big buttons, each with its own colour, a picture and a word.
+ * Below 1024px it is a bar along the bottom; from 1024px a menu card down the left.
+ */
+export function FarmNav({ items, badges }: { items: MenuItem[]; badges: Partial<Record<MenuItem["key"], number>> }) {
   const t = useTranslations("farm.nav")
   const path = usePathname()
   return (
-    // Below 1024px: a 5-tab bar fixed along the bottom. From 1024px: a menu card down the left, sticky under the header.
-    // The third tab (customers, "வாடிக்கையாளர்") has the longest label, so its column is wider.
-    <nav className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-[1fr_1fr_1.4fr_1fr_1fr] border-t bg-card pb-[env(safe-area-inset-bottom,0px)] print:hidden lg:sticky lg:top-24 lg:mt-6 lg:flex lg:h-fit lg:w-56 lg:shrink-0 lg:flex-col lg:gap-1 lg:self-start lg:rounded-3xl lg:border lg:p-2 lg:pb-2">
-      {[...ITEMS, messagesOn ? MESSAGES : SLOTS].map(({ href, key, icon: Icon }) => {
-        const active = href === "/farm" ? path === "/farm" : path.startsWith(href)
-        const badge = key === "messages" ? unread : key === "orders" ? toConfirm : 0
+    <nav
+      aria-label={t("label")}
+      className="fixed inset-x-0 bottom-0 z-10 grid border-t bg-card pb-[env(safe-area-inset-bottom,0px)] print:hidden lg:sticky lg:top-24 lg:mt-6 lg:flex lg:h-fit lg:w-60 lg:shrink-0 lg:flex-col lg:gap-1.5 lg:self-start lg:rounded-3xl lg:border lg:p-2"
+      style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+    >
+      {items.map((item) => {
+        const active = menuItemActive(item, path)
+        const look = SECTION_LOOK[item.key]
+        const badge = badges[item.key] ?? 0
         return (
           <Link
-            key={href}
-            href={href}
+            key={item.key}
+            href={item.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "relative flex min-w-0 flex-col items-center gap-0.5 px-0.5 py-2 text-center text-tab font-medium sm:text-xs",
-              "lg:flex-row lg:gap-3 lg:rounded-2xl lg:px-3 lg:py-2.5 lg:text-left lg:text-base",
-              active ? "font-semibold text-primary lg:bg-accent" : "text-muted-foreground lg:hover:bg-accent lg:hover:text-primary"
+              "relative flex min-w-0 flex-col items-center gap-1 px-0.5 pt-2 pb-2.5 text-center text-xs leading-tight",
+              "lg:flex-row lg:gap-3 lg:rounded-2xl lg:px-2.5 lg:py-2 lg:text-left lg:text-base",
+              active ? cn("font-bold", look.text, "lg:bg-accent") : "font-medium text-muted-foreground lg:hover:bg-accent"
             )}
           >
-            <span className={cn("grid h-8 w-12 shrink-0 place-items-center rounded-full transition-colors lg:size-6", active && "bg-accent lg:bg-transparent")}>
-              <Icon className="size-6" />
+            <span className={cn("grid h-9 w-14 shrink-0 place-items-center rounded-full transition-colors lg:size-10", active ? look.strong : cn(look.tint, look.text))}>
+              <SectionIcon name={item.key} className="size-6" />
             </span>
-            {/* Under 360px the Tamil labels can't fit five across: icons only, labels kept for screen readers. */}
-            <span className="max-w-full whitespace-nowrap max-xs:sr-only">{t(key)}</span>
+            <span className="max-w-full truncate">{t(item.key)}</span>
             {badge > 0 && (
-              <span className="absolute left-1/2 top-1 ml-2 min-w-5 rounded-full bg-destructive px-1 text-center text-[11px] font-bold leading-5 text-destructive-foreground tabular-nums lg:static lg:ml-auto">
+              <span className="absolute top-1 left-1/2 ml-3 min-w-5 rounded-full bg-destructive px-1 text-center text-[11px] leading-5 font-bold text-destructive-foreground tabular-nums lg:static lg:ml-auto">
                 {badge}
               </span>
             )}

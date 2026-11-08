@@ -13,6 +13,7 @@ import { istDate } from "@/domain/ist"
 import { ShareCard } from "@/components/farm/share-card"
 import { TemplateEditor } from "@/components/farm/template-editor"
 import { currentPrice, offerActive } from "@/domain/offers"
+import { SectionHeader } from "@/components/farm/section-header"
 
 /** Share the shop on WhatsApp, print its QR code, and edit every message the farm sends. */
 export default async function WhatsAppPage() {
@@ -52,7 +53,7 @@ export default async function WhatsAppPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-xl font-bold print:hidden">{t("title")}</h1>
+      <SectionHeader section="whatsapp" back={{ href: "/farm/more" }} />
 
       <ShareCard messages={order.map((lang) => ({ lang, ...build(lang) }))} shopUrl={shopUrl} />
 
