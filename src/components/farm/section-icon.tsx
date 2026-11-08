@@ -52,6 +52,7 @@ const ICONS: Record<string, LucideIcon> = {
   profit: TrendingUp,
   sales: BarChart3,
   spending: Receipt,
+  costs: Receipt,
   made: Egg,
   shop: Store,
   delivery: Truck,

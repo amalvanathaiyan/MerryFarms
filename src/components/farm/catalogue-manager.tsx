@@ -28,6 +28,7 @@ import { ART_KINDS, artFor, artKind, STARTER_CATEGORIES, type ArtKind } from "@/
 import { shrinkPhoto } from "@/lib/shrink-photo"
 import { pick } from "@/lib/i18n-helpers"
 import { cn } from "@/lib/utils"
+import { COMMON_EGG_PACKS } from "@/domain/eggs"
 
 type Category = { id: string; nameTa: string; nameEn: string; kind: string | null }
 type Product = {
@@ -42,6 +43,8 @@ type Product = {
   priceRupees: number
   stockQty: number
   stockUnit: string
+  /** Egg products: eggs in one unit; their stock comes from the farm's egg store. */
+  eggsPerUnit: number | null
   gstRate: 0 | 5 | 12 | 18
   hsn: string
   isActive: boolean
@@ -103,6 +106,7 @@ export function CatalogueManager({
     priceRupees: 0,
     stockQty: 0,
     stockUnit: "packs",
+    eggsPerUnit: null,
     gstRate: 0,
     hsn: "",
     isActive: true,
@@ -178,6 +182,23 @@ export function CatalogueManager({
           </Labelled>
           )}
         </div>
+        {tracksStock && (categories.find((c) => c.id === draft.categoryId)?.kind === "egg" || draft.eggsPerUnit != null) && (
+          <fieldset className="flex flex-col gap-2 rounded-xl border border-dashed p-3">
+            <legend className="px-1 text-sm font-semibold">{t("eggsPerUnit")}</legend>
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" aria-pressed={draft.eggsPerUnit == null} onClick={() => set("eggsPerUnit", null)} className={cn("rounded-full border px-3 py-1.5 text-sm font-medium", draft.eggsPerUnit == null ? "border-primary bg-accent" : "bg-card")}>
+                {t("notEggs")}
+              </button>
+              {COMMON_EGG_PACKS.map((n) => (
+                <button key={n} type="button" aria-pressed={draft.eggsPerUnit === n} onClick={() => set("eggsPerUnit", n)} className={cn("min-w-12 rounded-full border px-3 py-1.5 text-sm font-semibold tabular-nums", draft.eggsPerUnit === n ? "border-primary bg-accent" : "bg-card")}>
+                  {n}
+                </button>
+              ))}
+              <Input type="number" min={1} max={1000} inputMode="numeric" aria-label={t("eggsPerUnit")} value={draft.eggsPerUnit ?? ""} onChange={(e) => set("eggsPerUnit", e.target.value ? Number(e.target.value) : null)} className="h-9 w-20" />
+            </div>
+            <p className="text-xs text-muted-foreground">{draft.eggsPerUnit ? t("eggsPerUnitHint", { count: draft.eggsPerUnit }) : t("eggsPerUnitOff")}</p>
+          </fieldset>
+        )}
         <fieldset className="flex flex-col gap-3 rounded-xl border border-dashed p-3">
           <legend className="flex items-center gap-1.5 px-1 text-sm font-semibold">
             <Tag className="size-4" /> {t("offer")}
@@ -434,6 +455,7 @@ export function CatalogueManager({
                       <div className={cn("text-sm text-muted-foreground", tracksStock && p.stockQty <= 5 && "font-semibold text-destructive")}>
                         {pick(locale, p.packTa, p.packEn)}
                         {tracksStock && ` · ${t("left", { count: p.stockQty, unit: unitName(p.stockUnit) })}`}
+                        {tracksStock && p.eggsPerUnit != null && ` · ${t("fromEggStore")}`}
                       </div>
                     </div>
                     <label className="flex shrink-0 flex-col items-center gap-0.5 text-xs text-muted-foreground">

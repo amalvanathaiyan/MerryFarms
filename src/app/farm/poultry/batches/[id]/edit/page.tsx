@@ -23,6 +23,7 @@ export default async function EditBatchPage({ params }: { params: Promise<{ id: 
       <SectionHeader section="poultry" back={{ href: `/farm/poultry/batches/${id}`, label: `${batch.name} · ${t("batchNo", { number: batch.number })}` }} title={t("editTitle")} hint={null} />
       <BatchForm
         id={id}
+        number={batch.number}
         today={istDate(new Date())}
         parents={parents.map((p) => ({ id: p.id, name: `${p.name} · #${p.number}` }))}
         initial={{

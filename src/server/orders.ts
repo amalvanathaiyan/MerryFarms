@@ -19,6 +19,7 @@ export function areaOf(t: { farmLat: number | null; farmLng: number | null; deli
 }
 import { featuresOf } from "@/lib/features"
 import { currentPrice, validAgreedPrice } from "@/domain/offers"
+import { putStock, takeStock } from "./stock"
 
 export class OrderError extends Error {
   constructor(public code: string) {
@@ -272,12 +273,8 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
         })
 
         for (const l of features.stockTracking ? lines : []) {
-          // Conditional decrement: fails (count 0) if another order took the stock meanwhile.
-          const r = await tx.product.updateMany({
-            where: { id: l.productId, stockQty: { gte: l.qty } },
-            data: { stockQty: { decrement: l.qty } },
-          })
-          if (r.count !== 1) throw new OrderError("out_of_stock")
+          // Fails if another order took the stock meanwhile (egg products: the shared egg store, see stock.ts).
+          if (!(await takeStock(tx, tenant.id, l.productId, l.qty))) throw new OrderError("out_of_stock")
         }
         if (input.replaces) {
           await tx.order.updateMany({ where: { id: input.replaces }, data: { cancelReason: `customer:changed:${orderCode(tenant.invoicePrefix, number)}` } })
@@ -350,10 +347,9 @@ export async function editOrder(tenant: Tenant, orderId: string, input: EditOrde
     if (features.stockTracking) {
       for (const [productId, delta] of stockDeltas(order.items, lines)) {
         if (delta > 0) {
-          const r = await tx.product.updateMany({ where: { id: productId, stockQty: { gte: delta } }, data: { stockQty: { decrement: delta } } })
-          if (r.count !== 1) throw new OrderError("out_of_stock")
+          if (!(await takeStock(tx, tenant.id, productId, delta))) throw new OrderError("out_of_stock")
         } else {
-          await tx.product.updateMany({ where: { id: productId }, data: { stockQty: { increment: -delta } } })
+          await putStock(tx, tenant.id, productId, -delta)
         }
       }
     }
@@ -442,9 +438,7 @@ export async function transition(
   if (r.count !== 1) throw new OrderError("bad_transition")
 
   if (to === "cancelled") {
-    for (const i of order.items) {
-      await tx.product.updateMany({ where: { id: i.productId }, data: { stockQty: { increment: i.qty } } })
-    }
+    for (const i of order.items) await putStock(tx, tenantId, i.productId, i.qty)
   }
   await tx.orderEvent.create({
     data: { tenantId, orderId: order.id, fromStatus: order.status, toStatus: to, byStaffId, note: note ?? null },

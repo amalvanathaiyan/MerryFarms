@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { saveBatchDayAction } from "@/app/actions/batches"
 import { LOSS_CAUSES } from "@/domain/batches"
+import { NumberStepper } from "./number-stepper"
 
 export interface DayEntry {
   date: string
@@ -61,6 +62,9 @@ export function BatchDayForm({
   const [saved, setSaved] = useState(false)
   const [v, setV] = useState(() => valuesFor(date, entries))
   const existing = entries.some((e) => e.date === date)
+  // Feed from the last day entered before this one, for "Same as last time".
+  const lastFeed = [...entries].filter((e) => e.date < date && (e.feedKg ?? 0) > 0).sort((a, b) => b.date.localeCompare(a.date))[0]?.feedKg ?? null
+  const td = useTranslations("farm.dayAll")
 
   const edit = (patch: Partial<typeof v>) => (setSaved(false), setV({ ...v, ...patch }))
   const box = (label: string, value: string, onChange: (s: string) => void, decimal = false) => (
@@ -114,9 +118,16 @@ export function BatchDayForm({
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        {box(t("feedKg"), v.feedKg, (s) => edit({ feedKg: s }), true)}
-        {showEggs && box(t("eggsCollected"), v.eggsCollected, (s) => edit({ eggsCollected: s }))}
-        {showEggs && box(t("eggsBroken"), v.eggsBroken, (s) => edit({ eggsBroken: s }))}
+        <div className="col-span-2 flex flex-col gap-1.5">
+          <NumberStepper label={t("feedKg")} value={v.feedKg} onChange={(s) => edit({ feedKg: s })} decimal />
+          {lastFeed != null && v.feedKg !== String(lastFeed) && (
+            <button type="button" onClick={() => edit({ feedKg: String(lastFeed) })} className="self-start rounded-full border-2 border-dashed border-primary px-3 py-1 text-sm font-semibold text-primary">
+              {td("sameAsLast", { kg: lastFeed })}
+            </button>
+          )}
+        </div>
+        {showEggs && <NumberStepper label={t("eggsCollected")} value={v.eggsCollected} onChange={(s) => edit({ eggsCollected: s })} />}
+        {showEggs && <NumberStepper label={t("eggsBroken")} value={v.eggsBroken} onChange={(s) => edit({ eggsBroken: s })} />}
       </div>
 
       <fieldset className="flex flex-col gap-2 rounded-xl border border-dashed p-3">
