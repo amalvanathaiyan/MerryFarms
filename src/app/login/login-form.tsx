@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 
 const FIELD = "flex flex-col gap-1.5 text-sm font-semibold"
 
-/** Owners sign in with email and password; staff with their Staff ID and password, as on Hotelier-4U. */
+/** Owners and super admins sign in with email or username and password; staff with their Staff ID and password. */
 export function LoginForm({ next, forAdmin, farmKnown }: { next: string; forAdmin: boolean; farmKnown: boolean }) {
   const t = useTranslations("login")
   const [mode, setMode] = useState<"email" | "staff">("email")
@@ -50,8 +50,8 @@ export function LoginForm({ next, forAdmin, farmKnown }: { next: string; forAdmi
       <form onSubmit={submit} className="flex flex-col gap-4">
         {mode === "email" ? (
           <label className={FIELD}>
-            {t("email")}
-            <Input name="email" type="email" required autoComplete="email" className="h-12 font-normal" />
+            {t("emailOrUsername")}
+            <Input name="email" type="text" inputMode="email" required autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="username" className="h-12 font-normal" />
           </label>
         ) : (
           <>

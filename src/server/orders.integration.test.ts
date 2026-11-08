@@ -1071,6 +1071,48 @@ describe("sign-in and staff logins", () => {
     await expect(staffSvc.assertFarmLogin("auth-valli")).resolves.toBeUndefined()
   })
 
+  it("lets super admins and farm admins sign in with a username, and nobody else", async () => {
+    const names = await import("./usernames")
+    const farm = await prisma.tenant.findUniqueOrThrow({ where: { slug: "vallifarm" } })
+    const staffer = await tenantDb(farm.id).staffMember.findFirstOrThrow({ where: { staffCode: "VAL-002" } })
+
+    await names.setUsername("auth-valli", "  Valli ")
+    expect(await names.usernameOf("auth-valli")).toBe("valli")
+    expect(await names.usernameLogin("VALLI")).toEqual({ authUserId: "auth-valli", email: "valli@example.com" })
+    expect(await names.usernameLoginEmail("valli")).toBe("valli@example.com")
+
+    await names.setUsername("auth-boss", "boss")
+    expect(await names.usernameLogin("boss")).toEqual({ authUserId: "auth-boss", email: null })
+
+    await expect(names.setUsername("auth-boss", "valli")).rejects.toThrow("username_taken")
+    await expect(names.setUsername("auth-valli", "va")).rejects.toThrow("username_invalid")
+    await expect(names.setUsername(staffer.authUserId, "helper")).rejects.toThrow("username_not_allowed")
+    await expect(names.setUsername("nobody", "nobody")).rejects.toThrow("username_not_allowed")
+
+    // Changing keeps one username per login; the old one is free again.
+    await names.setUsername("auth-valli", "valli.farm")
+    expect(await names.usernameLogin("valli")).toBeNull()
+    expect(await names.usernameOf("auth-valli")).toBe("valli.farm")
+    await names.setUsername("auth-valli", "valli.farm")
+    expect(await names.usernameOf("auth-valli")).toBe("valli.farm")
+
+    // Unknown or badly written names find nothing, the same as a wrong password.
+    expect(await names.usernameLogin("ghost")).toBeNull()
+    expect(await names.usernameLogin("a b")).toBeNull()
+
+    // A farm admin whose access is removed can't sign in with the username either.
+    const valli = await tenantDb(farm.id).staffMember.findFirstOrThrow({ where: { authUserId: "auth-valli" } })
+    await tenantDb(farm.id).staffMember.updateMany({ where: { id: valli.id }, data: { isActive: false } })
+    expect(await names.usernameLogin("valli.farm")).toBeNull()
+    await tenantDb(farm.id).staffMember.updateMany({ where: { id: valli.id }, data: { isActive: true } })
+    expect(await names.usernameLogin("valli.farm")).not.toBeNull()
+
+    // Empty removes it.
+    await names.setUsername("auth-valli", "")
+    expect(await names.usernameOf("auth-valli")).toBeNull()
+    await names.setUsername("auth-boss", "")
+  })
+
   it("won't reset a password that also opens another farm or the admin area", async () => {
     process.env.DEMO_LOGIN = "1"
     const staffSvc = await import("./staff")
