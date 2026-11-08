@@ -722,36 +722,127 @@ model ClosedDay {
   @@map("closed_days")
 }
 
-/// One day's flock figures, entered by the farm (one row per farm per day).
-model DailyRecord {
+/// A batch of birds (or other animals) that came onto the farm together: bought in, or hatched here.
+/// Its birds alive are never typed: chicks at the start minus everything lost, sold or given (see src/domain/batches.ts).
+model Batch {
+  id             String   @id @default(uuid())
+  tenantId       String
+  number         Int // Batch 1, 2, 3… per farm
+  name           String
+  breed          String? // e.g. நாட்டுக்கோழி, Aseel
+  purpose        String // eggs | meat | breeding
+  source         String // bought | hatched
+  supplier       String?
+  startDate      String // IST: first day on the farm (for hatched: the hatch day)
+  ageAtStartDays Int      @default(0) // age when it came; 0 when hatched here
+  startCount     Int // chicks on the first day
+  eggsSet        Int? // hatched here: eggs put to hatch
+  parentBatchId  String? // hatched here: the batch whose eggs they were
+  eggValuePaise  Int? // what one egg from this batch is worth, to value eggs in its profit
+  closedDate     String? // IST: the batch is finished (all sold or gone)
+  note           String?
+  createdAt      DateTime @default(now())
+
+  days         BatchDay[]
+  losses       BatchLoss[]
+  vaccinations BatchVaccination[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, closedDate])
+  @@map("batches")
+}
+
+/// One day of one batch: feed, eggs, birds sold or given. Losses for the day are BatchLoss rows.
+model BatchDay {
   id            String   @id @default(uuid())
   tenantId      String
-  date          String // IST "2026-10-22"
+  batchId       String
+  date          String // IST
+  feedKg        Float?
   eggsCollected Int?
   eggsBroken    Int?
-  birds         Int? // birds in the flock that day
-  birdsLost     Int? // died or culled
-  feedKg        Float?
+  sold          Int      @default(0) // birds sold
+  soldPaise     Int      @default(0) // money for those birds
+  given         Int      @default(0) // used at home or given away
   note          String?
   byStaffId     String?
   updatedAt     DateTime @updatedAt
 
-  @@unique([tenantId, date])
-  @@map("daily_records")
+  batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, date])
+  @@index([tenantId, date])
+  @@map("batch_days")
+}
+
+/// Birds lost from a batch on a day, by cause (one row per cause), so losses can be counted and priced.
+model BatchLoss {
+  id       String @id @default(uuid())
+  tenantId String
+  batchId  String
+  date     String // IST
+  cause    String // disease | predator | heat | weak | injury | unknown | culled
+  count    Int
+
+  batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, date])
+  @@index([tenantId, date])
+  @@map("batch_losses")
+}
+
+/// The farm's own vaccine plan, by age in days. Each new batch gets a copy of the doses still ahead of it.
+model VaccineScheduleItem {
+  id        String   @id @default(uuid())
+  tenantId  String
+  vaccine   String // e.g. Lasota, Gumboro, as the farm or its vet calls it
+  ageDays   Int // give at this age
+  method    String? // see VACCINE_METHODS in src/domain/vaccinations.ts
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, ageDays])
+  @@map("vaccine_schedule")
+}
+
+/// One dose for a batch: planned (dueDate, not yet given) and/or given (givenDate).
+/// A given dose with a cost has a "medicine" expense on the batch (expenseId), so it counts in profit.
+model BatchVaccination {
+  id        String   @id @default(uuid())
+  tenantId  String
+  batchId   String
+  vaccine   String
+  method    String?
+  dueDate   String? // IST: planned day (hatch day + age)
+  givenDate String? // IST: day it was given; null while planned
+  birds     Int? // birds given the dose
+  expenseId String?
+  note      String?
+  byStaffId String?
+  createdAt DateTime @default(now())
+
+  batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@index([tenantId, givenDate, dueDate])
+  @@map("batch_vaccinations")
 }
 
 /// Money spent running the farm (feed, medicine, chicks, labour…), for profit.
+/// batchId: spent on one batch (chicks, medicine). quantityKg: feed bought, which fills the feed store.
 model Expense {
   id          String   @id @default(uuid())
   tenantId    String
   date        String // IST
-  kind        String // feed | medicine | chicks | labour | transport | electricity | packing | other
+  kind        String // see EXPENSE_KINDS in src/domain/records.ts
   amountPaise Int
+  quantityKg  Float?
+  batchId     String?
   note        String?
   byStaffId   String?
   createdAt   DateTime @default(now())
 
   @@index([tenantId, date])
+  @@index([batchId])
   @@map("expenses")
 }
 

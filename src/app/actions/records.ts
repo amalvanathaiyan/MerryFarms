@@ -6,43 +6,49 @@ import { OWNER_ONLY, requireStaff } from "@/lib/auth"
 import { featuresOf } from "@/lib/features"
 import { istDate } from "@/domain/ist"
 import { rupeesToPaise } from "@/domain/money"
-import { checkDayRecord, EXPENSE_KINDS } from "@/domain/records"
+import { EXPENSE_KINDS } from "@/domain/records"
 import { saveProduction } from "@/server/production"
 import { OrderError } from "@/server/orders"
 
 type Result = { ok: true } | { ok: false; error: string }
 const ymd = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
-const count = z.number().int().min(0).max(10_000_000).nullable()
 
-/** One day's flock figures; saving again the same day updates it. Owner and packing staff. */
-export async function saveDayRecord(raw: unknown): Promise<Result> {
-  const parsed = z
-    .object({ date: ymd, eggsCollected: count, eggsBroken: count, birds: count, birdsLost: count, feedKg: z.number().min(0).max(100_000).nullable(), note: z.string().trim().max(200).optional() })
-    .safeParse(raw)
-  if (!parsed.success) return { ok: false, error: "record_invalid" }
-  const { db, tenant, staff } = await requireStaff(["owner", "packing"])
-  if (!featuresOf(tenant).farmRecords) return { ok: false, error: "feature_off" }
-  const { date, note, ...figures } = parsed.data
-  if (date > istDate(new Date())) return { ok: false, error: "record_future" }
-  const problem = checkDayRecord(figures)
-  if (problem) return { ok: false, error: problem }
-  await db.dailyRecord.upsert({
-    where: { tenantId_date: { tenantId: tenant.id, date } },
-    update: { ...figures, note: note || null, byStaffId: staff.id },
-    create: { tenantId: tenant.id, date, ...figures, note: note || null, byStaffId: staff.id },
-  })
-  revalidatePath("/farm", "layout")
-  return { ok: true }
-}
-
+/**
+ * Owner: money spent. Feed can carry its kg, which fills the feed store and prices the feed each batch eats.
+ * Other spending can be put on one batch (chicks, medicine); feed never is, because a batch's feed cost comes
+ * from what it ate, and counting the purchase too would count it twice.
+ */
 export async function addExpense(raw: unknown): Promise<Result> {
-  const parsed = z.object({ date: ymd, kind: z.enum(EXPENSE_KINDS), amountRupees: z.number().positive().max(10_000_000), note: z.string().trim().max(120).optional() }).safeParse(raw)
+  const parsed = z
+    .object({
+      date: ymd,
+      kind: z.enum(EXPENSE_KINDS),
+      amountRupees: z.number().positive().max(10_000_000),
+      quantityKg: z.number().positive().max(1_000_000).nullable().optional(),
+      batchId: z.string().uuid().nullable().optional(),
+      note: z.string().trim().max(120).optional(),
+    })
+    .safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_form" }
   const { db, tenant, staff } = await requireStaff(OWNER_ONLY)
   if (!featuresOf(tenant).farmRecords) return { ok: false, error: "feature_off" }
-  if (parsed.data.date > istDate(new Date())) return { ok: false, error: "record_future" }
+  const d = parsed.data
+  if (d.date > istDate(new Date())) return { ok: false, error: "record_future" }
+  // Feed kg and batches belong to poultry care; without it, an expense is just an amount.
+  const poultry = featuresOf(tenant).poultryCare
+  const batchId = !poultry || d.kind === "feed" ? null : (d.batchId ?? null)
+  if (batchId && !(await db.batch.findFirst({ where: { id: batchId }, select: { id: true } }))) return { ok: false, error: "batch_not_found" }
   await db.expense.create({
-    data: { tenantId: tenant.id, date: parsed.data.date, kind: parsed.data.kind, amountPaise: rupeesToPaise(parsed.data.amountRupees), note: parsed.data.note || null, byStaffId: staff.id },
+    data: {
+      tenantId: tenant.id,
+      date: d.date,
+      kind: d.kind,
+      amountPaise: rupeesToPaise(d.amountRupees),
+      quantityKg: poultry && d.kind === "feed" ? (d.quantityKg ?? null) : null,
+      batchId,
+      note: d.note || null,
+      byStaffId: staff.id,
+    },
   })
   revalidatePath("/farm", "layout")
   return { ok: true }
