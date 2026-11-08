@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl"
 import { getLocale } from "next-intl/server"
 import { getTenant } from "@/lib/tenant"
 import "./globals.css"
+import { DISPLAY_SCRIPT } from "@/lib/display"
 
 // Body: Hind Madurai, one family for Tamil and English. Headings: Baloo Thambi 2, rounded and warm.
 const body = Hind_Madurai({
@@ -42,7 +43,11 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale()
   return (
-    <html lang={locale} className={`${body.variable} ${heading.variable}`}>
+    // The display choice (soft colours, light/dark, larger text) is set on <html> before React loads.
+    <html lang={locale} className={`${body.variable} ${heading.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: DISPLAY_SCRIPT }} />
+      </head>
       <body className="min-h-dvh antialiased">
         <NextIntlClientProvider>{children}</NextIntlClientProvider>
       </body>
