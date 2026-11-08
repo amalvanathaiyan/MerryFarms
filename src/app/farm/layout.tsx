@@ -9,6 +9,7 @@ import { WheelMark } from "@/components/art/wheel-mark"
 import type { Metadata } from "next"
 import { getTenant } from "@/lib/tenant"
 import { InstallCatcher } from "@/components/install-app"
+import { HeaderHeight } from "@/components/header-height"
 
 export const dynamic = "force-dynamic"
 
@@ -30,7 +31,8 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
     <div className="flex min-h-dvh flex-col">
       <InstallCatcher />
       {/* Only the farm and the language here: everything else is one tap away in the menu (More). */}
-      <header className="sticky top-0 z-20 border-b bg-header/95 text-header-foreground backdrop-blur print:hidden">
+      <HeaderHeight id="app-header" />
+      <header id="app-header" className="sticky top-0 z-20 border-b bg-header/95 text-header-foreground backdrop-blur print:hidden">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
           <div className="flex min-w-0 flex-1 items-center gap-3">
             {tenant.logoUrl ? (

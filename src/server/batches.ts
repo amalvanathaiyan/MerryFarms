@@ -1,6 +1,6 @@
 import "server-only"
 import { tenantDb } from "@/lib/tenant-db"
-import { batchMoney, batchStatus, checkBatch, checkBatchDay, feedStore, outOnDay, type BatchDayRow, type BatchInfo, type BatchLossRow } from "@/domain/batches"
+import { batchMoney, batchStatus, boughtIn, checkBatch, checkBatchDay, feedStore, outOnDay, type BatchDayRow, type BatchInfo, type BatchLossRow } from "@/domain/batches"
 import { OrderError } from "./orders"
 import { planNewBatch } from "./vaccinations"
 import { addEggs } from "./stock"
@@ -101,8 +101,10 @@ export async function createBatch(tenantId: string, staffId: string, input: Batc
         const last = await tx.batch.findFirst({ orderBy: { number: "desc" }, select: { number: true } })
         const number = (last?.number ?? 0) + 1
         const batch = await tx.batch.create({ data: { ...data, tenantId, number, name: data.name || `#${number}` } })
-        if (input.source === "bought" && chicksCostPaise && chicksCostPaise > 0) {
-          await tx.expense.create({ data: { tenantId, date: input.startDate, kind: "chicks", amountPaise: chicksCostPaise, batchId: batch.id, note: input.supplier, byStaffId: staffId } })
+        // What was paid for the chicks, or for the eggs that were hatched, is the batch's starting cost.
+        if (boughtIn(input.source) && chicksCostPaise && chicksCostPaise > 0) {
+          const note = input.source === "eggs_bought" ? ["Hatching eggs", input.supplier].filter(Boolean).join(" · ") : input.supplier
+          await tx.expense.create({ data: { tenantId, date: input.startDate, kind: "chicks", amountPaise: chicksCostPaise, batchId: batch.id, note, byStaffId: staffId } })
         }
         await planNewBatch(tx, tenantId, batch)
         return batch
