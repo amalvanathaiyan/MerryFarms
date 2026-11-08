@@ -795,7 +795,9 @@
       "name": "Name",
       "changePassword": "Change password",
       "currentPassword": "Current password",
-      "saved": "Saved."
+      "saved": "Saved.",
+      "username": "Username (optional)",
+      "usernameHint": "Sign in with this instead of your email, if you like. Small letters a–z, numbers, dot, - or _; 3 to 30 long, starting with a letter. Leave it empty to sign in with your email only."
     }
   },
   "login": {
@@ -835,7 +837,11 @@
     "same_password": "That's your old password. Choose a different one.",
     "link_expired": "This link has expired. Ask for a new one from the sign-in page.",
     "current_wrong": "Your current password is wrong.",
-    "too_many_emails": "Too many emails sent just now. Wait an hour and try again, or call FarmForYou."
+    "too_many_emails": "Too many emails sent just now. Wait an hour and try again, or call FarmForYou.",
+    "emailOrUsername": "Email or username",
+    "username_invalid": "That username can't be used. Use small letters a–z, numbers, dot, - or _, 3 to 30 long, starting with a letter.",
+    "username_taken": "Someone already has that username. Choose another.",
+    "username_not_allowed": "Only farm owners and FarmForYou admins can have a username."
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",

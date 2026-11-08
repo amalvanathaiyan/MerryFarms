@@ -233,6 +233,16 @@ model PlatformAdmin {
   @@map("platform_admins")
 }
 
+/// A username a super admin or farm admin (owner) can sign in with instead of their email.
+/// One per login, unique across the platform, stored lowercase. Not a farm table: a login isn't one farm's.
+model LoginUsername {
+  username   String   @id
+  authUserId String   @unique
+  createdAt  DateTime @default(now())
+
+  @@map("login_usernames")
+}
+
 // ─────────────────────────────────────────────────
 // CATALOGUE & DELIVERY
 // ─────────────────────────────────────────────────
