@@ -311,3 +311,13 @@ describe("renumbering a batch", () => {
     expect(next.number).toBe(2)
   })
 })
+
+describe("a batch hatched from bought eggs", () => {
+  it("books what was paid for the eggs as the batch's starting cost, noted as hatching eggs", async () => {
+    const b = await batches.createBatch(T2, "s1", { ...input({ name: "Hatched lot", source: "eggs_bought", supplier: "Salem farm", ageAtStartDays: 0, startCount: 80, eggsSet: 100 }), chicksCostPaise: 150_000 }, TODAY)
+    const e = await tenantDb(T2).expense.findFirstOrThrow({ where: { batchId: b.id } })
+    expect([e.kind, e.amountPaise, e.note]).toEqual(["chicks", 150_000, "Hatching eggs · Salem farm"])
+    expect(await code(batches.createBatch(T2, "s1", { ...input({ source: "eggs_bought", ageAtStartDays: 0, startCount: 120, eggsSet: 100 }), chicksCostPaise: null }, TODAY))).toBe("hatched_more_than_set")
+  })
+})
+

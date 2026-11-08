@@ -3,6 +3,8 @@ import {
   ageDays,
   batchMoney,
   batchStatus,
+  boughtIn,
+  hatchedHere,
   checkBatch,
   checkBatchDay,
   dayOnFarm,
@@ -186,5 +188,19 @@ describe("losses in ₹", () => {
 
   it("counts birds from a batch with no costs at ₹0", () => {
     expect(lossesValued([loss("2026-10-02", "heat", 2, "bx")], new Map())).toEqual([{ cause: "heat", count: 2, valuePaise: 0 }])
+  })
+})
+
+describe("where a batch came from", () => {
+  it("knows which starts were bought and which were hatched here", () => {
+    expect([boughtIn("bought"), boughtIn("eggs_bought"), boughtIn("hatched")]).toEqual([true, true, false])
+    expect([hatchedHere("bought"), hatchedHere("eggs_bought"), hatchedHere("hatched")]).toEqual([false, true, true])
+  })
+
+  it("refuses more chicks than eggs set, for bought eggs as for the farm's own", () => {
+    const b = { startDate: "2026-10-01", ageAtStartDays: 0, startCount: 90, eggsSet: 80 }
+    expect(checkBatch({ ...b, source: "eggs_bought" }, "2026-10-21")).toBe("hatched_more_than_set")
+    expect(checkBatch({ ...b, source: "hatched" }, "2026-10-21")).toBe("hatched_more_than_set")
+    expect(checkBatch({ ...b, source: "eggs_bought", eggsSet: 100 }, "2026-10-21")).toBeNull()
   })
 })

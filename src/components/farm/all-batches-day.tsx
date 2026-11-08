@@ -100,12 +100,15 @@ export function AllBatchesDay({ date, today, minDate, batches }: { date: string;
         const lostCount = Object.values(r.losses).reduce((a, v) => a + (Number(v) || 0), 0)
         return (
           <section key={b.id} className={cn("flex flex-col gap-3 rounded-2xl border-2 bg-card p-4", res?.ok ? "border-primary/50" : res ? "border-destructive/50" : "border-border")}>
-            <div className="flex items-start justify-between gap-2">
-              <Link href={`/farm/poultry/batches/${b.id}`} className="min-w-0">
-                <span className="block text-lg leading-tight font-bold">
-                  {b.name} <span className="font-normal text-muted-foreground">· {tb("batchNo", { number: b.number })}</span>
+            {/* A thin, light bar pinned under the app header while this batch is on screen, so the numbers below
+                always say which batch they're for. */}
+            <div className="sticky z-10 -mx-4 -mt-4 flex items-center justify-between gap-2 rounded-t-2xl border-b bg-sec-poultry-tint/95 px-4 py-2 backdrop-blur" style={{ top: "var(--app-header-h, 66px)" }}>
+              <Link href={`/farm/poultry/batches/${b.id}`} className="min-w-0 truncate">
+                <span className="font-bold">{b.name}</span>
+                <span className="text-sm text-muted-foreground">
+                  {" "}
+                  · {tb("batchNo", { number: b.number })} · {t("birdsShort", { count: b.alive })}
                 </span>
-                <span className="block text-sm text-muted-foreground">{t("alive", { count: b.alive })}</span>
               </Link>
               {res?.ok ? (
                 <span className="flex shrink-0 items-center gap-1 rounded-full bg-accent px-2.5 py-0.5 text-sm font-bold text-primary">
@@ -213,7 +216,7 @@ export function AllBatchesDay({ date, today, minDate, batches }: { date: string;
                 })
               })
             }
-            className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-sec-poultry text-lg font-bold text-sec-on shadow-lg disabled:opacity-50"
+            className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-sec-poultry text-lg font-bold text-sec-on shadow-lg disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
           >
             <Save className="size-5" aria-hidden />
             {pending ? t("saving") : toSave.length > 0 ? t("saveCount", { count: toSave.length }) : Object.values(results).some((x) => x.ok) ? `✓ ${t("allSaved")}` : t("save")}

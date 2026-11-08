@@ -48,7 +48,7 @@ export default async function PoultryCostsPage({ searchParams }: { searchParams:
             </Link>
             <dl className="flex flex-col gap-1.5 text-base">
               <div className="flex justify-between gap-3">
-                <dt>{t("chicks")}</dt>
+                <dt>{batch.source === "eggs_bought" ? t("eggsBought") : t("chicks")}</dt>
                 <dd className="tabular-nums">{formatRupees(money.chicksPaise)}</dd>
               </div>
               <div className="flex justify-between gap-3">

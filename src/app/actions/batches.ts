@@ -6,7 +6,7 @@ import { OWNER_ONLY, requireStaff } from "@/lib/auth"
 import { featuresOf } from "@/lib/features"
 import { istDate } from "@/domain/ist"
 import { rupeesToPaise } from "@/domain/money"
-import { BATCH_PURPOSES, BATCH_SOURCES, LOSS_CAUSES } from "@/domain/batches"
+import { BATCH_PURPOSES, BATCH_SOURCES, LOSS_CAUSES, boughtIn, hatchedHere } from "@/domain/batches"
 import { createBatch, deleteBatch, saveBatchDay, saveBatchDays, setBatchClosed, updateBatch } from "@/server/batches"
 import { OrderError } from "@/server/orders"
 
@@ -54,12 +54,12 @@ const toBatch = (d: z.infer<typeof batchInput>) => ({
   breed: orNull(d.breed),
   purpose: d.purpose,
   source: d.source,
-  supplier: d.source === "bought" ? orNull(d.supplier) : null,
+  supplier: boughtIn(d.source) ? orNull(d.supplier) : null,
   startDate: d.startDate,
   // Hatched here: the first day is the hatch day.
-  ageAtStartDays: d.source === "hatched" ? 0 : d.ageAtStartDays,
+  ageAtStartDays: hatchedHere(d.source) ? 0 : d.ageAtStartDays,
   startCount: d.startCount,
-  eggsSet: d.source === "hatched" ? d.eggsSet : null,
+  eggsSet: hatchedHere(d.source) ? d.eggsSet : null,
   parentBatchId: d.source === "hatched" ? d.parentBatchId : null,
   eggValuePaise: d.eggValueRupees != null && d.eggValueRupees > 0 ? rupeesToPaise(d.eggValueRupees) : null,
   note: orNull(d.note),
