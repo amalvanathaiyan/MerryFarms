@@ -130,6 +130,15 @@ CREATE TABLE "platform_admins" (
 );
 
 -- CreateTable
+CREATE TABLE "login_usernames" (
+    "username" TEXT NOT NULL,
+    "authUserId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "login_usernames_pkey" PRIMARY KEY ("username")
+);
+
+-- CreateTable
 CREATE TABLE "categories" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
@@ -555,6 +564,9 @@ CREATE UNIQUE INDEX "staff_members_tenantId_staffCode_key" ON "staff_members"("t
 
 -- CreateIndex
 CREATE UNIQUE INDEX "platform_admins_authUserId_key" ON "platform_admins"("authUserId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "login_usernames_authUserId_key" ON "login_usernames"("authUserId");
 
 -- CreateIndex
 CREATE INDEX "categories_tenantId_idx" ON "categories"("tenantId");

@@ -9,12 +9,16 @@ const FIELD = "flex flex-col gap-1.5 text-sm font-semibold"
 
 type Save = (raw: unknown) => Promise<{ error?: string }>
 
-/** Name and password, for farm people and platform admins; `save` is the server action for whichever this is. */
-export function AccountForm(props: { name: string; staffCode: string | null; email: string | null; canChangePassword: boolean; save: Save }) {
+/**
+ * Name, username and password, for farm people and super admins; `save` is the server action for whichever this is.
+ * `username` is null for people who can't have one (staff sign in with their Staff ID).
+ */
+export function AccountForm(props: { name: string; staffCode: string | null; email: string | null; username: string | null; canChangePassword: boolean; save: Save }) {
   const t = useTranslations("farm.account")
   const tl = useTranslations("login")
   const tc = useTranslations("common")
   const [name, setName] = useState(props.name)
+  const [username, setUsername] = useState(props.username ?? "")
   const [current, setCurrent] = useState("")
   const [next, setNext] = useState("")
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
@@ -27,7 +31,7 @@ export function AccountForm(props: { name: string; staffCode: string | null; ema
         e.preventDefault()
         setResult(null)
         start(async () => {
-          const r = await props.save({ name, currentPassword: current || undefined, newPassword: next || undefined })
+          const r = await props.save({ name, username: props.username === null ? undefined : username, currentPassword: current || undefined, newPassword: next || undefined })
           if (r.error) return setResult({ ok: false, text: tl.has(r.error) ? tl(r.error) : tl("generic") })
           setCurrent("")
           setNext("")
@@ -53,6 +57,22 @@ export function AccountForm(props: { name: string; staffCode: string | null; ema
         {t("name")}
         <Input required value={name} onChange={(e) => setName(e.target.value)} className="h-12 font-normal" />
       </label>
+      {props.username !== null && (
+        <label className={FIELD}>
+          {t("username")}
+          <Input
+            value={username}
+            onChange={(e) => setUsername(e.target.value.toLowerCase())}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            autoComplete="username"
+            maxLength={30}
+            className="h-12 font-normal lowercase"
+          />
+          <span className="font-normal text-muted-foreground">{t("usernameHint")}</span>
+        </label>
+      )}
       {props.canChangePassword && (
         <>
           <h2 className="font-semibold">{t("changePassword")}</h2>

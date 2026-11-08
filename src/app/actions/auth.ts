@@ -12,6 +12,8 @@ import { absoluteUrl } from "@/lib/urls"
 import { normaliseStaffCode } from "@/domain/staff"
 import { homeAfterSignIn } from "@/server/platform"
 import { staffLoginEmail } from "@/server/staff"
+import { usernameLoginEmail } from "@/server/usernames"
+import { isEmailLogin } from "@/domain/username"
 
 const MIN_PASSWORD = 8
 
@@ -24,7 +26,10 @@ const loginInput = z.object({
   next: z.string().max(200).optional(),
 })
 
-/** Email for owners; Staff ID on one farm for staff. Wrong ID and wrong password read the same, so IDs can't be guessed. */
+/**
+ * Super admins and farm admins (owners): email or username. Staff: Staff ID on one farm.
+ * A wrong ID or username and a wrong password read the same, so neither can be guessed.
+ */
 export async function signIn(raw: unknown): Promise<{ error: string } | undefined> {
   const parsed = loginInput.safeParse(raw)
   if (!parsed.success) return { error: "wrong_login" }
@@ -33,6 +38,11 @@ export async function signIn(raw: unknown): Promise<{ error: string } | undefine
   const host = await getTenant()
 
   let email = parsed.data.email
+  if (mode === "email" && !isEmailLogin(email)) {
+    const found = await usernameLoginEmail(email)
+    if (!found) return { error: "wrong_login" }
+    email = found
+  }
   let farm: { id: string; slug: string } | null = null
   if (mode === "staff") {
     farm = (await farmKnownFromAddress()) ? host : await prisma.tenant.findUnique({ where: { slug: parsed.data.farm }, select: { id: true, slug: true } })
