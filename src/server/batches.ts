@@ -139,11 +139,26 @@ export async function setBatchClosed(tenantId: string, id: string, closedDate: s
   await db.batch.updateMany({ where: { id }, data: { closedDate } })
 }
 
-/** Only a batch with no daily entries can be deleted (one added by mistake); its expenses stay, as farm-wide ones. */
-export async function deleteBatch(tenantId: string, id: string) {
+/** The words typed to confirm deleting a batch match its name (spaces and capitals don't matter). */
+export const namesMatch = (typed: string, name: string) => typed.trim().replace(/\s+/g, " ").toLowerCase() === name.trim().replace(/\s+/g, " ").toLowerCase()
+
+/**
+ * Deletes a batch. One with nothing entered goes at once (added by mistake). One with days entered (a test or a
+ * duplicate) needs its name typed to confirm, and takes its days, losses and vaccinations with it. Its own costs
+ * (chicks, its medicine) go too, or stay as farm-wide costs when `keepCosts`.
+ */
+export async function deleteBatch(tenantId: string, id: string, opts: { confirmName?: string; keepCosts?: boolean } = {}) {
   const db = tenantDb(tenantId)
-  if ((await entriesOf(tenantId, id)).count > 0) throw new OrderError("batch_has_entries")
-  await db.$transaction([db.expense.updateMany({ where: { batchId: id }, data: { batchId: null } }), db.batch.deleteMany({ where: { id } })])
+  const batch = await db.batch.findFirst({ where: { id } })
+  if (!batch) throw new OrderError("batch_not_found")
+  const { count } = await entriesOf(tenantId, id)
+  if (count > 0 && !namesMatch(opts.confirmName ?? "", batch.name)) throw new OrderError("batch_confirm_name")
+  await db.$transaction([
+    opts.keepCosts ? db.expense.updateMany({ where: { batchId: id }, data: { batchId: null } }) : db.expense.deleteMany({ where: { batchId: id } }),
+    // Batches hatched from this one's eggs keep their birds; they just no longer point to it.
+    db.batch.updateMany({ where: { parentBatchId: id }, data: { parentBatchId: null } }),
+    db.batch.deleteMany({ where: { id } }),
+  ])
 }
 
 export interface BatchDayInput {

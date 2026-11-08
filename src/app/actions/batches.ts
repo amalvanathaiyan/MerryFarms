@@ -94,10 +94,13 @@ export async function closeBatch(id: string, closedDate: string | null): Promise
   })
 }
 
-export async function removeBatch(id: string): Promise<Result> {
+/** Owner: delete a batch. With days entered, its name must be typed to confirm; its own costs go too unless kept. */
+export async function removeBatch(id: string, raw: unknown = {}): Promise<Result> {
+  const parsed = z.object({ confirmName: z.string().max(80).optional(), keepCosts: z.boolean().optional() }).safeParse(raw)
+  if (!parsed.success) return { ok: false, error: "invalid_form" }
   return run(async () => {
     const { tenant } = await farm(OWNER_ONLY)
-    await deleteBatch(tenant.id, id)
+    await deleteBatch(tenant.id, id, parsed.data)
   })
 }
 

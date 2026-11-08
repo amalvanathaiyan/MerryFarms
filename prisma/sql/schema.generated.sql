@@ -635,6 +635,7 @@ CREATE TABLE "expenses" (
     "amountPaise" INTEGER NOT NULL,
     "quantityKg" DOUBLE PRECISION,
     "batchId" TEXT,
+    "spreadMonths" INTEGER,
     "note" TEXT,
     "byStaffId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
