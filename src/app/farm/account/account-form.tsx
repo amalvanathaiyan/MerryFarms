@@ -4,11 +4,13 @@ import { useState, useTransition } from "react"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { saveAccount } from "@/app/actions/account"
 
 const FIELD = "flex flex-col gap-1.5 text-sm font-semibold"
 
-export function AccountForm(props: { name: string; staffCode: string | null; email: string | null; canChangePassword: boolean }) {
+type Save = (raw: unknown) => Promise<{ error?: string }>
+
+/** Name and password, for farm people and platform admins; `save` is the server action for whichever this is. */
+export function AccountForm(props: { name: string; staffCode: string | null; email: string | null; canChangePassword: boolean; save: Save }) {
   const t = useTranslations("farm.account")
   const tl = useTranslations("login")
   const tc = useTranslations("common")
@@ -25,7 +27,7 @@ export function AccountForm(props: { name: string; staffCode: string | null; ema
         e.preventDefault()
         setResult(null)
         start(async () => {
-          const r = await saveAccount({ name, currentPassword: current || undefined, newPassword: next || undefined })
+          const r = await props.save({ name, currentPassword: current || undefined, newPassword: next || undefined })
           if (r.error) return setResult({ ok: false, text: tl.has(r.error) ? tl(r.error) : tl("generic") })
           setCurrent("")
           setNext("")

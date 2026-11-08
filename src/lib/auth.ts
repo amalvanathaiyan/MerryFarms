@@ -19,6 +19,8 @@ async function currentAuthUserId(): Promise<string | null> {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  // A password someone else was shown is only good for making their own.
+  if (user?.app_metadata?.tempPassword) redirect("/auth/update-password")
   return user?.id ?? null
 }
 

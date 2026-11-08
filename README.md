@@ -28,7 +28,7 @@ A Tamil-first, multi-tenant platform for small farms that sell direct to custome
 | Customers change or cancel | From My orders, until the slot's cut-off: **Cancel** (with a reason; stock returns; staff notified) or **Change** (the shop opens with the order's items; placing replaces the old order in one transaction, reusing its stock and slot place). After the cut-off: "Call the farm to change". |
 | Closed days | On the Slots page: close a whole day or one delivery time with a reason (e.g. Pongal). Those slots disappear for customers and staff, the shop says "No deliveries on …", plan orders skip the day, and orders already booked that day are counted for the farm to move. |
 | Staff and logins | Owner only (Settings → Staff and logins): add staff with a name, roles (owner, order desk, packing, delivery) and optional email and mobile; the app gives them a **Staff ID** (MER-002), creates the login and shows a temporary password once (e.g. Farm-4827-kmtq). Staff without an email sign in with the Staff ID on a hidden internal login; owners need a real email. Edit roles, make a new password, remove or restore access (history kept). A farm always keeps an owner, and owners can't remove their own access. In the demo, new staff appear as demo sign-in buttons. |
-| Signing in | Same flow as Hotelier-4U. **Sign-in page** with two tabs: owner (email and password) and staff (Staff ID and password; on the platform's main address they also give the Farm ID). **Register your farm** (`/register`): owner, farm names, mobile, web address, email and password; makes the farm on the free plan with a 30-day trial, straight away or after the emailed link when Supabase's "Confirm email" is on, and a sign-up interrupted part-way finishes at the next sign-in. Closed until farms have addresses (`NEXT_PUBLIC_ROOT_DOMAIN`). **Forgot password** (`/forgot-password`): emailed link, then `/auth/update-password`; it never reveals whether an email has a login. **My account** (`/farm/account`, every role): change your name and, with the current password, your password. After sign-in platform admins go to `/admin`, and staff signed in on the wrong address go to their own farm; with `NEXT_PUBLIC_ROOT_DOMAIN` set the sign-in cookie is shared across farm subdomains, and `requireStaff()` still checks the farm. |
+| Signing in | Same flow as Hotelier-4U. **Sign-in page** with two tabs: owner (email and password) and staff (Staff ID and password; on the platform's main address they also give the Farm ID). Only the platform admin creates farms, in `/admin`, and hands the owner their login; there is no self-registration. A temporary password from the platform or a farm owner only works to make your own: every page sends you to `/auth/update-password` until you do. **Forgot password** (`/forgot-password`): emailed link that works in any browser, then `/auth/update-password`; it never reveals whether an email has a login. If that fails, the platform admin resets it on request. **My account** (`/farm/account` for every farm role, `/admin/account` for platform admins): change your name and, with the current password, your password. After sign-in platform admins go to `/admin`, and staff signed in on the wrong address go to their own farm; with `NEXT_PUBLIC_ROOT_DOMAIN` set the sign-in cookie is shared across farm subdomains, and `requireStaff()` still checks the farm. |
 | Backups | Nightly encrypted database backup by GitHub Actions (`.github/workflows/backup.yml`, kept 30 days; turns on when `BACKUP_DATABASE_URL` and `BACKUP_PASSPHRASE` secrets are set). Owners can also **Download all my data** (Reports) as one JSON file without keys or links. Setup and restore: `docs/backups.md`. |
 | Any kind of farm | Categories have a type (eggs, poultry & meat, milk, ghee & dairy, oils, vegetables, greens, fruits, rice & grains, honey, spices, pickles & homemade, plants & seeds, other) chosen with a picture picker or guessed from Tamil/English names; each has its own drawing until photos are added. One-tap ready-made categories. Units include grams, ml, bottles, dozen, bunches and bags. |
 | Farm records & profit | Own feature switch. **Records** page (owner and packing staff): **Made / collected** per product each day (with spoiled; the good quantity goes into stock when stock is tracked; shown in Reports). For poultry farms also each day's eggs collected and broken, birds in the flock and lost, feed used (kg), note; last two weeks at a glance. Owner adds **expenses** by type (feed, medicine, chicks, labour, transport, electricity/water, trays & packing, other). **Reports → Farm and profit**: net sales minus spending = profit (and margin), good eggs per day, laying rate, feed cost and all costs per egg, birds lost, spending by type. Today reminds owner/packing staff to enter the day's record. |
@@ -76,24 +76,20 @@ Open http://localhost:3000 for the shop. The farm app needs a real Supabase proj
 ## Set up on Supabase (free tier)
 
 1. Create a Supabase project (region: Mumbai). Copy `.env.local.template` to `.env.local` and fill it in.
-2. In Supabase → Authentication → Providers, keep Email on. Leave "Confirm email" on so self-registered owners prove their email (logins made by the app or scripts skip it). In Authentication → URL Configuration set the Site URL to your address and add `https://*.your-domain/auth/callback**` (and `http://localhost:3000/auth/callback**`) to the Redirect URLs, or emailed links won't work. Supabase's built-in email sends only a few messages an hour; add your own SMTP before opening registration widely.
-3. Create the tables and lock the public API:
+2. In Supabase → Authentication → Providers, keep Email on. Turn off "Allow new users to sign up": logins are only made by the app and scripts, which aren't affected. In Authentication → URL Configuration set the Site URL to your address and add `https://*.your-domain/auth/callback**` (and `http://localhost:3000/auth/callback**`) to the Redirect URLs, or emailed links won't work. Supabase's built-in email sends only a few messages an hour; add your own SMTP if "Forgot password" emails start failing.
+3. Create the tables and lock the public API. The platform starts with no farms:
    ```bash
    npm run db:push
    npm run db:rls
-   npm run db:seed            # add -- --demo for sample orders
    ```
-4. Create the owner's login:
+4. Create the first platform admin, the login that runs the platform:
    ```bash
-   npm run staff:add -- --email you@example.com --password 'a-long-password' --name "Your name" --roles owner
-   ```
-   and, for running the platform (adding more farms, plans, trials), make yourself a platform admin. The same login can be both:
-   ```bash
-   npm run admin:add -- --email you@example.com --name "Your name"
+   npm run admin:add -- --email you@example.com --password 'a-long-password' --name "Your name"
    ```
    Then open `/admin` (in the demo: http://localhost:3000/login?next=/admin and the demo admin button).
-5. For phone notifications, run `node scripts/vapid-keys.mjs` once and add the three lines to `.env.local` (and to the host's environment settings). Keep `VAPID_PRIVATE_KEY` secret; changing the keys means everyone has to turn notifications on again.
-6. `npm run dev`, then sign in at http://localhost:3000/login.
+5. Add each farm in `/admin` → **New farm**, including the first. Set `DEFAULT_TENANT_SLUG` to the farm shown when the address has no farm subdomain. A farm owner using the same email as an admin keeps that one login and password.
+6. For phone notifications, run `node scripts/vapid-keys.mjs` once and add the three lines to `.env.local` (and to the host's environment settings). Keep `VAPID_PRIVATE_KEY` secret; changing the keys means everyone has to turn notifications on again.
+7. `npm run dev`, then sign in at http://localhost:3000/login.
 
 ## Host on Vercel
 

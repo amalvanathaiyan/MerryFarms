@@ -1,9 +1,8 @@
 /**
- * Sets up Merry Farms: farm profile, call rules, categories, products and delivery slots.
- * Safe to re-run: it only creates what is missing.
+ * Sample data for trying the app locally: a Merry Farms with placeholder products and prices, demo staff, customers and orders.
+ * Safe to re-run: it only creates what is missing. Real farms are added in /admin, never by this script.
  *
- *   npm run db:seed            catalogue and slots only (use this for the real shop)
- *   npm run db:seed -- --demo  also adds demo staff (for demo sign-in), 5 sample customers and orders
+ *   npm run db:seed -- --demo
  */
 import { config } from "dotenv"
 config({ path: ".env.local", quiet: true })
@@ -35,6 +34,7 @@ const SLOTS = [
 ]
 
 async function main() {
+  if (!demo) throw new Error("This adds sample data, so it only runs with --demo. Add real farms in /admin.")
   const slug = process.env.DEFAULT_TENANT_SLUG ?? "merryfarms"
   const phone = process.env.SEED_FARM_PHONE ?? "+919626043372"
 

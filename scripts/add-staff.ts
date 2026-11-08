@@ -39,7 +39,7 @@ async function main() {
 
   try {
     const tenant = await prisma.tenant.findUnique({ where: { slug } })
-    if (!tenant) throw new Error(`No farm with slug "${slug}". Run npm run db:seed first.`)
+    if (!tenant) throw new Error(`No farm with slug "${slug}". Add the farm in /admin first.`)
 
     let userId: string | undefined
     if (password) {
@@ -54,6 +54,8 @@ async function main() {
       userId = data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase())?.id
       if (!userId) throw new Error("No login with that email. Pass --password to create one.")
     }
+
+    if (await prisma.platformAdmin.findUnique({ where: { authUserId: userId } })) throw new Error("That login is a platform admin. A farm login needs its own email.")
 
     const codes = await prisma.staffMember.findMany({ where: { tenantId: tenant.id }, select: { staffCode: true } })
     const staffCode = nextStaffCode(tenant.slug, codes.map((c) => c.staffCode))
