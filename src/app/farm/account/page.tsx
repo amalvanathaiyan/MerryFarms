@@ -10,7 +10,7 @@ import { DisplaySettings } from "@/components/display-settings"
 export default async function AccountPage() {
   const { staff } = await requireStaff()
   // Farm admins (owners) may sign in with a username too; other staff use their Staff ID.
-  const username = staff.roles.includes("owner") ? ((await usernameOf(staff.authUserId)) ?? "") : null
+  const username = staff.storedRoles.includes("owner") ? ((await usernameOf(staff.authUserId)) ?? "") : null
 
   return (
     <div className="flex flex-col gap-4">

@@ -4,8 +4,16 @@
  */
 
 export type Role = "owner" | "manager" | "order_desk" | "packing" | "delivery"
-/** "manager" adds farm expenses but sees no totals, sales or profit. */
+/** "manager" has the owner's rights everywhere except the staff list (see effectiveRoles). */
 export const ROLES: Role[] = ["owner", "manager", "order_desk", "packing", "delivery"]
+
+/**
+ * The roles someone acts with: a manager also acts as owner. Only the staff list (who can sign in, with what
+ * role) is kept to real owners, so a manager can't remove the owner or lock them out; that checks stored roles.
+ */
+export function effectiveRoles<R extends string>(roles: readonly R[]): R[] {
+  return roles.includes("manager" as R) && !roles.includes("owner" as R) ? [...roles, "owner" as R] : [...roles]
+}
 
 type Member = { id: string; roles: Role[]; isActive: boolean }
 

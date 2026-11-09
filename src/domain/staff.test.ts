@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { checkStaffChange, internalStaffEmail, nextStaffCode, normaliseStaffCode } from "./staff"
+import { checkStaffChange, effectiveRoles, internalStaffEmail, nextStaffCode, normaliseStaffCode } from "./staff"
 import { tempPassword } from "./staff-password"
 
 const owner = { id: "o", roles: ["owner" as const], isActive: true }
@@ -46,5 +46,14 @@ describe("staff IDs", () => {
 
   it("keep hidden login emails apart between farms with the same prefix", () => {
     expect(internalStaffEmail("MER-001", "farm-a")).not.toBe(internalStaffEmail("MER-001", "farm-b"))
+  })
+})
+
+describe("a manager's rights", () => {
+  it("acts as owner, without changing other roles", () => {
+    expect(effectiveRoles(["manager"])).toEqual(["manager", "owner"])
+    expect(effectiveRoles(["manager", "packing"])).toEqual(["manager", "packing", "owner"])
+    expect(effectiveRoles(["owner", "manager"])).toEqual(["owner", "manager"])
+    expect(effectiveRoles(["packing"])).toEqual(["packing"])
   })
 })
