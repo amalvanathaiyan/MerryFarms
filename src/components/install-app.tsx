@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useSyncExternalStore } from "react"
+import { useEffect, useState, useSyncExternalStore } from "react"
 import { useTranslations } from "next-intl"
-import { Download, Share, SquarePlus, X } from "lucide-react"
+import { Copy, Download, Share, SquarePlus, X } from "lucide-react"
 
 /** Chrome and Edge's "this can be installed" event (not in TypeScript's DOM types). */
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> }
@@ -133,20 +133,71 @@ export function InstallApp({ variant }: { variant: "banner" | "panel" }) {
         </button>
       )}
 
-      {mode === "ios" && (
-        <ol className="flex flex-col gap-2 text-base">
-          <li className="flex items-center gap-2 rounded-xl bg-card p-2.5">
-            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">1</span>
-            <span>{t.rich("iosStep1", { icon: () => <Share className="inline size-5 text-primary" aria-label={t("shareIcon")} /> })}</span>
-          </li>
-          <li className="flex items-center gap-2 rounded-xl bg-card p-2.5">
-            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">2</span>
-            <span>{t.rich("iosStep2", { icon: () => <SquarePlus className="inline size-5 text-primary" aria-hidden /> })}</span>
-          </li>
-        </ol>
-      )}
+      {mode === "ios" && <IosSteps />}
 
       {mode === "menu" && <p className="text-sm">{t("menuHint")}</p>}
     </section>
   )
 }
+
+/** Which iPhone browser this is: Safari and Chrome can add to the home screen; others are sent to Safari. */
+function iosBrowser(): "safari" | "chrome" | "other" {
+  const ua = navigator.userAgent
+  if (/CriOS/.test(ua)) return "chrome"
+  if (/FxiOS|EdgiOS|OPiOS|FBAN|FBAV|Instagram|Line\/|GSA\//.test(ua)) return "other"
+  return "safari"
+}
+
+/**
+ * iPhone and iPad: Apple lets only the browser's own menu add a site to the home screen, so this can't be a button.
+ * The steps are plain text (not boxes that look tappable), for the browser in use, and a real "Copy the link" helps
+ * someone inside WhatsApp's browser (which can't add to the home screen, and can't be told apart from Safari).
+ */
+function IosSteps() {
+  const t = useTranslations("farm.install")
+  const browser = useSyncExternalStore(
+    () => () => {},
+    iosBrowser,
+    () => "safari" as const
+  )
+  const [copied, setCopied] = useState<"yes" | "no" | null>(null)
+  const link = typeof window === "undefined" ? "" : `${window.location.origin}/farm`
+  const share = () => <Share className="inline size-5 align-text-bottom text-primary" aria-label={t("shareIcon")} />
+  const add = () => <SquarePlus className="inline size-5 align-text-bottom text-primary" aria-hidden />
+  const steps =
+    browser === "chrome"
+      ? [t.rich("iosChrome1", { icon: share }), t.rich("iosChrome2", { icon: add }), t("iosAdd")]
+      : browser === "other"
+        ? [t("iosOther1"), t.rich("iosSafari1", { icon: share }), t.rich("iosSafari2", { icon: add }), t("iosAdd")]
+        : [t.rich("iosSafari1", { icon: share }), t.rich("iosSafari2", { icon: add }), t("iosAdd")]
+
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm font-semibold">{t("iosIntro")}</p>
+      <ol className="flex list-decimal flex-col gap-1.5 pl-6 text-base leading-snug marker:font-bold marker:text-primary">
+        {steps.map((s, i) => (
+          <li key={i}>{s}</li>
+        ))}
+      </ol>
+      <div className="flex flex-col gap-2 rounded-xl border-2 border-dashed border-primary/30 p-3 text-sm">
+        <p>{t("iosWhatsapp")}</p>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(link)
+              setCopied("yes")
+            } catch {
+              setCopied("no")
+            }
+          }}
+          className="flex h-11 items-center justify-center gap-2 self-start rounded-xl bg-primary px-4 font-bold text-primary-foreground"
+        >
+          <Copy className="size-4" aria-hidden /> {copied === "yes" ? t("copied") : t("copyLink")}
+        </button>
+        {copied === "no" && <p className="font-mono text-sm break-all select-all">{link}</p>}
+      </div>
+    </div>
+  )
+}
+

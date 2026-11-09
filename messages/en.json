@@ -1170,10 +1170,18 @@
       "hint": "Install it once: it then opens from its own icon on your phone or computer, like any app. No need to look for the link again.",
       "button": "Install the app",
       "close": "Not now",
-      "iosStep1": "Tap <icon></icon> Share at the bottom of the screen",
-      "iosStep2": "Choose <icon></icon> Add to Home Screen",
       "shareIcon": "Share",
-      "menuHint": "Open your browser's menu (⋮ or …) and choose “Install app” or “Add to Home screen”."
+      "menuHint": "Open your browser's menu (⋮ or …) and choose “Install app” or “Add to Home screen”.",
+      "iosIntro": "On iPhone this is done from the browser's own menu (this card can't do it for you):",
+      "iosSafari1": "In Safari, tap the Share button <icon></icon> in the bar at the bottom (on iPad, at the top).",
+      "iosSafari2": "Scroll down the list and tap <icon></icon> Add to Home Screen.",
+      "iosChrome1": "In Chrome, tap the Share button <icon></icon> next to the address at the top.",
+      "iosChrome2": "Tap <icon></icon> Add to Home Screen (scroll down if you don't see it).",
+      "iosAdd": "Tap Add at the top right. The farm app icon appears on your home screen.",
+      "iosOther1": "This browser can't add apps to the home screen. Copy the link below, open Safari, and paste it in the address bar. Then:",
+      "iosWhatsapp": "Opened from WhatsApp, or no Share button at the bottom? You're in another app's browser. Copy the link, open Safari, paste it, and follow the steps there.",
+      "copyLink": "Copy the link",
+      "copied": "✓ Link copied. Now open Safari and paste it."
     },
     "dayAll": {
       "title": "Enter today",
