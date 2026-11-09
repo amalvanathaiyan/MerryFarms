@@ -50,3 +50,40 @@ export function staffNewOrderNote(o: { code: string; customerName: string; total
     tag: `new-${o.code}`,
   }
 }
+
+// ── Poultry reminders (staff: Tamil and English together) ─────────────────────
+
+const names = (xs: string[]) => clip(xs.join(", "), 80)
+
+/** Evening: batches with nothing entered for today. */
+export function staffNotEnteredNote(batchNames: string[]): Note {
+  const n = batchNames.length
+  return {
+    title: `இன்றைய பதிவு இல்லை · ${n === 1 ? "1 batch not entered" : `${n} batches not entered`}`,
+    body: `${names(batchNames)} · இப்போதே பதியுங்கள் / enter it now`,
+    url: "/farm/poultry/today",
+    tag: "not-entered",
+  }
+}
+
+/** Morning: vaccine doses due today or late. */
+export function staffVaccinesDueNote(doses: { vaccine: string; batchName: string; late: boolean }[]): Note {
+  const n = doses.length
+  const late = doses.some((d) => d.late)
+  return {
+    title: `தடுப்பூசி · ${n === 1 ? "1 vaccine due" : `${n} vaccines due`}${late ? " · தாமதம் / late" : ""}`,
+    body: names(doses.map((d) => `${d.vaccine} (${d.batchName})`)),
+    url: "/farm/poultry/vaccines",
+    tag: "vaccines-due",
+  }
+}
+
+/** Morning: warnings worked out from the entries (unusual losses, feed running out, eggs dropping). */
+export function staffWarningsNote(lines: { ta: string; en: string }[]): Note {
+  return {
+    title: `கவனிக்கவும் · ${lines.length === 1 ? "1 thing to check" : `${lines.length} things to check`}`,
+    body: clip(lines.map((l) => `${l.ta} / ${l.en}`).join(" · "), 160),
+    url: "/farm",
+    tag: "warnings",
+  }
+}
