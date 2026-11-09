@@ -1,11 +1,11 @@
-import { OWNER_ONLY, requireStaff } from "@/lib/auth"
+import { requireStaffAdmin } from "@/lib/auth"
 import { DEMO_AUTH_PREFIX, isDemoLoginEnabled } from "@/lib/demo-auth"
 import { StaffManager } from "@/components/farm/staff-manager"
 import { SectionHeader } from "@/components/farm/section-header"
 
-/** Owner only: who works on the farm app and what each person can do. */
+/** Owner only (not managers): who works on the farm app and what each person can do. */
 export default async function StaffPage() {
-  const { db, staff } = await requireStaff(OWNER_ONLY)
+  const { db, staff } = await requireStaffAdmin()
   const members = await db.staffMember.findMany({ orderBy: [{ isActive: "desc" }, { createdAt: "asc" }] })
 
   return (

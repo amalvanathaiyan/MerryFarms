@@ -49,7 +49,7 @@ export async function saveAccount(raw: unknown): Promise<{ error?: string }> {
   const { name, username, currentPassword, newPassword } = parsed.data
   const { db, staff } = await requireStaff()
 
-  const usernameError = await saveUsername(staff.authUserId, staff.roles.includes("owner") ? username : undefined)
+  const usernameError = await saveUsername(staff.authUserId, staff.storedRoles.includes("owner") ? username : undefined)
   if (usernameError) return { error: usernameError }
 
   if (newPassword) {

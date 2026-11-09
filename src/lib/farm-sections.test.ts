@@ -27,14 +27,15 @@ describe("the bottom menu", () => {
     expect(keys(poultryTabs({ roles: ["packing"], features: withPoultry }))).toEqual(["batches", "vaccines", "feed"])
   })
 
-  it("gives a manager only Spending under Money: no sales, no profit, no poultry, no settings", () => {
-    const menu = mainMenu({ roles: ["manager"], features: withPoultry })
-    expect(keys(menu)).toEqual(["today", "orders", "money", "more"])
-    expect(menu.find((m) => m.key === "money")?.href).toBe("/farm/money/spending")
-    expect(keys(moneyTabs({ roles: ["manager"], features: withPoultry }))).toEqual(["spending"])
-    expect(keys(moreTiles({ roles: ["manager"], features: plain }))).toEqual(["account"])
-    // Combined with packing, they also get Poultry and Made.
-    expect(keys(moneyTabs({ roles: ["manager", "packing"], features: withPoultry }))).toEqual(["spending", "made"])
+  it("gives a manager everything the owner has, except the Staff list", () => {
+    const owner = { roles: ["owner"], features: withPoultry }
+    const manager = { roles: ["manager"], features: withPoultry }
+    expect(mainMenu(manager)).toEqual(mainMenu(owner))
+    expect(moneyTabs(manager)).toEqual(moneyTabs(owner))
+    expect(poultryTabs(manager)).toEqual(poultryTabs(owner))
+    const ownerTiles = keys(moreTiles(owner))
+    expect(ownerTiles).toContain("staff")
+    expect(keys(moreTiles(manager))).toEqual(ownerTiles.filter((k) => k !== "staff"))
   })
 
   it("lights up the right button for every page", () => {

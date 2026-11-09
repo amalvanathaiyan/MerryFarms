@@ -774,7 +774,7 @@
       "passwordHint": "Send it to them privately (e.g. on WhatsApp). It is shown only now; you can make a new one any time.",
       "done": "Done",
       "role_manager": "Manager",
-      "roleHint_manager": "Add farm expenses like labour and electricity. Can't see totals, sales or profit."
+      "roleHint_manager": "Same as the owner: sees and changes everything, except the Staff list."
     },
     "records": {
       "title": "Farm records",

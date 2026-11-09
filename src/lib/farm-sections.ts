@@ -5,6 +5,7 @@
  *
  * Every class string is written out in full so Tailwind generates it (see the sec-* colours in globals.css).
  */
+import { effectiveRoles } from "@/domain/staff"
 import type { FeatureSet } from "@/domain/features"
 
 export type SectionKey =
@@ -57,7 +58,8 @@ export interface Who {
   features: FeatureSet
 }
 
-const has = (who: Who, ...roles: Role[]) => who.roles.some((r) => (roles as string[]).includes(r))
+/** A manager acts as owner (see effectiveRoles), so menus follow the same rule as the pages. */
+const has = (who: Who, ...roles: Role[]) => effectiveRoles(who.roles).some((r) => (roles as string[]).includes(r))
 
 export interface Tab {
   key: string
@@ -81,7 +83,7 @@ export function poultryTabs(who: Who): Tab[] {
   ]
 }
 
-/** Money's tabs: a manager only adds spending, packing staff only enter what was made; the rest is the owner's. */
+/** Money's tabs: packing staff only enter what was made; the rest is the owner's (and a manager's). */
 export function moneyTabs(who: Who): Tab[] {
   const owner = has(who, "owner")
   const tabs: Tab[] = []
@@ -145,7 +147,8 @@ export function moreTiles(who: Who): MoreTile[] {
     desk && f.messages && { key: "messages", href: "/farm/messages" },
     desk && f.whatsappLite && { key: "whatsapp", href: "/farm/whatsapp" },
     desk && f.subscriptions && { key: "plans", href: "/farm/plans" },
-    has(who, "owner") && { key: "staff", href: "/farm/staff" },
+    // Stored roles: the staff list stays with real owners, not managers.
+    who.roles.includes("owner") && { key: "staff", href: "/farm/staff" },
     has(who, "owner") && { key: "settings", href: "/farm/settings" },
     { key: "account", href: "/farm/account" },
   ]
