@@ -7,6 +7,7 @@ import { tenantDb } from "@/lib/tenant-db"
 import { prisma } from "@/lib/prisma"
 import { DEMO_AUTH_PREFIX, DEMO_COOKIE, isDemoLoginEnabled } from "@/lib/demo-auth"
 import type { StaffRole } from "@prisma/client"
+import { effectiveRoles } from "@/domain/staff"
 
 /** The auth user id of whoever is signed in: Supabase, or a demo staff member in demo mode. */
 async function currentAuthUserId(): Promise<string | null> {
@@ -27,6 +28,7 @@ async function currentAuthUserId(): Promise<string | null> {
 /**
  * The signed-in staff member of THIS farm, or a redirect to /login.
  * A login that belongs to another farm gets no access here.
+ * `staff.roles` are the roles they act with (a manager also acts as owner); `staff.storedRoles` are as saved.
  */
 export const requireStaff = cache(async (allowed?: StaffRole[]) => {
   const tenant = await requireTenant()
@@ -36,9 +38,17 @@ export const requireStaff = cache(async (allowed?: StaffRole[]) => {
   const db = tenantDb(tenant.id)
   const staff = await db.staffMember.findFirst({ where: { authUserId, isActive: true } })
   if (!staff) redirect("/login?error=not_staff")
-  if (allowed && !staff.roles.some((r) => allowed.includes(r))) redirect("/farm?error=access_denied")
+  const roles = effectiveRoles(staff.roles)
+  if (allowed && !roles.some((r) => allowed.includes(r))) redirect("/farm?error=access_denied")
 
-  return { tenant, staff, db }
+  return { tenant, staff: { ...staff, roles, storedRoles: staff.roles }, db }
+})
+
+/** Real owners only (not managers): the staff list, i.e. who can sign in to the farm and with what role. */
+export const requireStaffAdmin = cache(async () => {
+  const ctx = await requireStaff()
+  if (!ctx.staff.storedRoles.includes("owner")) redirect("/farm?error=access_denied")
+  return ctx
 })
 
 /**

@@ -16,7 +16,7 @@ export default async function MorePage() {
   const t = await getTranslations("farm.sections")
   const tm = await getTranslations("farm.more")
   const features = featuresOf(tenant)
-  const tiles = moreTiles({ roles: staff.roles, features })
+  const tiles = moreTiles({ roles: staff.storedRoles, features })
   const unread = features.messages ? await db.message.count({ where: { sender: "customer", seenAt: null } }) : 0
 
   return (

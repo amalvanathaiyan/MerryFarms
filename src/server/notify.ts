@@ -74,7 +74,9 @@ export async function notifyStaff(tenantId: string, note: Note, roles: StaffRole
   await quietly(async () => {
     if (!(await pushOn(tenantId))) return
     const db = tenantDb(tenantId)
-    const who = await db.staffMember.findMany({ where: { isActive: true, roles: { hasSome: roles } }, select: { id: true } })
+    // A manager gets what the owner gets.
+    const to: StaffRole[] = roles.includes("owner") ? [...roles, "manager"] : roles
+    const who = await db.staffMember.findMany({ where: { isActive: true, roles: { hasSome: to } }, select: { id: true } })
     const subs = await db.pushSubscription.findMany({ where: { staffId: { in: who.map((d) => d.id) } } })
     await deliver(tenantId, subs, note)
   })
