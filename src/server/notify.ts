@@ -8,6 +8,7 @@ import { orderCode } from "@/domain/orders"
 import { dayLabel } from "@/lib/i18n-helpers"
 import { formatRupees } from "@/domain/money"
 import type { Tenant } from "@/lib/tenant"
+import type { StaffRole } from "@prisma/client"
 import { cloudConfigured, sendTemplate } from "./whatsapp-cloud"
 
 export type { Note }
@@ -68,13 +69,13 @@ async function quietly(fn: () => Promise<void>) {
   }
 }
 
-/** To the farm's order desk and owner phones. */
-export async function notifyStaff(tenantId: string, note: Note): Promise<void> {
+/** To the phones of active staff with any of these roles (default: the order desk and the owner). */
+export async function notifyStaff(tenantId: string, note: Note, roles: StaffRole[] = ["owner", "order_desk"]): Promise<void> {
   await quietly(async () => {
     if (!(await pushOn(tenantId))) return
     const db = tenantDb(tenantId)
-    const desk = await db.staffMember.findMany({ where: { isActive: true, roles: { hasSome: ["owner", "order_desk"] } }, select: { id: true } })
-    const subs = await db.pushSubscription.findMany({ where: { staffId: { in: desk.map((d) => d.id) } } })
+    const who = await db.staffMember.findMany({ where: { isActive: true, roles: { hasSome: roles } }, select: { id: true } })
+    const subs = await db.pushSubscription.findMany({ where: { staffId: { in: who.map((d) => d.id) } } })
     await deliver(tenantId, subs, note)
   })
 }

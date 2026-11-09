@@ -165,7 +165,17 @@
       "jobLowStock": "{count, plural, one {# product running out} other {# products running out}}",
       "doNow": "Do these now",
       "allDone": "Nothing waiting. All done for now!",
-      "takenToday": "Orders taken today"
+      "takenToday": "Orders taken today",
+      "alertLosses": "{name}: {count, plural, one {# bird} other {# birds}} lost today",
+      "alertLossesYesterday": "{name}: {count, plural, one {# bird} other {# birds}} lost yesterday",
+      "alertLossesHint": "Usually about {usual} a day. Check the birds for sickness.",
+      "alertLossesHintNone": "Usually none are lost. Check the birds for sickness.",
+      "alertFeed": "Feed left for only {days, plural, one {# day} other {# days}}",
+      "alertFeedOut": "Feed has run out",
+      "alertFeedHint": "{left} kg left, about {perDay} kg used a day. Buy feed soon.",
+      "alertLaying": "{name}: fewer eggs",
+      "alertLayingHint": "Laying fell from {before}% to {now}% in the last 3 days. Check feed, water and health.",
+      "watch": "Check these"
     },
     "orders": {
       "tab_to_confirm": "To call",

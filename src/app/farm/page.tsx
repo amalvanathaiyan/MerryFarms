@@ -4,13 +4,13 @@ import { requireStaff } from "@/lib/auth"
 import type { TenantDb } from "@/lib/tenant-db"
 import { dayLabel, pick } from "@/lib/i18n-helpers"
 import { formatRupees } from "@/domain/money"
-import { istDate, istInstant } from "@/domain/ist"
+import { addDays, istDate, istInstant } from "@/domain/ist"
 import { cn } from "@/lib/utils"
 import { allBalances } from "@/server/billing"
 import { featuresOf } from "@/lib/features"
 import { generatePlanOrders } from "@/server/plans"
 import { EnablePush } from "@/components/push/enable-push"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, TriangleAlert } from "lucide-react"
 import { AutoRefresh } from "@/components/auto-refresh"
 import { SectionHeader } from "@/components/farm/section-header"
 import { SectionIcon } from "@/components/farm/section-icon"
@@ -18,6 +18,7 @@ import { SECTION_LOOK, type SectionKey } from "@/lib/farm-sections"
 import { batchStatus } from "@/domain/batches"
 import { asDay, asInfo, asLoss, loadBatches } from "@/server/batches"
 import { InstallApp } from "@/components/install-app"
+import { alertsFor } from "@/server/reminders"
 
 /**
  * True when a batch on the farm has no entry for today (with poultry care on); otherwise, or with no batches,
@@ -68,6 +69,8 @@ export default async function TodayPage() {
       : []
   // Birds on the farm now, across every batch (poultry care, for owner and packing).
   const birdsNow = canRecord && features.poultryCare ? await birdsOnFarm(tenant.id, today) : null
+  // Warnings worked out from the entries: unusual losses, feed running out, eggs dropping.
+  const alerts = canRecord && features.poultryCare ? await alertsFor(tenant.id, today) : []
   const unreadMessages = features.messages ? await db.message.count({ where: { sender: "customer", seenAt: null } }) : 0
   const activePlans = features.subscriptions ? await db.subscription.count({ where: { status: "active" } }) : 0
 
@@ -152,11 +155,65 @@ export default async function TodayPage() {
       : []),
   ]
 
+  // "Check these": the warnings, each opening where it can be looked into.
+  const yesterday = addDays(today, -1)
+  const warnings: Job[] = alerts.map((a) => {
+    switch (a.kind) {
+      case "losses":
+        return {
+          key: `loss-${a.batchId}`,
+          section: "poultry",
+          icon: "batches",
+          title: t(a.date === yesterday ? "alertLossesYesterday" : "alertLosses", { name: a.batchName, count: a.lost }),
+          hint: a.usual > 0 ? t("alertLossesHint", { usual: a.usual }) : t("alertLossesHintNone"),
+          href: `/farm/poultry/batches/${a.batchId}`,
+        }
+      case "feed":
+        return {
+          key: "feed",
+          section: "poultry",
+          icon: "feed",
+          title: a.daysLeft === 0 ? t("alertFeedOut") : t("alertFeed", { days: a.daysLeft }),
+          hint: t("alertFeedHint", { left: a.leftKg, perDay: a.perDay }),
+          href: "/farm/poultry/feed",
+        }
+      case "laying":
+        return {
+          key: `lay-${a.batchId}`,
+          section: "poultry",
+          icon: "made",
+          title: t("alertLaying", { name: a.batchName }),
+          hint: t("alertLayingHint", { before: a.before, now: a.now }),
+          href: `/farm/poultry/batches/${a.batchId}`,
+        }
+    }
+  })
+
   return (
     <div className="flex flex-col gap-4">
       <AutoRefresh seconds={60} />
       {features.pushNotifications && <EnablePush who="staff" />}
       <SectionHeader section="today" hint={new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Kolkata" }).format(new Date())} />
+
+      {warnings.length > 0 && (
+        <section className="flex flex-col gap-2.5">
+          <h2 className="flex items-center gap-1.5 text-base font-bold text-destructive">
+            <TriangleAlert className="size-5 shrink-0" aria-hidden /> {t("watch")}
+          </h2>
+          {warnings.map((j) => (
+            <Link key={j.key} href={j.href} className="flex items-center gap-3 rounded-2xl border-2 border-destructive/50 bg-destructive/5 p-3 transition-transform active:scale-[0.99]">
+              <span className="grid size-12 shrink-0 place-items-center rounded-full bg-destructive text-white dark:bg-destructive/60">
+                <SectionIcon name={j.icon} className="size-6" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-lg leading-tight font-bold">{j.title}</span>
+                <span className="block text-sm text-muted-foreground">{j.hint}</span>
+              </span>
+              <ChevronRight className="size-6 shrink-0" aria-hidden />
+            </Link>
+          ))}
+        </section>
+      )}
 
       <section className="flex flex-col gap-2.5">
         <h2 className="text-base font-bold text-muted-foreground">{jobs.length ? t("doNow") : t("allDone")}</h2>
