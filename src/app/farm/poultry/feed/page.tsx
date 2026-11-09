@@ -4,11 +4,12 @@ import { requireFeature } from "@/lib/require-feature"
 import { dayLabel } from "@/lib/i18n-helpers"
 import { featuresOf } from "@/lib/features"
 import { poultryTabs } from "@/lib/farm-sections"
-import { addDays, istDate } from "@/domain/ist"
+import { istDate } from "@/domain/ist"
 import { formatRupees } from "@/domain/money"
 import { batchBook } from "@/server/batches"
 import { SectionHeader } from "@/components/farm/section-header"
 import { FeedBuyForm } from "@/components/farm/feed-buy-form"
+import { FEED_DAYS_WARNING, feedDaysLeft } from "@/domain/alerts"
 import { cn } from "@/lib/utils"
 
 /** Poultry care · Feed: how much is left, how long it lasts, and feed bought (owner). Prices only for the owner. */
@@ -28,13 +29,12 @@ export default async function PoultryFeedPage() {
   ])
   const feed = book.feed
   // Feed given per day over the last 7 days (only days with feed entered), to say about how long the store lasts.
-  const weekAgo = addDays(today, -6)
-  const lastWeek = book.days.filter((d) => d.date >= weekAgo && d.date <= today && (d.feedKg ?? 0) > 0)
-  const feedDays = new Set(lastWeek.map((d) => d.date)).size
-  const perDay = feedDays ? Math.round((lastWeek.reduce((a, d) => a + (d.feedKg ?? 0), 0) / feedDays) * 10) / 10 : 0
-  const daysLeft = perDay > 0 && feed.leftKg > 0 ? Math.floor(feed.leftKg / perDay) : null
+  // The same reckoning as the "feed running out" alert on Today.
+  const lasts = feed.leftKg > 0 ? feedDaysLeft(feed, book.days, today) : null
+  const perDay = lasts?.perDay ?? 0
+  const daysLeft = lasts?.daysLeft ?? null
   const leftPct = feed.boughtKg > 0 ? Math.max(0, Math.min(100, (feed.leftKg / feed.boughtKg) * 100)) : 0
-  const low = daysLeft != null && daysLeft <= 7
+  const low = daysLeft != null && daysLeft <= FEED_DAYS_WARNING
 
   return (
     <div className="flex flex-col gap-4">
