@@ -15,6 +15,8 @@ import { artFor } from "@/domain/product-art"
 import { shopArt } from "@/components/art/drawing-library"
 import { otpOn } from "@/server/otp"
 import { SignInGate } from "@/components/shop/sign-in-gate"
+import { ViewerBar } from "@/components/shop/viewer-bar"
+import { shopViewer } from "@/lib/auth"
 import { currentPrice, offerActive, percentOff } from "@/domain/offers"
 import { customerMayChange, orderCode } from "@/domain/orders"
 
@@ -33,8 +35,12 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     )
   }
 
+  // The farm's own staff (or the super admin) looking at the shop: a bar back to their app, and no customer sign-in.
+  const viewer = await shopViewer(tenant.id)
+  const viewerBar = viewer && <ViewerBar viewer={viewer} />
+
   // Code sign-in: ask for the mobile number first; "just look" is one tap away.
-  if (otpOn(tenant) && browse === undefined && !reorder && !(await getSessionCustomer())) {
+  if (!viewer && otpOn(tenant) && browse === undefined && !reorder && !(await getSessionCustomer())) {
     return <SignInGate tenant={tenant} />
   }
 
@@ -158,5 +164,10 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       : null,
   }
 
-  return <Shop data={data} />
+  return (
+    <>
+      {viewerBar}
+      <Shop data={data} />
+    </>
+  )
 }
