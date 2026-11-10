@@ -14,6 +14,9 @@ import { BatchVaccinations, type DoseRow } from "@/components/farm/batch-vaccina
 import { AgeText } from "@/components/farm/batches-section"
 import { BatchDayPanel, type HistoryRow } from "@/components/farm/batch-day-panel"
 import { BatchActions } from "@/components/farm/batch-actions"
+import { BatchWeights, type WeightItem } from "@/components/farm/batch-weights"
+import { loadWeights } from "@/server/weights"
+import { weighDue, weightPoints } from "@/domain/weights"
 import { cn } from "@/lib/utils"
 import { ChevronLeft, Syringe } from "lucide-react"
 
@@ -45,6 +48,10 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
   const book = asOf === today ? probe : await batchBook(tenant.id, asOf)
   const { info, status: s, money: m } = book.rows.find((r) => r.batch.id === id)!
 
+  // Weekly weights: each weighing with the birds' age and growth since the one before.
+  const weightRows = await loadWeights(tenant.id, id)
+  const weights: WeightItem[] = weightPoints(info, weightRows).map((p, i) => ({ ...p, id: weightRows[i].id, dayText: dayLabel(p.date, locale, labels) }))
+  const weighing = weighDue(batch, weightRows, today)
   const myDays = probe.days.filter((d) => d.batchId === id)
   const myLosses = probe.losses.filter((l) => l.batchId === id)
   const dates = [...new Set([...myDays.map((d) => d.date), ...myLosses.map((l) => l.date)])]
@@ -184,6 +191,16 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
       </section>
 
       <BatchDayPanel batchId={id} batchName={batch.name} minDate={batch.startDate} maxDate={maxDate} initialDate={asOf} showEggs={showEggs} entries={history} />
+
+      <BatchWeights
+        batchId={id}
+        batchName={batch.name}
+        minDate={batch.startDate}
+        maxDate={maxDate}
+        weights={weights}
+        due={weighing}
+        open={weighing.due}
+      />
 
       <BatchVaccinations
         batchId={id}

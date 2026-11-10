@@ -1261,6 +1261,41 @@
       "lostHint": "Each bird at what its batch had cost per chick.",
       "profitIsFarms": "The farm's real profit, from actual sales, is under Money → Profit",
       "eggsBought": "Eggs bought to hatch"
+    },
+    "weights": {
+      "title": "Weekly weights",
+      "hint": "Weigh a few birds once a week to see how they grow.",
+      "due": "Time to weigh",
+      "dueFirst": "Not weighed yet",
+      "weighedAgo": "Weighed {days, plural, =0 {today} one {yesterday} other {# days ago}}",
+      "latest": "Average bird",
+      "detail": "{birds, plural, one {# bird} other {# birds}} weighed · {age} old",
+      "ageWeeks": "{weeks, plural, one {# week} other {# weeks}}",
+      "ageDays": "{days, plural, one {# day} other {# days}}",
+      "gain": "+{grams} g a day since the last weighing",
+      "drop": "{grams} g a day since the last weighing",
+      "oneMore": "Weigh again next week to see the growth line.",
+      "chartLabel": "Average weight per bird, by age",
+      "axisAge": "Age in weeks",
+      "formTitle": "Weigh birds",
+      "day": "Day",
+      "birds": "Birds weighed",
+      "total": "Their weight together (kg)",
+      "totalHint": "Weigh them together, or add up each bird's weight.",
+      "preview": "{value} {unit} per bird",
+      "save": "Save weighing",
+      "saving": "Saving…",
+      "history": "Weighings",
+      "colDay": "Day",
+      "colAvg": "Average",
+      "colGain": "Gain a day (g)",
+      "delete": "Delete weighing",
+      "deleteConfirm": "Delete the weighing on {day}?",
+      "g": "g",
+      "kg": "kg",
+      "cardDue": "Weigh this week",
+      "birdsWeighed": "{birds, plural, one {# bird} other {# birds}} weighed",
+      "birdsShort": "{birds, plural, one {# bird} other {# birds}}"
     }
   },
   "login": {
@@ -1422,7 +1457,12 @@
     "vaccine_in_plan": "That vaccine is already in the plan at that age.",
     "batch_confirm_name": "Type the batch's name exactly to delete it.",
     "not_your_expense": "You can only delete expenses you entered.",
-    "batch_number_taken": "Another batch already has that number. Pick a different one."
+    "batch_number_taken": "Another batch already has that number. Pick a different one.",
+    "weight_date": "That day isn't while this batch was on the farm.",
+    "weight_birds": "Birds weighed: from 1 to 500.",
+    "weight_total": "Enter the birds' weight together.",
+    "weight_odd": "That weight per bird looks wrong. Check you entered kilos, not grams.",
+    "weight_not_found": "That weighing was already deleted."
   },
   "my": {
     "connectTitle": "Connect with the farm",
@@ -1645,7 +1685,8 @@
       "slot": "Delivery times saved",
       "plan": "Plan saved",
       "settings": "Saved",
-      "deleted": "Removed"
+      "deleted": "Removed",
+      "weight": "Weighed · {batch} · {avg} a bird"
     },
     "lines": {
       "eggs": [
@@ -1799,6 +1840,12 @@
       "deleted": [
         "Gone. The list is tidy again.",
         "Removed. Clean books, clear mind."
+      ],
+      "weight": [
+        "Growing nicely. The chart has a new point.",
+        "Weighed and noted. Now you can watch them grow.",
+        "A week's growth, written down.",
+        "Good habit! Weekly weights show trouble early."
       ]
     },
     "time": {

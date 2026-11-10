@@ -1,4 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server"
+import { weighDue } from "@/domain/weights"
 import { requireStaff } from "@/lib/auth"
 import { requireFeature } from "@/lib/require-feature"
 import { dayLabel } from "@/lib/i18n-helpers"
@@ -24,7 +25,11 @@ export default async function PoultryPage({ searchParams }: { searchParams: Prom
   const today = istDate(new Date())
   const asOf = sp.on && ymd.test(sp.on) && sp.on < today ? sp.on : today
 
-  const [book, doses] = await Promise.all([batchBook(tenant.id, asOf), db.batchVaccination.findMany({ where: { givenDate: null, dueDate: { lte: today } } })])
+  const [book, doses, weighings] = await Promise.all([
+    batchBook(tenant.id, asOf),
+    db.batchVaccination.findMany({ where: { givenDate: null, dueDate: { lte: today } } }),
+    db.batchWeight.findMany({ where: { date: { lte: today } }, select: { batchId: true, date: true, birds: true, totalGrams: true } }),
+  ])
   const due = dosesDue(
     doses,
     book.rows.map((r) => r.batch),
@@ -42,6 +47,7 @@ export default async function PoultryPage({ searchParams }: { searchParams: Prom
     hatchDayText: dayLabel(hatchDate(batch), locale, labels),
     status,
     vaccinesDue: due.filter((d) => d.batchId === batch.id).map((d) => d.vaccine),
+    weighDue: weighDue(batch, weighings.filter((w) => w.batchId === batch.id), today).due,
     enteredToday: book.days.some((d) => d.batchId === batch.id && d.date === today) || book.losses.some((l) => l.batchId === batch.id && l.date === today),
   })
 
