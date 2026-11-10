@@ -30,6 +30,7 @@ const TENANT_MODELS = new Set([
   "BatchLoss",
   "VaccineScheduleItem",
   "BatchVaccination",
+  "BatchWeight",
   "Expense",
   "ProductionEntry",
 ])
