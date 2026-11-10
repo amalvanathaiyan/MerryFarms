@@ -1613,5 +1613,217 @@
     "eggs": "Country eggs",
     "chicken": "Country chicken",
     "fresh": "Fresh today"
+  },
+  "cheers": {
+    "facts": {
+      "eggs": "Saved · {batch} · {eggs} eggs",
+      "loss": "Loss noted · {batch} · {count, plural, one {# bird} other {# birds}}",
+      "day": "Saved · {batch}",
+      "allDays": "Saved · {count, plural, one {# batch} other {# batches}}",
+      "batchAdded": "Batch added · {batch}",
+      "batchSaved": "Batch updated · {batch}",
+      "batchClosed": "Batch closed · {batch}",
+      "dose": "Vaccine given · {name}",
+      "doseUndone": "Marked not given · {name}",
+      "vaccinePlan": "Vaccine plan updated",
+      "feed": "Feed added · {kg} kg",
+      "expense": "Expense saved · {amount}",
+      "made": "Saved · what was made",
+      "eggStore": "Egg store set · {eggs} eggs",
+      "payment": "Payment saved · {amount}",
+      "orderNew": "Order created",
+      "orderSaved": "Order updated",
+      "confirmed": "Order confirmed",
+      "packed": "Order packed",
+      "onTheWay": "Out for delivery",
+      "delivered": "Delivered",
+      "cancelled": "Order cancelled",
+      "called": "Call noted",
+      "returned": "Return saved",
+      "product": "Product saved",
+      "customer": "Customer saved",
+      "slot": "Delivery times saved",
+      "plan": "Plan saved",
+      "settings": "Saved",
+      "deleted": "Removed"
+    },
+    "lines": {
+      "eggs": [
+        "The hens worked hard today, and so did you.",
+        "Basket counted, book updated. Nice and neat.",
+        "Every egg counted is money you can see.",
+        "Fresh eggs, fresh numbers.",
+        "The hens laid, you counted. Good team.",
+        "Another day's eggs, safely in the book."
+      ],
+      "loss": [
+        "Sorry about the birds. Writing it down helps you spot trouble early.",
+        "Noted with care. Keep an eye on the rest today.",
+        "Hard days happen. Your records will show if something is wrong.",
+        "Recorded. A quick look at water and feed can help the others.",
+        "Noted. Every honest entry makes the batch easier to look after."
+      ],
+      "day": [
+        "Today's page is filled in. The farm diary thanks you.",
+        "Done for this batch. One less thing on your mind.",
+        "Logged. Tomorrow you will be glad you did.",
+        "Neatly noted. The birds are in good hands.",
+        "That's today's entry. Simple as that."
+      ],
+      "allDays": [
+        "Every batch in one go. That's how it's done.",
+        "All entered. The whole flock is on the books.",
+        "One screen, every batch, done. Tea time?",
+        "The farm diary is up to date. Well done."
+      ],
+      "batchAdded": [
+        "Welcome to the new arrivals! May they grow strong.",
+        "A new batch begins. The diary has a fresh page.",
+        "New birds on the farm. Good luck with this batch!"
+      ],
+      "batchSaved": [
+        "Details fixed. Everything lines up now.",
+        "Updated. Good records start with good details."
+      ],
+      "batchClosed": [
+        "That batch's story is complete. Well raised.",
+        "Closed. Its numbers stay in the book for next time.",
+        "Every batch finished is a lesson learned."
+      ],
+      "dose": [
+        "Protected! A vaccine on time saves a lot of worry.",
+        "Done. The flock is a little safer today.",
+        "Right on schedule. That's how healthy birds stay healthy.",
+        "Vaccine recorded. One less thing to remember."
+      ],
+      "doseUndone": [
+        "Changed back. It shows as due again.",
+        "Undone. The reminder is back on the list."
+      ],
+      "vaccinePlan": [
+        "Plan updated. New batches will follow it.",
+        "The vaccine calendar is set."
+      ],
+      "feed": [
+        "The store is stocked. Happy hens ahead.",
+        "Feed in, worries out.",
+        "Sacks counted. The birds won't go hungry.",
+        "Good stock. The Feed page will warn you when it runs low."
+      ],
+      "expense": [
+        "Every rupee written down is a rupee understood.",
+        "Noted. No more guessing where the money went.",
+        "In the book. Month-end will be easy.",
+        "Spending tracked. That's how farms grow."
+      ],
+      "made": [
+        "Made and counted. The shop shelves are ready.",
+        "Good work today. It's all in stock now.",
+        "Fresh from the farm, straight into the book."
+      ],
+      "eggStore": [
+        "Counted and set. The shop shows the right packs now.",
+        "The egg store matches the shelf."
+      ],
+      "payment": [
+        "Money in! The dues just got smaller.",
+        "Paid and noted. Nice.",
+        "Received with thanks. The account is up to date."
+      ],
+      "orderNew": [
+        "A new order, on its way to a happy kitchen.",
+        "Order taken. Someone's breakfast is sorted.",
+        "In the list. The packing team will see it right away."
+      ],
+      "orderSaved": [
+        "Changes saved. The customer gets exactly what they asked for.",
+        "Updated. Better to fix it now than at the door."
+      ],
+      "confirmed": [
+        "Confirmed! Time to get packing.",
+        "One more happy customer lined up.",
+        "Call done, order sure. Nice work.",
+        "Locked in. The customer knows it's coming."
+      ],
+      "packed": [
+        "Packed with care. Ready to roll.",
+        "Box closed. On to the next one!",
+        "Packed and ready. The delivery run is taking shape."
+      ],
+      "onTheWay": [
+        "On the road! Farm-fresh, coming right up.",
+        "Off it goes. Safe ride!",
+        "Out of the gate. Someone's doorbell is about to ring."
+      ],
+      "delivered": [
+        "Delivered! Another family eating farm-fresh today.",
+        "Doorstep reached. That's the best part.",
+        "Done. The customer has it.",
+        "Fresh food, happy home. Delivered.",
+        "From our farm to their table. Well done."
+      ],
+      "cancelled": [
+        "Cancelled. Not every order works out, and that's fine.",
+        "Noted. The items go back into stock."
+      ],
+      "called": [
+        "Call noted. Try again a little later.",
+        "Logged. Some people just need a second ring."
+      ],
+      "returned": [
+        "Return noted. Fair and square.",
+        "Sorted. Good service keeps customers coming back."
+      ],
+      "product": [
+        "Shelf updated. Customers see it right away.",
+        "Looking good! The shop is up to date.",
+        "Saved. Your shop window just got fresher."
+      ],
+      "customer": [
+        "Saved. Good to know your customers well.",
+        "Details safe. The next call will be easier."
+      ],
+      "slot": [
+        "Delivery times set. Customers can plan around you.",
+        "Calendar updated. Clear times, fewer calls."
+      ],
+      "plan": [
+        "Plan saved. Regular orders, steady income.",
+        "Set to repeat. The farm will remember."
+      ],
+      "settings": [
+        "Your farm, your way.",
+        "Done. The change is live.",
+        "All set."
+      ],
+      "deleted": [
+        "Gone. The list is tidy again.",
+        "Removed. Clean books, clear mind."
+      ]
+    },
+    "time": {
+      "morning": [
+        "Early start! The hens approve.",
+        "A good morning starts with good records."
+      ],
+      "afternoon": [
+        "Halfway through the day and right on track.",
+        "Afternoon, and the work keeps moving."
+      ],
+      "evening": [
+        "Evening jobs done. The farm can settle down.",
+        "Sunset, and everything is sorted."
+      ],
+      "night": [
+        "Working late? The farm thanks you. Rest well.",
+        "Night owl! Everything is safe in the book."
+      ]
+    },
+    "milestone": [
+      "That's {count} entries today! The farm runs on you.",
+      "{count} today. You're the star of the farm!",
+      "{count} entries and counting. What a day!"
+    ],
+    "close": "Tap to close"
   }
 }

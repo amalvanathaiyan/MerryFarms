@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { addBatch, editBatch } from "@/app/actions/batches"
 import { BATCH_PURPOSES, BATCH_SOURCES } from "@/domain/batches"
 import { cn } from "@/lib/utils"
+import { useCheer } from "@/components/cheer"
 
 export interface BatchFormValues {
   name: string
@@ -44,6 +45,7 @@ export function BatchForm({
 }) {
   const t = useTranslations("farm.batches")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const router = useRouter()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -108,6 +110,7 @@ export function BatchForm({
           }
           const r = id ? await editBatch(id, { ...input, number: num(batchNo) ?? undefined }) : await addBatch({ ...input, chicksCostRupees: chicksBought || eggsBought ? num(cost) : null })
           if (!r.ok) return setError(te.has(r.error) ? te(r.error) : te("generic"))
+          cheer(id ? "batchSaved" : "batchAdded", { batch: v.name })
           router.push(`/farm/poultry/batches/${id ?? r.id}`)
         })
       }}

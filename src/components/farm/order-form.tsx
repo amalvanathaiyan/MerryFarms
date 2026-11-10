@@ -11,6 +11,7 @@ import { formatRupees } from "@/domain/money"
 import { formatIndianMobile } from "@/domain/phone"
 import { deliveryFee } from "@/domain/pricing"
 import { cn } from "@/lib/utils"
+import { useCheer } from "@/components/cheer"
 
 export interface OrderFormData {
   /** pricePaise: today's price (offer included); listPricePaise: the most staff may charge. */
@@ -41,6 +42,7 @@ export type OrderFormMode =
 export function OrderForm({ data, mode }: { data: OrderFormData; mode: OrderFormMode }) {
   const t = useTranslations("farm.orderForm")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const ts = useTranslations("shop")
   const router = useRouter()
   const editing = mode.kind === "edit"
@@ -116,6 +118,7 @@ export function OrderForm({ data, mode }: { data: OrderFormData; mode: OrderForm
       if (mode.kind === "edit") {
         const r = await updateFarmOrder({ orderId: mode.orderId, items: itemList, slotKey, address, paymentMethod: payment, note: note || undefined, fromCall: mode.fromCall, prices: agreedPrices })
         if (!r.ok) return setError(r.error && te.has(r.error) ? te(r.error) : te("generic"))
+        cheer(mode.fromCall ? "confirmed" : "orderSaved")
         router.push(mode.fromCall ? "/farm/orders?tab=open" : "/farm/orders")
         return
       }
@@ -132,6 +135,7 @@ export function OrderForm({ data, mode }: { data: OrderFormData; mode: OrderForm
         prices: agreedPrices,
       })
       if (!r.ok) return setError(te.has(r.error) ? te(r.error) : te("generic"))
+      cheer("orderNew")
       router.push(r.invoiceId ? `/farm/invoices/${r.invoiceId}` : "/farm/orders")
     })
   }

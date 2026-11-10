@@ -10,6 +10,8 @@ import { saveAllBatchDaysAction } from "@/app/actions/batches"
 import { LOSS_CAUSES } from "@/domain/batches"
 import { NumberStepper } from "./number-stepper"
 import { cn } from "@/lib/utils"
+import { useCheer } from "@/components/cheer"
+import { dayCheer } from "@/domain/cheers"
 
 export interface DayBatch {
   id: string
@@ -62,6 +64,7 @@ export function AllBatchesDay({ date, today, minDate, batches }: { date: string;
   const t = useTranslations("farm.dayAll")
   const tb = useTranslations("farm.batches")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const router = useRouter()
   const [pending, start] = useTransition()
   const [rows, setRows] = useState<Record<string, Row>>(() => Object.fromEntries(batches.map((b) => [b.id, startRow(b)])))
@@ -212,6 +215,15 @@ export function AllBatchesDay({ date, today, minDate, batches }: { date: string;
                 })
                 if (!res.ok) return setError(te.has(res.error) ? te(res.error) : te("generic"))
                 setResults(Object.fromEntries(res.results.map((x) => [x.batchId, x])))
+                const done = res.results.filter((x) => x.ok).map((x) => {
+                  const b = batches.find((y) => y.id === x.batchId)
+                  const r = rows[x.batchId]
+                  return { name: b?.name ?? "", eggs: b?.showEggs ? n(r.eggs) : null, lost: LOSS_CAUSES.reduce((a, c) => a + (n(r.losses[c]) ?? 0), 0) }
+                })
+                if (done.length) {
+                  const c = dayCheer(done)
+                  cheer(c.kind, c.values)
+                }
                 setRows((all) => {
                   const next = { ...all }
                   for (const x of res.results) if (x.ok) next[x.batchId] = { ...next[x.batchId], touched: false }

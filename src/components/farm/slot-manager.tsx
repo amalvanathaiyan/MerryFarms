@@ -9,6 +9,8 @@ import type { ActionResult } from "@/app/actions/catalogue"
 import { slotRangeLabel } from "@/domain/slots"
 import { pick, weekdayNames } from "@/lib/i18n-helpers"
 import { cn } from "@/lib/utils"
+import { useCheer } from "@/components/cheer"
+import type { CheerKind } from "@/domain/cheers"
 
 type Slot = {
   id: string
@@ -30,6 +32,7 @@ export function SlotManager({ slots, canEdit }: { slots: Slot[]; canEdit: boolea
   const t = useTranslations("farm.slots")
   const tc = useTranslations("common")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const locale = useLocale()
   const days = weekdayNames(locale)
   const [pending, start] = useTransition()
@@ -37,12 +40,15 @@ export function SlotManager({ slots, canEdit }: { slots: Slot[]; canEdit: boolea
   const [draft, setDraft] = useState<Draft | null>(null)
   const [armedDelete, setArmedDelete] = useState(false)
 
-  const run = (fn: () => Promise<ActionResult>, after?: () => void) =>
+  const run = (fn: () => Promise<ActionResult>, after?: () => void, done?: CheerKind) =>
     start(async () => {
       setError(null)
       const r = await fn()
       if (!r.ok) setError(te.has(r.error) ? te(r.error) : te("generic"))
-      else after?.()
+      else {
+        after?.()
+        if (done) cheer(done)
+      }
     })
 
   const daysText = (ds: number[]) => (ds.length === 7 ? t("everyDay") : WEEK.filter((d) => ds.includes(d)).map((d) => days[d]).join(", "))
@@ -60,7 +66,7 @@ export function SlotManager({ slots, canEdit }: { slots: Slot[]; canEdit: boolea
         className="flex flex-col gap-4 rounded-2xl border bg-card p-4"
         onSubmit={(e) => {
           e.preventDefault()
-          run(() => saveSlot(draft), () => setDraft(null))
+          run(() => saveSlot(draft), () => setDraft(null), "slot")
         }}
       >
         <h2 className="text-lg font-semibold">{draft.id ? t("editTitle") : t("addTitle")}</h2>
@@ -133,7 +139,7 @@ export function SlotManager({ slots, canEdit }: { slots: Slot[]; canEdit: boolea
             onClick={() => {
               if (!armedDelete) return setArmedDelete(true)
               setArmedDelete(false)
-              run(() => deleteSlot(draft.id!), () => setDraft(null))
+              run(() => deleteSlot(draft.id!), () => setDraft(null), "deleted")
             }}
           >
             {armedDelete ? tc("confirmDelete") : tc("delete")}

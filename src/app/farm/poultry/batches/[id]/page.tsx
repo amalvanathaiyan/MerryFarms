@@ -183,7 +183,7 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
         )}
       </section>
 
-      <BatchDayPanel batchId={id} minDate={batch.startDate} maxDate={maxDate} initialDate={asOf} showEggs={showEggs} entries={history} />
+      <BatchDayPanel batchId={id} batchName={batch.name} minDate={batch.startDate} maxDate={maxDate} initialDate={asOf} showEggs={showEggs} entries={history} />
 
       <BatchVaccinations
         batchId={id}

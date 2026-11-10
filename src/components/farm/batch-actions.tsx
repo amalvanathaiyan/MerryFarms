@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { closeBatch, removeBatch } from "@/app/actions/batches"
 import { formatRupees } from "@/domain/money"
+import { useCheer } from "@/components/cheer"
 
 /** What deleting a batch would take with it. */
 export interface BatchFootprint {
@@ -43,6 +44,7 @@ export function BatchActions({
 }) {
   const t = useTranslations("farm.batches")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const router = useRouter()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -72,7 +74,7 @@ export function BatchActions({
       {closedDate ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm">{t("closedOn", { day: closedText ?? closedDate })}</p>
-          <Button variant="outline" disabled={pending} onClick={() => run(() => closeBatch(id, null))}>
+          <Button variant="outline" disabled={pending} onClick={() => run(() => closeBatch(id, null), () => cheer("batchSaved", { batch: name }))}>
             {t("reopen")}
           </Button>
         </div>
@@ -81,7 +83,7 @@ export function BatchActions({
           className="flex flex-col gap-2"
           onSubmit={(e) => {
             e.preventDefault()
-            run(() => closeBatch(id, closeOn), () => setClosing(false))
+            run(() => closeBatch(id, closeOn), () => (setClosing(false), cheer("batchClosed", { batch: name })))
           }}
         >
           <p className="text-sm text-muted-foreground">{t("closeHint")}</p>
@@ -105,7 +107,7 @@ export function BatchActions({
           className="flex flex-col gap-3 rounded-xl border-2 border-destructive/30 bg-destructive/5 p-3"
           onSubmit={(e) => {
             e.preventDefault()
-            run(() => removeBatch(id, { confirmName: typed, keepCosts }), gone)
+            run(() => removeBatch(id, { confirmName: typed, keepCosts }), () => (cheer("deleted"), gone()))
           }}
         >
           <p className="font-bold text-destructive">{t("deleteTitle", { name })}</p>
@@ -153,7 +155,7 @@ export function BatchActions({
             disabled={pending}
             onClick={() => {
               if (hasEntries) return setDeleting(true)
-              if (window.confirm(footprint.costPaise > 0 ? t("deleteConfirmCosts", { amount: formatRupees(footprint.costPaise) }) : t("deleteConfirm"))) run(() => removeBatch(id, { keepCosts: false }), gone)
+              if (window.confirm(footprint.costPaise > 0 ? t("deleteConfirmCosts", { amount: formatRupees(footprint.costPaise) }) : t("deleteConfirm"))) run(() => removeBatch(id, { keepCosts: false }), () => (cheer("deleted"), gone()))
             }}
           >
             <Trash2 className="size-4" /> {t("delete")}

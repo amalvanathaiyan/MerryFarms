@@ -6,6 +6,7 @@ import { Egg } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { setEggStoreAction } from "@/app/actions/catalogue"
 import { unitsFromEggs } from "@/domain/eggs"
+import { useCheer } from "@/components/cheer"
 
 /**
  * The farm's egg store on the Products page: eggs in store, what can be packed from it, and a way to set the count
@@ -14,6 +15,7 @@ import { unitsFromEggs } from "@/domain/eggs"
 export function EggStoreCard({ eggs, products, fromBatches }: { eggs: number; products: { id: string; name: string; eggsPerUnit: number }[]; fromBatches: boolean }) {
   const t = useTranslations("farm.eggStore")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [counting, setCounting] = useState(false)
@@ -54,6 +56,7 @@ export function EggStoreCard({ eggs, products, fromBatches }: { eggs: number; pr
               const r = await setEggStoreAction({ eggs: Number(value) })
               if (!r.ok) return setError(r.error && te.has(r.error) ? te(r.error) : te("generic"))
               setCounting(false)
+              cheer("eggStore", { eggs: Number(value) })
             })
           }}
         >

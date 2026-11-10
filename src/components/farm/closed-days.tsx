@@ -6,6 +6,7 @@ import { CalendarOff, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { addClosedDay, removeClosedDay } from "@/app/actions/slots"
+import { useCheer } from "@/components/cheer"
 
 export type ClosedDayRow = { id: string; dayText: string; slotText: string | null; note: string | null; booked: number }
 
@@ -13,6 +14,7 @@ export type ClosedDayRow = { id: string; dayText: string; slotText: string | nul
 export function ClosedDays({ rows, slots, today, canEdit }: { rows: ClosedDayRow[]; slots: { id: string; label: string }[]; today: string; canEdit: boolean }) {
   const t = useTranslations("farm.slots")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const [date, setDate] = useState("")
   const [slotId, setSlotId] = useState("")
   const [note, setNote] = useState("")
@@ -24,7 +26,10 @@ export function ClosedDays({ rows, slots, today, canEdit }: { rows: ClosedDayRow
       setError(null)
       const r = await fn()
       if (!r.ok) setError(r.error && te.has(r.error) ? te(r.error) : te("generic"))
-      else after?.()
+      else {
+        after?.()
+        cheer("slot")
+      }
     })
 
   return (

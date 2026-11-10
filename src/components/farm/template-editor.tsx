@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { resetTemplate, saveTemplate } from "@/app/actions/messages"
 import { fillTemplate, type TemplateKey } from "@/domain/templates"
 import { cn } from "@/lib/utils"
+import { useCheer } from "@/components/cheer"
 
 type Row = { key: TemplateKey; vars: string[]; defaults: { ta: string; en: string }; ta: string; en: string }
 
@@ -57,6 +58,7 @@ export function TemplateEditor({ templates }: { templates: Row[] }) {
 function TemplateRow({ row }: { row: Row }) {
   const t = useTranslations("farm.whatsapp")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const [text, setText] = useState({ ta: row.ta || row.defaults.ta, en: row.en || row.defaults.en })
   const [lang, setLang] = useState<"ta" | "en">("ta")
   const [error, setError] = useState<string | null>(null)
@@ -75,7 +77,10 @@ function TemplateRow({ row }: { row: Row }) {
       if (!r.ok) {
         setError(r.error === "template_unknown" ? t("unknownPlaceholders", { names: (r.unknown ?? []).map((n) => `{${n}}`).join(", ") }) : te.has(r.error) ? te(r.error) : te("generic"))
         if (r.lang) setLang(r.lang)
-      } else setSaved(true)
+      } else {
+        setSaved(true)
+        cheer("settings")
+      }
     })
 
   return (
@@ -124,6 +129,7 @@ function TemplateRow({ row }: { row: Row }) {
               await resetTemplate(row.key)
               setText({ ta: row.defaults.ta, en: row.defaults.en })
               setSaved(false)
+              cheer("settings")
             })
           }
         >
