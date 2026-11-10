@@ -29,6 +29,8 @@ import { shrinkPhoto } from "@/lib/shrink-photo"
 import { pick } from "@/lib/i18n-helpers"
 import { cn } from "@/lib/utils"
 import { COMMON_EGG_PACKS } from "@/domain/eggs"
+import { useCheer } from "@/components/cheer"
+import type { CheerKind } from "@/domain/cheers"
 
 type Category = { id: string; nameTa: string; nameEn: string; kind: string | null }
 type Product = {
@@ -76,6 +78,7 @@ export function CatalogueManager({
   const t = useTranslations("farm.catalogue")
   const tc = useTranslations("common")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const tu = useTranslations("farm.units")
   const unitName = (u: string) => (tu.has(u) ? tu(u) : u)
   const locale = useLocale()
@@ -87,12 +90,15 @@ export function CatalogueManager({
   const dayText = (d: string) => dayLabel(d, locale, { today: tc("today"), tomorrow: tc("tomorrow") })
   const [armedDelete, setArmedDelete] = useState(false)
 
-  const run = (fn: () => Promise<ActionResult>, after?: () => void) =>
+  const run = (fn: () => Promise<ActionResult>, after?: () => void, done?: CheerKind) =>
     start(async () => {
       setError(null)
       const r = await fn()
       if (!r.ok) setError(te.has(r.error) ? te(r.error) : te("generic"))
-      else after?.()
+      else {
+        after?.()
+        if (done) cheer(done)
+      }
     })
 
   const blank = (): Draft => ({
@@ -127,7 +133,7 @@ export function CatalogueManager({
         className="flex flex-col gap-4 rounded-2xl border bg-card p-4"
         onSubmit={(e) => {
           e.preventDefault()
-          run(() => saveProduct({ ...draft, noteTa: draft.noteTa || undefined, noteEn: draft.noteEn || undefined, hsn: draft.hsn || undefined, offerRupees: draft.offerRupees || null }), () => setDraft(null))
+          run(() => saveProduct({ ...draft, noteTa: draft.noteTa || undefined, noteEn: draft.noteEn || undefined, hsn: draft.hsn || undefined, offerRupees: draft.offerRupees || null }), () => setDraft(null), "product")
         }}
       >
         <h2 className="text-lg font-semibold">{draft.id ? t("editTitle") : t("addTitle")}</h2>
@@ -253,7 +259,7 @@ export function CatalogueManager({
             onClick={() => {
               if (!armedDelete) return setArmedDelete(true)
               setArmedDelete(false)
-              run(() => deleteProduct(draft.id!), () => setDraft(null))
+              run(() => deleteProduct(draft.id!), () => setDraft(null), "deleted")
             }}
           >
             {armedDelete ? tc("confirmDelete") : tc("delete")}
@@ -283,7 +289,7 @@ export function CatalogueManager({
           onSubmit={(e) => {
             e.preventDefault()
             const withKind = { ...cat, kind: cat.kind ?? artKind(cat.nameEn, cat.nameTa) }
-            run(() => (cat.id ? renameCategory(withKind) : addCategory(withKind)), () => setCat(null))
+            run(() => (cat.id ? renameCategory(withKind) : addCategory(withKind)), () => setCat(null), "product")
           }}
         >
           {!cat.id && (
@@ -355,7 +361,7 @@ export function CatalogueManager({
                       <Tag className="size-4" />
                     </button>
                   ) : (
-                    <button type="button" className={cn(icon, "text-destructive")} disabled={pending} aria-label={t("deleteCategory")} onClick={() => run(() => deleteCategory(c.id))}>
+                    <button type="button" className={cn(icon, "text-destructive")} disabled={pending} aria-label={t("deleteCategory")} onClick={() => run(() => deleteCategory(c.id), undefined, "deleted")}>
                       <Trash2 className="size-4" />
                     </button>
                   )}
@@ -389,7 +395,7 @@ export function CatalogueManager({
                   ))}
                 </ul>
                 <div className="flex gap-2">
-                  <Button className="flex-1" disabled={pending || !(bulk.amount > 0)} onClick={() => run(() => bulkAdjustPrices(bulk), () => setBulk(null))}>
+                  <Button className="flex-1" disabled={pending || !(bulk.amount > 0)} onClick={() => run(() => bulkAdjustPrices(bulk), () => setBulk(null), "product")}>
                     {t("applyPrices")}
                   </Button>
                   <Button variant="outline" onClick={() => setBulk(null)}>
@@ -422,13 +428,13 @@ export function CatalogueManager({
                                 } catch {
                                   return { ok: false, error: "photo_type" }
                                 }
-                              })
+                              }, undefined, "product")
                             }}
                           />
                         </label>
                       )}
                       {canEdit && p.imageUrl && (
-                        <button type="button" className="text-xs text-muted-foreground underline-offset-2 hover:underline" disabled={pending} onClick={() => run(() => removeProductPhoto(p.id))}>
+                        <button type="button" className="text-xs text-muted-foreground underline-offset-2 hover:underline" disabled={pending} onClick={() => run(() => removeProductPhoto(p.id), undefined, "product")}>
                           {t("removePhoto")}
                         </button>
                       )}
@@ -446,7 +452,7 @@ export function CatalogueManager({
                             {p.offerEndsOn && ` · ${t("until", { day: dayText(p.offerEndsOn) })}`}
                           </span>
                           {canEdit && (
-                            <button type="button" className="text-xs underline underline-offset-2" disabled={pending} onClick={() => run(() => endOffer(p.id))}>
+                            <button type="button" className="text-xs underline underline-offset-2" disabled={pending} onClick={() => run(() => endOffer(p.id), undefined, "product")}>
                               {t("endOffer")}
                             </button>
                           )}
@@ -465,7 +471,7 @@ export function CatalogueManager({
                         checked={p.isActive}
                         disabled={!canEdit || pending}
                         aria-label={t("showInShop")}
-                        onChange={(e) => run(() => quickUpdateProduct({ id: p.id, isActive: e.target.checked }))}
+                        onChange={(e) => run(() => quickUpdateProduct({ id: p.id, isActive: e.target.checked }), undefined, "product")}
                       />
                       {p.isActive ? t("inShop") : t("hidden")}
                     </label>
@@ -484,7 +490,7 @@ export function CatalogueManager({
                       className="h-10 w-24 tabular-nums"
                       onBlur={(e) => {
                         const v = Number(e.target.value)
-                        if (v > 0 && v !== p.priceRupees) run(() => quickUpdateProduct({ id: p.id, priceRupees: v }))
+                        if (v > 0 && v !== p.priceRupees) run(() => quickUpdateProduct({ id: p.id, priceRupees: v }), undefined, "product")
                       }}
                     />
                     {tracksStock && <div className="flex items-center overflow-hidden rounded-lg border">

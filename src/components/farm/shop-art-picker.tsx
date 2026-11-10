@@ -9,6 +9,7 @@ import { ArtStrip } from "@/components/art/art-strip"
 import { DRAWINGS, DRAWING_GROUPS, MAX_SHOP_ART } from "@/components/art/drawing-library"
 import { setShopArt } from "@/app/actions/look"
 import { cn } from "@/lib/utils"
+import { useCheer } from "@/components/cheer"
 
 /**
  * Pick the drawings that decorate the shop: the village set fits every farm, then one group per kind of product.
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils"
 export function ShopArtPicker({ picked: initial, isDefault, kinds, suggested }: { picked: string[]; isDefault: boolean; kinds: string[]; suggested: string[] }) {
   const t = useTranslations("farm.look")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const locale = useLocale()
   const router = useRouter()
   const [picked, setPicked] = useState(initial)
@@ -39,6 +41,7 @@ export function ShopArtPicker({ picked: initial, isDefault, kinds, suggested }: 
       const r = await setShopArt(ids)
       if (!r.ok) return setMsg({ ok: false, text: te.has(r.error) ? te(r.error) : te("generic") })
       setMsg({ ok: true, text: t("saved") })
+      cheer("settings")
       router.refresh()
     })
 

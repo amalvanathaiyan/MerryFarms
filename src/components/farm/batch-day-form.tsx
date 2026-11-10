@@ -9,6 +9,8 @@ import { LOSS_CAUSES } from "@/domain/batches"
 import { NumberStepper } from "./number-stepper"
 import { EntryBlock } from "./entry-block"
 import { ArrowRightLeft, Egg, TriangleAlert, Wheat } from "lucide-react"
+import { useCheer } from "@/components/cheer"
+import { dayCheer } from "@/domain/cheers"
 
 export interface DayEntry {
   date: string
@@ -42,6 +44,7 @@ function valuesFor(date: string, entries: DayEntry[]) {
 /** One day of one batch: feed, eggs, birds lost (by cause), sold or given. Keyed by date by its parent, so a new day starts fresh. */
 export function BatchDayForm({
   batchId,
+  batchName,
   minDate,
   maxDate,
   date,
@@ -50,6 +53,8 @@ export function BatchDayForm({
   entries,
 }: {
   batchId: string
+  /** For the notice after saving. */
+  batchName: string
   minDate: string
   maxDate: string
   date: string
@@ -59,6 +64,7 @@ export function BatchDayForm({
 }) {
   const t = useTranslations("farm.batches")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -94,6 +100,8 @@ export function BatchDayForm({
           })
           if (!r.ok) return setError(te.has(r.error) ? te(r.error) : te("generic"))
           setSaved(true)
+          const c = dayCheer([{ name: batchName, eggs: showEggs ? num(v.eggsCollected) : null, lost: lostCount }])
+          cheer(c.kind, c.values)
         })
       }}
     >

@@ -1,4 +1,5 @@
 import { getLocale } from "next-intl/server"
+import { CheerProvider } from "@/components/cheer"
 import { requireStaff } from "@/lib/auth"
 import { pick } from "@/lib/i18n-helpers"
 import { LanguageToggle } from "@/components/language-toggle"
@@ -53,7 +54,9 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
       <div className="mx-auto flex w-full max-w-6xl flex-1 lg:gap-8 lg:px-6">
         <FarmNav items={items} badges={{ orders: toConfirm, more: unread }} />
         <main className="min-w-0 flex-1 px-4 pt-4 pb-32 sm:px-6 lg:px-0 lg:pt-6 lg:pb-12">
-          <div className="mx-auto w-full max-w-3xl">{children}</div>
+          <div className="mx-auto w-full max-w-3xl">
+            <CheerProvider>{children}</CheerProvider>
+          </div>
         </main>
       </div>
     </div>

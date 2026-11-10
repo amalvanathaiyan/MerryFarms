@@ -10,6 +10,7 @@ export type HistoryRow = DayEntry & { dayText: string; lost: number; aliveAfter:
 /** The day's entry for a batch, and the days already entered: tap one to see or change it. */
 export function BatchDayPanel({
   batchId,
+  batchName,
   minDate,
   maxDate,
   initialDate,
@@ -17,6 +18,7 @@ export function BatchDayPanel({
   entries,
 }: {
   batchId: string
+  batchName: string
   minDate: string
   maxDate: string
   initialDate: string
@@ -29,7 +31,7 @@ export function BatchDayPanel({
 
   return (
     <>
-      <BatchDayForm key={date} batchId={batchId} minDate={minDate} maxDate={maxDate} date={date} onDate={setDate} showEggs={showEggs} entries={entries} />
+      <BatchDayForm key={date} batchId={batchId} batchName={batchName} minDate={minDate} maxDate={maxDate} date={date} onDate={setDate} showEggs={showEggs} entries={entries} />
 
       {recent.length > 0 && (
         <section className="rounded-2xl border bg-card p-4">

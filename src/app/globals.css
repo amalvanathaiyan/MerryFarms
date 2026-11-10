@@ -134,8 +134,8 @@
     --sec-today-tint: 45 100% 89%;
     --sec-orders: 213 62% 37%;
     --sec-orders-tint: 213 60% 92%;
-    --sec-poultry: 20 73% 37%;
-    --sec-poultry-tint: 24 79% 92%;
+    --sec-poultry: 22 46% 35%;
+    --sec-poultry-tint: 30 38% 93%;
     --sec-money: 150 56% 27%;
     --sec-money-tint: 124 27% 89%;
     --sec-more: 138 12% 33%;
@@ -195,8 +195,8 @@
       --sec-today-tint: 42 35% 17%;
       --sec-orders: 213 70% 70%;
       --sec-orders-tint: 213 30% 18%;
-      --sec-poultry: 22 75% 66%;
-      --sec-poultry-tint: 20 30% 17%;
+      --sec-poultry: 24 45% 64%;
+      --sec-poultry-tint: 22 16% 17%;
       --sec-money: 150 42% 58%;
       --sec-money-tint: 150 22% 16%;
       --sec-more: 130 10% 68%;
@@ -257,8 +257,8 @@
     --sec-today-tint: 42 35% 17%;
     --sec-orders: 213 70% 70%;
     --sec-orders-tint: 213 30% 18%;
-    --sec-poultry: 22 75% 66%;
-    --sec-poultry-tint: 20 30% 17%;
+    --sec-poultry: 24 45% 64%;
+    --sec-poultry-tint: 22 16% 17%;
     --sec-money: 150 42% 58%;
     --sec-money-tint: 150 22% 16%;
     --sec-more: 130 10% 68%;
@@ -591,3 +591,24 @@
 :root[data-theme="dark"] .farm-scene { filter: brightness(0.9) saturate(0.92); }
 :root[data-soft="on"] .farm-scene { filter: saturate(0.8) brightness(0.97); }
 :root[data-soft="on"][data-theme="dark"] .farm-scene { filter: brightness(0.88) saturate(0.78); }
+
+/* The bullock cart's daytime drawing in evening and night light (FarmScene lays one of these over it). */
+.cart-dusk { background: linear-gradient(to bottom, rgb(111 106 166 / 0.45), rgb(238 142 108 / 0.28) 55%, rgb(122 62 107 / 0.18)); mix-blend-mode: multiply; }
+.cart-night { background: linear-gradient(to bottom, rgb(12 24 56 / 0.82), rgb(30 49 96 / 0.62) 55%, rgb(10 21 54 / 0.55)); mix-blend-mode: multiply; }
+
+/* ── Save notices (src/components/cheer.tsx) ─────────────────────────────────────────────────────────────────
+   Just under the farm's name bar: it slides down from there, so it never covers the bottom menu or a Save bar
+   pinned to the bottom of a page. */
+.cheer-pos { top: calc(var(--app-header-h, 4rem) + 0.5rem); }
+.cheer-card { animation: cheer-in 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+.cheer-card.cheer-soft { animation: cheer-fade 0.4s ease-out both; }
+.cheer-pop { animation: cheer-pop 0.55s cubic-bezier(0.3, 1.6, 0.5, 1) 0.08s both; }
+.cheer-bar { width: 100%; transform-origin: left; animation: cheer-bar linear both; opacity: 0.5; }
+.cheer-sparks { position: absolute; inset: 0; pointer-events: none; }
+.cheer-sparks i { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; border-radius: 9999px; background: #F5B700; animation: cheer-spark 0.8s ease-out 0.15s both; }
+.cheer-sparks i:nth-child(even) { background: hsl(var(--primary)); width: 4px; height: 4px; margin: -2px; }
+@keyframes cheer-in { from { opacity: 0; transform: translateY(-18px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes cheer-fade { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@keyframes cheer-pop { 0% { transform: scale(0.3) rotate(-25deg); } 60% { transform: scale(1.18) rotate(8deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes cheer-bar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes cheer-spark { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(1); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-34px) scale(0.4); } }

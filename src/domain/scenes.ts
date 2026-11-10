@@ -49,3 +49,14 @@ export function msToNextPhase(at: Date): number {
   const ms = (next - m) * 60_000 - at.getUTCSeconds() * 1000 - at.getUTCMilliseconds()
   return Math.max(1000, Math.min(ms, 3_600_000))
 }
+
+export type Greeting = "morning" | "afternoon" | "evening" | "night"
+
+/** A hello for the hour in India: morning from 4, afternoon from noon, evening from 5 pm, night from 9 pm. */
+export function greetingAt(at: Date): Greeting {
+  const h = Math.floor(istMinutes(at) / 60)
+  if (h >= 4 && h < 12) return "morning"
+  if (h >= 12 && h < 17) return "afternoon"
+  if (h >= 17 && h < 21) return "evening"
+  return "night"
+}

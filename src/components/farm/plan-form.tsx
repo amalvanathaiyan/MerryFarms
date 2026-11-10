@@ -12,6 +12,7 @@ import { formatRupees } from "@/domain/money"
 import { formatIndianMobile } from "@/domain/phone"
 import { planUnitPrice } from "@/domain/plans"
 import { cn } from "@/lib/utils"
+import { useCheer } from "@/components/cheer"
 
 type Address = { id: string; line: string; landmark: string | null }
 type Customer = { id: string; name: string; phone: string; addresses: Address[] }
@@ -45,6 +46,7 @@ export function PlanForm({ data, initial }: { data: PlanFormData; initial?: Plan
   const tf = useTranslations("farm.orderForm")
   const ts = useTranslations("shop")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const router = useRouter()
   const [customer, setCustomer] = useState<Customer | null>(initial?.customer ?? null)
   const [query, setQuery] = useState("")
@@ -90,6 +92,7 @@ export function PlanForm({ data, initial }: { data: PlanFormData; initial?: Plan
         note: note || undefined,
       })
       if (!r.ok) return setError(te.has(r.error) ? te(r.error) : te("generic"))
+      cheer("plan")
       router.push("/farm/plans")
     })
   }

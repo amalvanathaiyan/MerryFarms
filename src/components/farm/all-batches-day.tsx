@@ -10,6 +10,8 @@ import { saveAllBatchDaysAction } from "@/app/actions/batches"
 import { LOSS_CAUSES } from "@/domain/batches"
 import { NumberStepper } from "./number-stepper"
 import { cn } from "@/lib/utils"
+import { useCheer } from "@/components/cheer"
+import { dayCheer } from "@/domain/cheers"
 
 export interface DayBatch {
   id: string
@@ -62,6 +64,7 @@ export function AllBatchesDay({ date, today, minDate, batches }: { date: string;
   const t = useTranslations("farm.dayAll")
   const tb = useTranslations("farm.batches")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const router = useRouter()
   const [pending, start] = useTransition()
   const [rows, setRows] = useState<Record<string, Row>>(() => Object.fromEntries(batches.map((b) => [b.id, startRow(b)])))
@@ -102,7 +105,7 @@ export function AllBatchesDay({ date, today, minDate, batches }: { date: string;
           <section key={b.id} className={cn("flex flex-col gap-3 rounded-2xl border-2 bg-card p-4", res?.ok ? "border-primary/50" : res ? "border-destructive/50" : "border-border")}>
             {/* A thin, light bar pinned under the app header while this batch is on screen, so the numbers below
                 always say which batch they're for. */}
-            <div className="sticky z-10 -mx-4 -mt-4 flex items-center justify-between gap-2 rounded-t-2xl border-b bg-sec-poultry-tint/95 px-4 py-2 backdrop-blur" style={{ top: "var(--app-header-h, 66px)" }}>
+            <div className="sticky z-10 -mx-4 -mt-4 flex items-center justify-between gap-2 rounded-t-2xl border-b bg-card/95 px-4 py-2 backdrop-blur" style={{ top: "var(--app-header-h, 66px)" }}>
               <Link href={`/farm/poultry/batches/${b.id}`} className="line-clamp-2 min-w-0 leading-snug">
                 <span className="font-bold">{b.name}</span>
                 <span className="text-sm text-muted-foreground">
@@ -212,6 +215,15 @@ export function AllBatchesDay({ date, today, minDate, batches }: { date: string;
                 })
                 if (!res.ok) return setError(te.has(res.error) ? te(res.error) : te("generic"))
                 setResults(Object.fromEntries(res.results.map((x) => [x.batchId, x])))
+                const done = res.results.filter((x) => x.ok).map((x) => {
+                  const b = batches.find((y) => y.id === x.batchId)
+                  const r = rows[x.batchId]
+                  return { name: b?.name ?? "", eggs: b?.showEggs ? n(r.eggs) : null, lost: LOSS_CAUSES.reduce((a, c) => a + (n(r.losses[c]) ?? 0), 0) }
+                })
+                if (done.length) {
+                  const c = dayCheer(done)
+                  cheer(c.kind, c.values)
+                }
                 setRows((all) => {
                   const next = { ...all }
                   for (const x of res.results) if (x.ok) next[x.batchId] = { ...next[x.batchId], touched: false }

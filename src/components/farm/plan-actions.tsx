@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { changePlanAction } from "@/app/actions/plans"
 import type { PlanChange } from "@/server/plans"
+import { useCheer } from "@/components/cheer"
 
 export function PlanActions({
   planId,
@@ -23,6 +24,7 @@ export function PlanActions({
 }) {
   const t = useTranslations("farm.plans")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [pausing, setPausing] = useState(false)
@@ -34,6 +36,7 @@ export function PlanActions({
       setError(null)
       const r = await changePlanAction({ planId, change })
       if (!r.ok) setError(te.has(r.error) ? te(r.error) : te("generic"))
+      else cheer(change.kind === "cancel" ? "deleted" : "plan")
       setPausing(false)
     })
 

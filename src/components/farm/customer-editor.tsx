@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { updateCustomer } from "@/app/actions/billing"
 import { LOCALE_LABELS } from "@/i18n/routing"
+import { useCheer } from "@/components/cheer"
 
 type Customer = {
   id: string
@@ -20,6 +21,7 @@ type Customer = {
 export function CustomerEditor({ customer, canEdit, showCredit, showTrusted }: { customer: Customer; canEdit: boolean; showCredit: boolean; showTrusted: boolean }) {
   const t = useTranslations("farm.customers")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const [c, setC] = useState(customer)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -35,7 +37,10 @@ export function CustomerEditor({ customer, canEdit, showCredit, showTrusted }: {
         start(async () => {
           const r = await updateCustomer({ ...c, notes: c.notes || undefined })
           if (!r.ok) setError(te.has(r.error) ? te(r.error) : te("generic"))
-          else setSaved(true)
+          else {
+            setSaved(true)
+            cheer("customer")
+          }
         })
       }}
     >

@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { getTranslations } from "next-intl/server"
-import { Eye, LogOut } from "lucide-react"
+import { ExternalLink, Eye, LogOut, Store } from "lucide-react"
 import { requireStaff } from "@/lib/auth"
 import { featuresOf } from "@/lib/features"
 import { moreTiles, SECTION_LOOK } from "@/lib/farm-sections"
@@ -40,6 +40,17 @@ export default async function MorePage() {
           )
         })}
       </ul>
+      {/* The shop as customers see it, in its own browser window (inside the installed app it would have no farm menu). */}
+      <a href="/?browse" target="_blank" rel="noopener" className="flex items-center gap-3 rounded-2xl border-2 bg-card p-3 hover:bg-accent">
+        <span className="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-primary">
+          <Store className="size-6" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-lg leading-tight font-bold">{tm("yourShop")}</span>
+          <span className="block text-sm text-muted-foreground">{tm("yourShopHint")}</span>
+        </span>
+        <ExternalLink className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+      </a>
       <Link href="/farm/account#display" className="flex items-center gap-3 rounded-2xl border-2 bg-card p-3 hover:bg-accent">
         <span className="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-primary">
           <Eye className="size-6" aria-hidden />

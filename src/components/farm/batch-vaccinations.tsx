@@ -10,6 +10,7 @@ import { addDoseAction, applyScheduleAction, deleteDoseAction, giveDoseAction, u
 import { VACCINE_METHODS, type DoseState } from "@/domain/vaccinations"
 import { formatRupees } from "@/domain/money"
 import { cn } from "@/lib/utils"
+import { useCheer } from "@/components/cheer"
 
 export interface DoseRow {
   id: string
@@ -62,6 +63,7 @@ export function BatchVaccinations({
 }) {
   const t = useTranslations("farm.vaccines")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -132,7 +134,7 @@ export function BatchVaccinations({
       {doses.length === 0 && <p className="text-sm text-muted-foreground">{t("none")}</p>}
 
       {isOwner && canApplySchedule && (
-        <Button variant="outline" className="self-start" disabled={pending} onClick={() => run(() => applyScheduleAction(batchId), (r) => setNotice(t("planAdded", { count: r.added ?? 0 })))}>
+        <Button variant="outline" className="self-start" disabled={pending} onClick={() => run(() => applyScheduleAction(batchId), (r) => (setNotice(t("planAdded", { count: r.added ?? 0 })), cheer("vaccinePlan")))}>
           {t("applyPlan")}
         </Button>
       )}
@@ -164,7 +166,7 @@ export function BatchVaccinations({
                 className="flex flex-col gap-2 rounded-lg bg-muted/50 p-2"
                 onSubmit={(e) => {
                   e.preventDefault()
-                  run(() => giveDoseAction(d.id, { givenDate: give.date, birds: num(give.birds), costRupees: num(give.cost), note: give.note || undefined }), () => setGiving(null))
+                  run(() => giveDoseAction(d.id, { givenDate: give.date, birds: num(give.birds), costRupees: num(give.cost), note: give.note || undefined }), () => (setGiving(null), cheer("dose", { name: d.vaccine })))
                 }}
               >
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -189,7 +191,7 @@ export function BatchVaccinations({
                     <Button size="sm" variant="outline" onClick={() => openGive(d)}>
                       {t("change")}
                     </Button>
-                    <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => undoDoseAction(d.id))}>
+                    <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => undoDoseAction(d.id), () => cheer("doseUndone", { name: d.vaccine }))}>
                       {t("undo")}
                     </Button>
                   </>
@@ -204,7 +206,7 @@ export function BatchVaccinations({
                     className="ml-auto grid size-9 place-items-center rounded-lg text-muted-foreground"
                     aria-label={t("delete")}
                     disabled={pending}
-                    onClick={() => window.confirm(t("deleteConfirm", { name: d.vaccine })) && run(() => deleteDoseAction(d.id))}
+                    onClick={() => window.confirm(t("deleteConfirm", { name: d.vaccine })) && run(() => deleteDoseAction(d.id), () => cheer("deleted"))}
                   >
                     <Trash2 className="size-4" />
                   </button>
@@ -231,7 +233,7 @@ export function BatchVaccinations({
                   costRupees: add.given ? num(add.cost) : null,
                   note: add.note || undefined,
                 }),
-              () => (setAdding(false), setAdd(blank))
+              () => (setAdding(false), setAdd(blank), add.given ? cheer("dose", { name: add.vaccine }) : cheer("vaccinePlan"))
             )
           }}
         >
