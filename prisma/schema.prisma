@@ -173,6 +173,9 @@ model Tenant {
   logoUrl String?
   shopArt String[] @default([])
 
+  // Storage for the farm's uploaded videos, in MB; null = the default (DEFAULT_VIDEO_SPACE_MB). Set by the platform.
+  videoSpaceMb Int?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -874,6 +877,31 @@ model BatchVaccination {
   @@index([batchId])
   @@index([tenantId, givenDate, dueDate])
   @@map("batch_vaccinations")
+}
+
+/// The farm's videos for the shop: clips uploaded from the farm app (kept in Supabase storage, bucket "farm-media")
+/// or YouTube links. banner: plays silently on repeat on the shop's home page (uploads only); watch: in
+/// "Watch our farm", plays with sound when tapped. See src/domain/videos.ts.
+model FarmVideo {
+  id          String   @id @default(uuid())
+  tenantId    String
+  kind        String // upload | youtube
+  src         String // public file address (upload) or YouTube video id
+  storagePath String? // the file in storage, to remove it with the video
+  posterPath  String?
+  posterUrl   String?
+  title       String?
+  banner      Boolean  @default(false)
+  watch       Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  seconds     Int?
+  bytes       Int?
+  byStaffId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@index([tenantId, sortOrder])
+  @@map("farm_videos")
 }
 
 /// A weighing: a few birds of a batch weighed on a day (usually once a week), to follow growth.

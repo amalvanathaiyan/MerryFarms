@@ -14,7 +14,7 @@ export default async function SettingsDeliveryPage() {
   const area = featuresOf(tenant).deliveryArea
   return (
     <div className="flex flex-col gap-4">
-      <SectionHeader section="settings" tabs={settingsTabs()} active="delivery" back={{ href: "/farm/more" }} />
+      <SectionHeader section="settings" tabs={settingsTabs(featuresOf(tenant))} active="delivery" back={{ href: "/farm/more" }} />
       <Link href="/farm/slots" className="flex items-center justify-between gap-3 rounded-2xl bg-sec-slots-tint p-4 text-lg font-bold">
         <span className="flex items-center gap-3">
           <span className="grid size-11 place-items-center rounded-full bg-sec-slots text-sec-on">

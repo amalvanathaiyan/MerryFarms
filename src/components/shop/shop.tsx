@@ -21,6 +21,7 @@ import { ProductPicture } from "@/components/product-picture"
 import type { ArtKind } from "@/domain/product-art"
 import { FarmBanner } from "@/components/farm-banner"
 import { FarmScene, type SceneProps } from "@/components/art/farm-scene"
+import { FarmVideoBanner, WatchOurFarm, type ShopVideo } from "@/components/shop/farm-videos"
 import { HelpButton } from "./help-button"
 import { HowTo } from "./how-to"
 import { KindDrawing } from "@/components/art/kind-drawing"
@@ -31,6 +32,8 @@ export interface ShopData {
     name: string
     /** The welcome picture and the small one (order placed, empty shop): the farm's own scene or the cart. */
     scenes: { hero: SceneProps; small: SceneProps }
+    /** The farm's videos: silent banners on the home page, and "Watch our farm". */
+    videos: { banner: ShopVideo[]; watch: ShopVideo[] }
     phone: string
     whatsappNumber: string
     orderPrefix: string
@@ -420,8 +423,11 @@ export function Shop({ data }: { data: ShopData }) {
             ) : (
               <p className="rounded-xl bg-yolk p-4 text-yolk-foreground">{t("noSlots")}</p>
             )}
+            {data.farm.videos.watch.length > 0 && <WatchOurFarm videos={data.farm.videos.watch} />}
           </div>
         </section>
+
+        {data.farm.videos.banner.length > 0 && <FarmVideoBanner videos={data.farm.videos.banner} />}
 
         {data.farm.webOrdering && !data.farm.paused && <HowTo calls={data.farm.calls} addLabel={t("add")} />}
 

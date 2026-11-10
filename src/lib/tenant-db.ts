@@ -31,6 +31,7 @@ const TENANT_MODELS = new Set([
   "VaccineScheduleItem",
   "BatchVaccination",
   "BatchWeight",
+  "FarmVideo",
   "Expense",
   "ProductionEntry",
 ])

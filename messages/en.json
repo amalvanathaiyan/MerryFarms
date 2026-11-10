@@ -125,7 +125,14 @@
     "slotHint": "When the order reaches your home",
     "payHint_upi_on_delivery": "Pay with GPay, PhonePe or Paytm when it arrives",
     "payHint_cash_on_delivery": "Pay in cash when it arrives",
-    "payNothingNow": "Nothing to pay now."
+    "payNothingNow": "Nothing to pay now.",
+    "video": {
+      "watch": "Watch our farm",
+      "close": "Close",
+      "pause": "Pause the banner",
+      "play": "Play the banner",
+      "more": "More videos"
+    }
   },
   "farm": {
     "nav": {
@@ -530,6 +537,14 @@
       "poultryScenes": {
         "title": "Poultry farm pictures",
         "hint": "Your shop shows your own farm: the gate with country hens, the farm shop stall, and a hen with her eggs. The picture changes each day, the sky follows the time of day, and the bullock cart takes its turn. Off: the bullock cart only."
+      },
+      "farmVideos": {
+        "title": "Videos on your shop",
+        "hint": "Add your farm's YouTube videos to “Watch our farm” on your shop."
+      },
+      "videoUploads": {
+        "title": "Videos from your phone",
+        "hint": "Send short clips from your phone: a silent banner on your shop's home page, or in “Watch our farm”. Comes with the Starter plan."
       }
     },
     "orderForm": {
@@ -1143,7 +1158,8 @@
         "shop": "Shop",
         "delivery": "Delivery",
         "look": "Look",
-        "switches": "Switches"
+        "switches": "Switches",
+        "videos": "Videos"
       }
     },
     "more": {
@@ -1296,6 +1312,42 @@
       "cardDue": "Weigh this week",
       "birdsWeighed": "{birds, plural, one {# bird} other {# birds}} weighed",
       "birdsShort": "{birds, plural, one {# bird} other {# birds}}"
+    },
+    "videos": {
+      "intro": "Videos on your shop. Real farm videos build trust: hens in the yard, eggs being collected, the gate in the morning.",
+      "addTitle": "Add a video from your phone",
+      "addHint": "Up to a minute. The app makes it smaller before sending, to save data.",
+      "choose": "Choose a video",
+      "shrinking": "Making it smaller… {pct}%",
+      "uploading": "Sending…",
+      "titleLabel": "Name (optional)",
+      "titlePlaceholder": "e.g. Morning egg collection",
+      "asBanner": "Banner on the shop's home page",
+      "asBannerHint": "Plays without sound, over and over.",
+      "asWatch": "In “Watch our farm”",
+      "asWatchHint": "Customers tap to watch it, with sound.",
+      "send": "Send video",
+      "cancel": "Cancel",
+      "about": "{size} MB · {seconds} seconds",
+      "youtubeTitle": "Add a YouTube video",
+      "youtubeHint": "Paste the link from YouTube's Share button. It shows in “Watch our farm”.",
+      "youtubeLink": "YouTube link",
+      "add": "Add",
+      "listTitle": "Your videos",
+      "empty": "No videos yet. Add one above.",
+      "fromPhone": "From phone",
+      "youtube": "YouTube",
+      "untitled": "Video {n}",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "delete": "Delete",
+      "deleteConfirm": "Delete this video? It goes from your shop and from storage.",
+      "limit": "Up to {max} videos.",
+      "bannerYoutube": "YouTube videos can only be in “Watch our farm”.",
+      "spaceTitle": "Video space",
+      "space": "Space used: {used} of {total} MB",
+      "spaceFull": "Your video space is full. Delete a video to add another, or call FarmForYou for more space.",
+      "uploadsPlan": "Sending videos from your phone comes with the Starter plan. YouTube videos below are free. Videos you sent before stay saved but don't show on your shop."
     }
   },
   "login": {
@@ -1462,7 +1514,20 @@
     "weight_birds": "Birds weighed: from 1 to 500.",
     "weight_total": "Enter the birds' weight together.",
     "weight_odd": "That weight per bird looks wrong. Check you entered kilos, not grams.",
-    "weight_not_found": "That weighing was already deleted."
+    "weight_not_found": "That weighing was already deleted.",
+    "video_type": "That file isn't a video the app can use.",
+    "video_empty": "That video file is empty.",
+    "video_too_big": "That video is too big even after making it smaller. Pick a shorter one.",
+    "video_too_big_original": "This phone can't make videos smaller, and this one is over 25 MB. Record a shorter clip (about 20 seconds).",
+    "video_limit": "You already have 12 videos. Delete one to add another.",
+    "video_not_uploaded": "The video didn't finish sending. Check the internet and try again.",
+    "video_not_found": "That video was already deleted.",
+    "youtube_link": "That isn't a YouTube video link.",
+    "video_already": "That YouTube video is already added.",
+    "video_banner_upload_only": "YouTube videos can only be in “Watch our farm”.",
+    "media_off": "Video storage isn't set up yet. Ask FarmForYou to switch it on.",
+    "video_space": "Not enough video space left for this one. Delete a video, choose a shorter one, or call FarmForYou for more space.",
+    "video_uploads_plan": "Sending videos from your phone comes with the Starter plan."
   },
   "my": {
     "connectTitle": "Connect with the farm",
@@ -1633,7 +1698,9 @@
     "demoNoPassword": "Demo login: no password needed.",
     "addOwner": "Add an owner",
     "save": "Save",
-    "saved": "Saved."
+    "saved": "Saved.",
+    "videoSpace": "Video space (MB)",
+    "videoSpaceHint": "Uses {used} MB now. Leave empty for the standard {standard} MB."
   },
   "display": {
     "title": "Easy on the eyes",
@@ -1686,7 +1753,8 @@
       "plan": "Plan saved",
       "settings": "Saved",
       "deleted": "Removed",
-      "weight": "Weighed · {batch} · {avg} a bird"
+      "weight": "Weighed · {batch} · {avg} a bird",
+      "video": "Video added"
     },
     "lines": {
       "eggs": [
@@ -1846,6 +1914,11 @@
         "Weighed and noted. Now you can watch them grow.",
         "A week's growth, written down.",
         "Good habit! Weekly weights show trouble early."
+      ],
+      "video": [
+        "Your farm, on screen. Customers will love it.",
+        "Lights, camera, farm!",
+        "Real farm, real trust. Nice work."
       ]
     },
     "time": {
