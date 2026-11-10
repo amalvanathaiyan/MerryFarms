@@ -591,3 +591,7 @@
 :root[data-theme="dark"] .farm-scene { filter: brightness(0.9) saturate(0.92); }
 :root[data-soft="on"] .farm-scene { filter: saturate(0.8) brightness(0.97); }
 :root[data-soft="on"][data-theme="dark"] .farm-scene { filter: brightness(0.88) saturate(0.78); }
+
+/* The bullock cart's daytime drawing in evening and night light (FarmScene lays one of these over it). */
+.cart-dusk { background: linear-gradient(to bottom, rgb(111 106 166 / 0.45), rgb(238 142 108 / 0.28) 55%, rgb(122 62 107 / 0.18)); mix-blend-mode: multiply; }
+.cart-night { background: linear-gradient(to bottom, rgb(12 24 56 / 0.82), rgb(30 49 96 / 0.62) 55%, rgb(10 21 54 / 0.55)); mix-blend-mode: multiply; }

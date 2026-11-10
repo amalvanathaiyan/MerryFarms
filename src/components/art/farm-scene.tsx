@@ -35,7 +35,19 @@ export function FarmScene({ scene, className, priority }: { scene: SceneProps; c
 
   const svg = useMemo(() => (now.kind === "cart" ? null : farmSceneSvg(now.kind, now.phase, scene.words)), [now, scene.words])
 
-  if (!svg || now.kind === "cart") return <CartArt variant={scene.spot === "hero" ? "scene" : "plain"} priority={priority} className={className} />
+  if (!svg || now.kind === "cart") {
+    // The cart's drawing has a daytime sky. In the big picture, evening and night lay their light over it
+    // (dusk, then moonlight), so it never shows the sun beside "Good night".
+    const light = scene.spot === "hero" && (now.phase === "evening" || now.phase === "night") ? now.phase : null
+    const cart = <CartArt variant={scene.spot === "hero" ? "scene" : "plain"} priority={priority} className={light ? undefined : className} />
+    if (!light) return cart
+    return (
+      <div className={cn("relative overflow-hidden", className)}>
+        {cart}
+        <div aria-hidden className={cn("pointer-events-none absolute inset-0", light === "night" ? "cart-night" : "cart-dusk")} />
+      </div>
+    )
+  }
   return (
     <div
       className={cn("w-full overflow-hidden", className)}

@@ -175,7 +175,12 @@
       "alertFeedHint": "{left} kg left, about {perDay} kg used a day. Buy feed soon.",
       "alertLaying": "{name}: fewer eggs",
       "alertLayingHint": "Laying fell from {before}% to {now}% in the last 3 days. Check feed, water and health.",
-      "watch": "Check these"
+      "watch": "Check these",
+      "greet_morning": "Good morning, {name}!",
+      "greet_afternoon": "Good afternoon, {name}!",
+      "greet_evening": "Good evening, {name}!",
+      "greet_night": "Good night, {name}!",
+      "yourShop": "Your shop"
     },
     "orders": {
       "tab_to_confirm": "To call",
@@ -1145,7 +1150,9 @@
       "newMessages": "{count, plural, one {# new message} other {# new messages}}",
       "signOut": "Sign out",
       "display": "Easy on the eyes",
-      "displayHint": "Soft colours, dark or light, larger text"
+      "displayHint": "Soft colours, dark or light, larger text",
+      "yourShop": "Your shop",
+      "yourShopHint": "See it as customers do. Opens in a new window."
     },
     "feed": {
       "buyTitle": "Feed bought",
