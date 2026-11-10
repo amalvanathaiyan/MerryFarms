@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { msToNextPhase, phaseAt, sceneFor } from "./scenes"
+import { greetingAt, msToNextPhase, phaseAt, sceneFor } from "./scenes"
 
 /** An instant at this time in India. */
 const ist = (date: string, time: string) => new Date(`${date}T${time}:00+05:30`)
@@ -53,5 +53,14 @@ describe("which picture", () => {
 
   it("shows the hen with her eggs in the small spots", () => {
     expect(sceneFor({ farmScenes: true, spot: "small", at: ist("2026-11-10", "10:00") })).toBe("hen")
+  })
+})
+
+describe("a hello for the hour", () => {
+  it("says good morning, afternoon, evening or night by the time in India", () => {
+    const at = (t: string) => greetingAt(ist("2026-11-10", t))
+    expect([at("03:59"), at("04:00"), at("11:59"), at("12:00"), at("16:59"), at("17:00"), at("20:59"), at("21:00")]).toEqual([
+      "night", "morning", "morning", "afternoon", "afternoon", "evening", "evening", "night",
+    ])
   })
 })

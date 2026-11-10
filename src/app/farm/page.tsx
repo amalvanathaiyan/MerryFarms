@@ -12,7 +12,9 @@ import { generatePlanOrders } from "@/server/plans"
 import { EnablePush } from "@/components/push/enable-push"
 import { ChevronRight, TriangleAlert } from "lucide-react"
 import { AutoRefresh } from "@/components/auto-refresh"
-import { SectionHeader } from "@/components/farm/section-header"
+import { TodayWelcome } from "@/components/farm/today-welcome"
+import { sceneProps } from "@/lib/scene"
+import { greetingAt } from "@/domain/scenes"
 import { SectionIcon } from "@/components/farm/section-icon"
 import { SECTION_LOOK, type SectionKey } from "@/lib/farm-sections"
 import { batchStatus } from "@/domain/batches"
@@ -193,7 +195,12 @@ export default async function TodayPage() {
     <div className="flex flex-col gap-4">
       <AutoRefresh seconds={60} />
       {features.pushNotifications && <EnablePush who="staff" />}
-      <SectionHeader section="today" hint={new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Kolkata" }).format(new Date())} />
+      <TodayWelcome
+        scene={await sceneProps(tenant, locale, "hero")}
+        greeting={t(`greet_${greetingAt(new Date())}`, { name: staff.name.trim().split(/\s+/)[0] })}
+        date={new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Kolkata" }).format(new Date())}
+        shopLabel={t("yourShop")}
+      />
 
       {warnings.length > 0 && (
         <section className="flex flex-col gap-2.5">
