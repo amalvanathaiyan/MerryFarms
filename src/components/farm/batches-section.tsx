@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { getTranslations } from "next-intl/server"
-import { CalendarDays, CheckCircle2, PencilLine, Plus, Syringe } from "lucide-react"
+import { CalendarDays, CheckCircle2, PencilLine, Plus, Scale, Syringe } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { weeksAndDays, type BatchStatus } from "@/domain/batches"
@@ -20,6 +20,8 @@ export interface BatchCard {
   enteredToday: boolean
   /** Doses due today or late. */
   vaccinesDue: string[]
+  /** No weighing in the last week (or ever): a quiet reminder to weigh a few birds. */
+  weighDue: boolean
 }
 
 /** Age as words: "31 days old · 4 weeks 3 days". */
@@ -54,6 +56,7 @@ export async function BatchesSection({
 }) {
   const t = await getTranslations("farm.batches")
   const tv = await getTranslations("farm.vaccines")
+  const tw = await getTranslations("farm.weights")
   const alive = cards.reduce((a, c) => a + c.status.alive, 0)
   const link = (c: BatchCard) => `/farm/poultry/batches/${c.id}${isToday ? "" : `?date=${asOf}`}`
 
@@ -101,6 +104,11 @@ export async function BatchesSection({
             {isToday && c.vaccinesDue.length > 0 && (
               <Link href="/farm/poultry/vaccines" className="flex items-center gap-2 rounded-xl bg-yolk px-3 py-1.5 text-sm font-bold text-yolk-foreground">
                 <Syringe className="size-4 shrink-0" aria-hidden /> {tv("dueOnCard", { names: c.vaccinesDue.join(", ") })}
+              </Link>
+            )}
+            {isToday && c.weighDue && (
+              <Link href={`/farm/poultry/batches/${c.id}#weights`} className="flex items-center gap-2 self-start rounded-full border px-3 py-1 text-sm font-semibold text-sec-poultry hover:bg-accent">
+                <Scale className="size-4 shrink-0" aria-hidden /> {tw("cardDue")}
               </Link>
             )}
             <dl className="grid grid-cols-3 gap-2 text-center">

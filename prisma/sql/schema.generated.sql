@@ -629,6 +629,22 @@ CREATE TABLE "batch_vaccinations" (
 );
 
 -- CreateTable
+CREATE TABLE "batch_weights" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "batchId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "birds" INTEGER NOT NULL,
+    "totalGrams" INTEGER NOT NULL,
+    "note" TEXT,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "batch_weights_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "expenses" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
@@ -800,6 +816,12 @@ CREATE INDEX "batch_vaccinations_batchId_idx" ON "batch_vaccinations"("batchId")
 CREATE INDEX "batch_vaccinations_tenantId_givenDate_dueDate_idx" ON "batch_vaccinations"("tenantId", "givenDate", "dueDate");
 
 -- CreateIndex
+CREATE INDEX "batch_weights_tenantId_date_idx" ON "batch_weights"("tenantId", "date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "batch_weights_batchId_date_key" ON "batch_weights"("batchId", "date");
+
+-- CreateIndex
 CREATE INDEX "expenses_tenantId_date_idx" ON "expenses"("tenantId", "date");
 
 -- CreateIndex
@@ -900,4 +922,7 @@ ALTER TABLE "batch_losses" ADD CONSTRAINT "batch_losses_batchId_fkey" FOREIGN KE
 
 -- AddForeignKey
 ALTER TABLE "batch_vaccinations" ADD CONSTRAINT "batch_vaccinations_batchId_fkey" FOREIGN KEY ("batchId") REFERENCES "batches"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "batch_weights" ADD CONSTRAINT "batch_weights_batchId_fkey" FOREIGN KEY ("batchId") REFERENCES "batches"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

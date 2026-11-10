@@ -788,6 +788,7 @@ model Batch {
   days         BatchDay[]
   losses       BatchLoss[]
   vaccinations BatchVaccination[]
+  weights      BatchWeight[]
   updatedAt    DateTime           @default(now()) @updatedAt
 
   @@unique([tenantId, number])
@@ -873,6 +874,27 @@ model BatchVaccination {
   @@index([batchId])
   @@index([tenantId, givenDate, dueDate])
   @@map("batch_vaccinations")
+}
+
+/// A weighing: a few birds of a batch weighed on a day (usually once a week), to follow growth.
+/// The average is totalGrams / birds; one weighing per batch per day (saving again replaces it).
+model BatchWeight {
+  id         String   @id @default(uuid())
+  tenantId   String
+  batchId    String
+  date       String // IST
+  birds      Int // how many birds were weighed
+  totalGrams Int // their weight together
+  note       String?
+  byStaffId  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, date])
+  @@index([tenantId, date])
+  @@map("batch_weights")
 }
 
 /// Money spent running the farm (feed, medicine, chicks, labour…), for profit.

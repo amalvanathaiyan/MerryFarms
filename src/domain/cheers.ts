@@ -23,6 +23,7 @@ export const CHEER_KINDS = {
   doseUndone: "calm",
   vaccinePlan: "calm",
   feed: "happy",
+  weight: "happy",
   // Money
   expense: "calm",
   made: "happy",
