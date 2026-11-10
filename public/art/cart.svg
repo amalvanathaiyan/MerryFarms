@@ -18,6 +18,8 @@
   .colour .glow{transform-box:fill-box;transform-origin:center;animation:ffy-glow 5s ease-in-out infinite}
   @keyframes ffy-spin{to{transform:rotate(-360deg)}}
   @keyframes ffy-road{to{transform:translateX(640px)}}
+  @keyframes ffy-s640{to{transform:translateX(640px)}}@keyframes ffy-s6{to{transform:translateX(6px)}}@keyframes ffy-s15{to{transform:translateX(15px)}}@keyframes ffy-s56{to{transform:translateX(56px)}}@keyframes ffy-s160{to{transform:translateX(160px)}}@keyframes ffy-s9{to{transform:translateX(9px)}}
+  @keyframes ffy-fan-plough{to{transform:skewX(17.745deg)}}@keyframes ffy-fan-near{to{transform:skewX(14.574deg)}}
   @keyframes ffy-walk{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.4px)}}
   @keyframes ffy-swish{0%,100%{transform:rotate(0)}50%{transform:rotate(9deg)}}
   @keyframes ffy-bump{0%,100%{transform:translateY(0)}25%{transform:translateY(-1.2px)}55%{transform:translateY(.4px)}}
