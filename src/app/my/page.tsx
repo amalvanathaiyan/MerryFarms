@@ -13,7 +13,8 @@ import { formatRupees } from "@/domain/money"
 import { customerMayChange, orderCode, isOpen } from "@/domain/orders"
 import { formatIndianMobile } from "@/domain/phone"
 import { FarmBanner } from "@/components/farm-banner"
-import { CartArt } from "@/components/art/cart-art"
+import { FarmScene } from "@/components/art/farm-scene"
+import { sceneProps } from "@/lib/scene"
 import { CartIcon } from "@/components/art/cart-icon"
 import { Button } from "@/components/ui/button"
 import { ConnectForm } from "@/components/shop/connect-form"
@@ -52,7 +53,7 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
       <div className="min-h-dvh">
         {header}
         <main className="mx-auto flex w-full max-w-md flex-col gap-5 px-4 py-6">
-          <CartArt variant="plain" className="mx-auto max-w-xs" />
+          <FarmScene scene={await sceneProps(tenant, locale, "small")} className="mx-auto max-w-xs" />
           <h1 className="text-2xl font-bold">{otp ? tsi("welcome") : t("connectTitle")}</h1>
           {link === "expired" && <p className="rounded-lg bg-yolk p-3 text-sm text-yolk-foreground">{t("linkExpired")}</p>}
           <p className="text-muted-foreground">{otp ? tsi("myHint") : t("connectHint", { farm: farmName })}</p>
