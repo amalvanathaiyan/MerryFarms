@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl"
 import { saveFeatures } from "@/app/actions/billing"
 import type { FeatureKey } from "@/domain/features"
 import { cn } from "@/lib/utils"
+import { useCheer } from "@/components/cheer"
 
 export interface FeatureRow {
   key: FeatureKey
@@ -18,6 +19,7 @@ export interface FeatureRow {
 export function FeatureSwitches({ rows }: { rows: FeatureRow[] }) {
   const t = useTranslations("farm.features")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const [state, setState] = useState(rows)
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
@@ -31,7 +33,7 @@ export function FeatureSwitches({ rows }: { rows: FeatureRow[] }) {
       if (!r.ok) {
         setState(previous)
         setError(te.has(r.error) ? te(r.error) : te("generic"))
-      }
+      } else cheer("settings")
     })
   }
 

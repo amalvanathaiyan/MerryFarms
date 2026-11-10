@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { addPaymentAction } from "@/app/actions/billing"
 import { cn } from "@/lib/utils"
+import { useCheer } from "@/components/cheer"
+import { formatRupees } from "@/domain/money"
 
 /** Record money received from a customer (clearing khata dues or paying in advance). */
 export function PaymentForm({ customerId, suggestedRupees }: { customerId: string; suggestedRupees?: number }) {
   const t = useTranslations("farm.customers")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const [open, setOpen] = useState(false)
   const [amount, setAmount] = useState(suggestedRupees ? String(suggestedRupees) : "")
   const [method, setMethod] = useState<"cash_on_delivery" | "upi_on_delivery">("upi_on_delivery")
@@ -39,6 +42,7 @@ export function PaymentForm({ customerId, suggestedRupees }: { customerId: strin
           if (!r.ok) return setError(te.has(r.error) ? te(r.error) : te("generic"))
           setSaved(true)
           setOpen(false)
+          cheer("payment", { amount: formatRupees(Math.round(Number(amount) * 100)) })
           setReference("")
         })
       }}

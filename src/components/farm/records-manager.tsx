@@ -9,6 +9,7 @@ import { addExpense, deleteExpense } from "@/app/actions/records"
 import { EXPENSE_KINDS, SPREAD_CHOICES, type ExpenseKind } from "@/domain/records"
 import { formatRupees } from "@/domain/money"
 import { cn } from "@/lib/utils"
+import { useCheer } from "@/components/cheer"
 
 type ExpenseRow = { id: string; dayText: string; kind: string; amountPaise: number; quantityKg: number | null; batchName: string | null; spreadMonths: number | null; note: string | null }
 
@@ -50,6 +51,7 @@ export function RecordsManager({
 }) {
   const t = useTranslations("farm.records")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const empty = { date: today, kind: "feed" as ExpenseKind, amount: "", kg: "", batchId: "", note: "", spread: null as number | null }
@@ -106,7 +108,10 @@ export function RecordsManager({
                     spreadMonths: spreads ? spend.spread : null,
                     note: spend.note || undefined,
                   }),
-                () => setSpend({ ...empty, date: spend.date, kind: spend.kind, batchId: spend.batchId, spread: spend.spread })
+                () => (
+                  setSpend({ ...empty, date: spend.date, kind: spend.kind, batchId: spend.batchId, spread: spend.spread }),
+                  isFeed && spend.kg ? cheer("feed", { kg: spend.kg }) : cheer("expense", { amount: formatRupees(Math.round(Number(spend.amount) * 100)) })
+                )
               )
             }}
           >
@@ -194,7 +199,7 @@ export function RecordsManager({
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <b className="tabular-nums">{formatRupees(e.amountPaise)}</b>
-                  <button type="button" className="grid size-9 place-items-center rounded-lg text-muted-foreground" disabled={pending} aria-label={t("deleteExpense")} onClick={() => run(() => deleteExpense(e.id))}>
+                  <button type="button" className="grid size-9 place-items-center rounded-lg text-muted-foreground" disabled={pending} aria-label={t("deleteExpense")} onClick={() => run(() => deleteExpense(e.id), () => cheer("deleted"))}>
                     <Trash2 className="size-4" />
                   </button>
                 </div>

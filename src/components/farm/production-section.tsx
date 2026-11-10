@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { saveProductionAction } from "@/app/actions/records"
+import { useCheer } from "@/components/cheer"
 
 type Product = { id: string; name: string; pack: string; unit: string }
 type Entry = { date: string; productId: string; made: number; wasted: number }
@@ -14,6 +15,7 @@ export function ProductionSection({ today, products, entries, toStock }: { today
   const t = useTranslations("farm.records")
   const tu = useTranslations("farm.units")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -43,6 +45,7 @@ export function ProductionSection({ today, products, entries, toStock }: { today
           const r = await saveProductionAction({ date, entries: list })
           if (!r.ok) return setError(te.has(r.error) ? te(r.error) : te("generic"))
           setSaved(true)
+          cheer("made")
         })
       }}
     >

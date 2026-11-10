@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { saveDeliveryArea } from "@/app/actions/billing"
 import { mapViewLink, parseLocation, parsePincodes } from "@/domain/delivery-area"
+import { useCheer } from "@/components/cheer"
 
 type Loc = { lat: number; lng: number } | null
 
@@ -14,6 +15,7 @@ type Loc = { lat: number; lng: number } | null
 export function DeliveryAreaForm({ initial }: { initial: { location: Loc; radiusKm: number | null; pincodes: string[] } }) {
   const t = useTranslations("farm.area")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const [location, setLocation] = useState<Loc>(initial.location)
   const [paste, setPaste] = useState("")
   const [radius, setRadius] = useState(initial.radiusKm ? String(initial.radiusKm) : "")
@@ -102,7 +104,10 @@ export function DeliveryAreaForm({ initial }: { initial: { location: Loc; radius
             setError(null)
             const r = await saveDeliveryArea({ lat: location?.lat ?? null, lng: location?.lng ?? null, radiusKm: radius ? Number(radius) : null, pincodes: pins })
             if (!r.ok) setError(te.has(r.error) ? te(r.error) : te("generic"))
-            else setSaved(true)
+            else {
+              setSaved(true)
+              cheer("settings")
+            }
           })
         }
       >

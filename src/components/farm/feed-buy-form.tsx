@@ -5,11 +5,13 @@ import { useTranslations } from "next-intl"
 import { Plus } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { addExpense } from "@/app/actions/records"
+import { useCheer } from "@/components/cheer"
 
 /** Owner: feed bought, with its kg and price. It fills the feed store and prices the feed each batch eats. */
 export function FeedBuyForm({ today }: { today: string }) {
   const t = useTranslations("farm.feed")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -28,6 +30,7 @@ export function FeedBuyForm({ today }: { today: string }) {
           if (!r.ok) return setError(te.has(r.error) ? te(r.error) : te("generic"))
           setV({ ...blank, date: v.date })
           setSaved(true)
+          cheer("feed", { kg: v.kg })
         })
       }}
     >

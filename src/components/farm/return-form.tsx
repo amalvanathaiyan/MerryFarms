@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { submitReturn } from "@/app/actions/returns"
 import { formatRupees } from "@/domain/money"
 import { cn } from "@/lib/utils"
+import { useCheer } from "@/components/cheer"
 
 const REASONS = ["damaged", "short_delivered", "returned", "quality", "other"] as const
 type Refund = "account" | "cash" | "upi"
@@ -32,6 +33,7 @@ export function ReturnForm({
 }) {
   const t = useTranslations("farm.returns")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const router = useRouter()
   const [qty, setQty] = useState<Record<string, number>>({})
   const [reason, setReason] = useState<(typeof REASONS)[number]>("damaged")
@@ -67,6 +69,7 @@ export function ReturnForm({
             refundDeliveryFee: fee > 0,
           })
           if (!r.ok) return setError(te.has(r.error) ? te(r.error) : te("generic"))
+          cheer("returned")
           router.push(r.creditNoteId ? `/farm/invoices/${r.creditNoteId}` : "/farm/orders?tab=done")
         })
       }}

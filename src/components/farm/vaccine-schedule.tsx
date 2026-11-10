@@ -9,6 +9,7 @@ import { addScheduleItemAction, deleteScheduleItemAction } from "@/app/actions/v
 import { VACCINE_METHODS } from "@/domain/vaccinations"
 import { weeksAndDays } from "@/domain/batches"
 import { cn } from "@/lib/utils"
+import { useCheer } from "@/components/cheer"
 
 type Item = { id: string; vaccine: string; ageDays: number; method: string | null }
 
@@ -16,6 +17,7 @@ type Item = { id: string; vaccine: string; ageDays: number; method: string | nul
 export function VaccineSchedule({ items }: { items: Item[] }) {
   const t = useTranslations("farm.vaccines")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const blank = { vaccine: "", ageDays: "", method: "" }
@@ -26,7 +28,10 @@ export function VaccineSchedule({ items }: { items: Item[] }) {
       setError(null)
       const r = await fn()
       if (!r.ok) setError(r.error && te.has(r.error) ? te(r.error) : te("generic"))
-      else after?.()
+      else {
+        after?.()
+        cheer("vaccinePlan")
+      }
     })
 
   return (

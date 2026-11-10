@@ -9,6 +9,8 @@ import { changeOrderStatus, logCall } from "@/app/actions/farm-orders"
 import { deliver } from "@/app/actions/billing"
 import { isEditable, nextStep, type OrderStatus } from "@/domain/orders"
 import { cn } from "@/lib/utils"
+import { useCheer } from "@/components/cheer"
+import type { CheerKind } from "@/domain/cheers"
 
 const OUTCOMES = ["confirmed", "changed", "cancelled", "no_answer", "wrong_number"] as const
 
@@ -37,19 +39,25 @@ export function OrderActions({
 }) {
   const t = useTranslations("farm.orders")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [armedCancel, setArmedCancel] = useState(false)
   const [note, setNote] = useState("")
   const [info, setInfo] = useState<string | null>(null)
 
-  const run = (fn: () => Promise<{ ok: boolean; error?: string; needsOwner?: boolean }>) =>
+  const run = (fn: () => Promise<{ ok: boolean; error?: string; needsOwner?: boolean }>, done?: CheerKind) =>
     start(async () => {
       setError(null)
       const r = await fn()
       if (!r.ok) setError(r.error && te.has(r.error) ? te(r.error) : te("generic"))
-      else if (r.needsOwner) setInfo(t("needsOwner"))
+      else if (r.needsOwner) {
+        setInfo(t("needsOwner"))
+        cheer("called")
+      } else if (done) cheer(done)
     })
+  /** The notice for each step an order can take. */
+  const STEP_CHEER: Record<string, CheerKind> = { confirmed: "confirmed", packed: "packed", out_for_delivery: "onTheWay", delivered: "delivered", cancelled: "cancelled" }
 
   const next = status === "to_confirm" ? null : nextStep(status)
   const canCancel = status === "to_confirm" || status === "confirmed" || status === "packed"
@@ -86,7 +94,7 @@ export function OrderActions({
                 variant={o === "confirmed" ? "default" : "outline"}
                 disabled={pending}
                 className={o === "cancelled" ? "text-destructive" : undefined}
-                onClick={() => run(() => logCall({ orderId, outcome: o, note: note || undefined }))}
+                onClick={() => run(() => logCall({ orderId, outcome: o, note: note || undefined }), STEP_CHEER[o] ?? "called")}
               >
                 {t(`outcome_${o}`)}
               </Button>
@@ -102,7 +110,7 @@ export function OrderActions({
           <span className="text-sm font-semibold">{t("howPaid")}</span>
           <div className={cn("grid gap-2", allowCredit ? "grid-cols-3" : "grid-cols-2")}>
             {(allowCredit ? (["cash", "upi", "credit"] as const) : (["cash", "upi"] as const)).map((p) => (
-              <Button key={p} variant={p === "credit" ? "outline" : "default"} disabled={pending} onClick={() => run(() => deliver({ orderId, payment: p }))}>
+              <Button key={p} variant={p === "credit" ? "outline" : "default"} disabled={pending} onClick={() => run(() => deliver({ orderId, payment: p }), "delivered")}>
                 {t(`paid_${p}`)}
               </Button>
             ))}
@@ -112,7 +120,7 @@ export function OrderActions({
 
       <div className="flex flex-wrap gap-2">
         {next && next !== "delivered" && (
-          <Button className="flex-1" disabled={pending} onClick={() => run(() => changeOrderStatus({ orderId, to: next }))}>
+          <Button className="flex-1" disabled={pending} onClick={() => run(() => changeOrderStatus({ orderId, to: next }), STEP_CHEER[next])}>
             {t(`next_${next}`)}
           </Button>
         )}
@@ -151,7 +159,7 @@ export function OrderActions({
             onClick={() => {
               if (!armedCancel) return setArmedCancel(true)
               setArmedCancel(false)
-              run(() => changeOrderStatus({ orderId, to: "cancelled" }))
+              run(() => changeOrderStatus({ orderId, to: "cancelled" }), "cancelled")
             }}
           >
             {armedCancel ? t("confirmCancel") : t("cancel")}

@@ -7,11 +7,13 @@ import { ImageUp, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { removeFarmLogo, setFarmLogo } from "@/app/actions/look"
 import { shrinkPhoto } from "@/lib/shrink-photo"
+import { useCheer } from "@/components/cheer"
 
 /** The farm's logo: chosen on the phone, shrunk there (512 px), shown in the shop's banner and on the farm app. */
 export function LogoForm({ logoUrl, initials }: { logoUrl: string | null; initials: string }) {
   const t = useTranslations("farm.look")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const router = useRouter()
   const input = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
@@ -29,6 +31,7 @@ export function LogoForm({ logoUrl, initials }: { logoUrl: string | null; initia
       }
       const r = await setFarmLogo(dataUrl)
       if (!r.ok) return setError(te.has(r.error) ? te(r.error) : te("generic"))
+      cheer("settings")
       router.refresh()
     })
   }
@@ -59,6 +62,7 @@ export function LogoForm({ logoUrl, initials }: { logoUrl: string | null; initia
               onClick={() =>
                 start(async () => {
                   await removeFarmLogo()
+                  cheer("deleted")
                   router.refresh()
                 })
               }

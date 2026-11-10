@@ -5,10 +5,12 @@ import { useTranslations } from "next-intl"
 import { Copy, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { resetPersonalLink } from "@/app/actions/customers"
+import { useCheer } from "@/components/cheer"
 
 /** The customer's personal "My orders" link: send it, copy it, or reset it if it was shared. */
 export function PersonalLink({ customerId, link, waLink }: { customerId: string; link: string; waLink: string | null }) {
   const t = useTranslations("farm.customers")
+  const cheer = useCheer()
   const [copied, setCopied] = useState(false)
   const [armed, setArmed] = useState(false)
   const [done, setDone] = useState(false)
@@ -51,6 +53,7 @@ export function PersonalLink({ customerId, link, waLink }: { customerId: string;
             await resetPersonalLink(customerId)
             setArmed(false)
             setDone(true)
+            cheer("customer")
           })
         }}
       >

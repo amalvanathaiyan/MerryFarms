@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useCheer } from "@/components/cheer"
 
 const FIELD = "flex flex-col gap-1.5 text-sm font-semibold"
 
@@ -17,6 +18,7 @@ export function AccountForm(props: { name: string; staffCode: string | null; ema
   const t = useTranslations("farm.account")
   const tl = useTranslations("login")
   const tc = useTranslations("common")
+  const cheer = useCheer()
   const [name, setName] = useState(props.name)
   const [username, setUsername] = useState(props.username ?? "")
   const [current, setCurrent] = useState("")
@@ -36,6 +38,7 @@ export function AccountForm(props: { name: string; staffCode: string | null; ema
           setCurrent("")
           setNext("")
           setResult({ ok: true, text: t("saved") })
+          cheer("settings")
         })
       }}
     >

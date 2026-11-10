@@ -62,7 +62,7 @@ export default async function PoultryVaccinesPage() {
                 </div>
                 <ChevronRight className="size-5 shrink-0" aria-hidden />
               </Link>
-              <QuickGiveButton doseId={d.id} today={today} birds={alive.get(d.batchId) ?? 0} />
+              <QuickGiveButton doseId={d.id} vaccine={d.vaccine} today={today} birds={alive.get(d.batchId) ?? 0} />
             </div>
           )
         })}

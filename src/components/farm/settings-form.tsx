@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { saveFarmSettings } from "@/app/actions/billing"
+import { useCheer } from "@/components/cheer"
 
 type Settings = {
   nameTa: string
@@ -21,6 +22,7 @@ type Settings = {
 export function SettingsForm({ initial }: { initial: Settings }) {
   const t = useTranslations("farm.settings")
   const te = useTranslations("errors")
+  const cheer = useCheer()
   const [s, setS] = useState(initial)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -53,7 +55,10 @@ export function SettingsForm({ initial }: { initial: Settings }) {
         start(async () => {
           const r = await saveFarmSettings(s)
           if (!r.ok) setError(te.has(r.error) ? te(r.error) : te("generic"))
-          else setSaved(true)
+          else {
+            setSaved(true)
+            cheer("settings")
+          }
         })
       }}
     >
