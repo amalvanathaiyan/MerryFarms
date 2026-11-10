@@ -28,8 +28,10 @@ const bull = (hide, t, stepping) => `
   <path fill="${hide}" d="${HIND_LEG}Z" transform="translate(-16 -2)"/>
   <path d="M137 318L152 318L151 311L141 311Z" fill="#3A3630" stroke-width="1.4"/>
   <path d="M211 318L226 318L225 311L215 311Z" fill="#3A3630" stroke-width="1.4"/>
+  <g class="tail">
   <path d="M254 172Q266 206 261 242" fill="none" stroke-width="2.6" stroke-linecap="round"/>
   ${p(E(261, 247, 3, 6), "#6E6A60", 'transform="rotate(-12 261 247)"')}
+  </g>
   <path fill="${hide}" d="${BODY}"/>
   ${shade("M142 238Q170 240 200 232Q212 231 230 228Q244 226 251 214Q252 226 240 234Q214 240 200 240Q170 246 142 242Z", 0.12)}
   ${shade("M98 226Q102 242 114 246Q126 247 142 238Q128 236 118 232Q106 228 100 214Z", 0.08)}
@@ -72,14 +74,17 @@ for (let i = 0; i < 12; i++) {
   spokes += `M${(wx + 13 * Math.cos(a)).toFixed(1)} ${(wy + 13 * Math.sin(a)).toFixed(1)}L${(wx + 50 * Math.cos(a)).toFixed(1)} ${(wy + 50 * Math.sin(a)).toFixed(1)}`
 }
 const wheel = `
+  <g class="spin">
   <path d="${C(wx, wy, R)}${C(wx, wy, 50)}" fill="${WOOD_DARK}" fill-rule="evenodd"/>
   <path d="${C(wx, wy, R)}" fill="none" stroke-width="4.5" stroke="#3E3A36"/>
   <path d="${spokes}" fill="none" stroke="${WOOD_DARK}" stroke-width="6" stroke-linecap="round"/>
   <path d="${spokes}" fill="none" stroke-width="1.2" opacity="0.6"/>
-  ${shade(`M${wx + 50} ${wy}A50 50 0 0 1 ${wx - 50} ${wy}A60 60 0 0 0 ${wx + 60} ${wy}Z`, 0.22)}
-  <path d="M${wx + 15} ${wy - 52}A55 55 0 0 1 ${wx + 54} ${wy - 12}" fill="none" stroke="#B9844C" stroke-width="3" stroke-linecap="round"/>
   <path d="${C(wx, wy, 14)}" fill="${WOOD}"/>
-  <path d="${C(wx, wy, 5)}" fill="#3E3A36"/>`
+  <path d="M${wx - 9} ${wy}H${wx + 9}" fill="none" stroke="#B9844C" stroke-width="2" stroke-linecap="round"/>
+  <path d="${C(wx, wy, 5)}" fill="#3E3A36"/>
+  </g>
+  ${shade(`M${wx + 50} ${wy}A50 50 0 0 1 ${wx - 50} ${wy}A60 60 0 0 0 ${wx + 60} ${wy}Z`, 0.22)}
+  <path d="M${wx + 15} ${wy - 52}A55 55 0 0 1 ${wx + 54} ${wy - 12}" fill="none" stroke="#B9844C" stroke-width="3" stroke-linecap="round"/>`
 
 // ── Cart: pole, bed (longer, to fit the bigger load), posts and rail. ──
 const pole = `
@@ -203,7 +208,7 @@ const farmer = () => {
     <path d="M314 140L341 172L337 179L309 148Z" fill="#B4432F"/>
     <path d="M321 130h10v11h-10Z" fill="${SKIN}"/>
     ${arm("M318 147L304 170L289 167")}
-    <path d="M350 110L290 48" fill="none" stroke="${ROPE}" stroke-width="3" stroke-linecap="round"/>
+    <g class="stick"><path d="M350 110L290 48" fill="none" stroke="${ROPE}" stroke-width="3" stroke-linecap="round"/></g>
     ${arm("M337 146L349 124L345 104")}
     <path d="${E(287, 167, 4.6, 4)}" fill="${SKIN}"/>
     <path d="M284 165h6M284 169h6" fill="none" stroke-width="1" opacity="0.6"/>
@@ -215,7 +220,7 @@ const farmer = () => {
 // ── Road, dust kicked up behind the wheel, motion lines. ──
 const ground = `
   <path d="M8 320H632" fill="none" stroke-width="2"/>
-  <path d="M30 328H90M150 330H240M330 328H410M480 330H600" fill="none" stroke-width="1.4" opacity="0.5" stroke-dasharray="3 7"/>
+  <g class="road">${["", ' transform="translate(-640 0)"'].map((t) => `<path d="M30 328H90M150 330H240M330 328H410M480 330H600" fill="none" stroke-width="1.4" opacity="0.5" stroke-dasharray="3 7"${t}/>`).join("")}</g>
   <path class="dust" d="${C(494, 314, 6)}${C(506, 308, 8)}${C(522, 312, 6)}${C(536, 306, 5)}${C(548, 311, 4)}" fill="#E7DCC6" stroke-width="1.2" opacity="0.85"/>
   <path d="M560 300h28M570 290h22M566 310h30" fill="none" stroke-width="1.6" opacity="0.4" stroke-linecap="round"/>
   <path d="M618 320q2-10 6-14M624 320q0-8-2-14M20 320q2-8 6-12M26 320q0-8-3-12" fill="none" stroke="#4E8F45" stroke-width="2"/>`
@@ -236,7 +241,7 @@ const egret = (x, y, k = 1) => `<g transform="translate(${x} ${y}) scale(${k})">
 const bananaClump = (x, y, k) => `<g transform="translate(${x} ${y}) scale(${k})"><path class="bg" d="M-2 0V-16H2V0Z" fill="#A9C38F"/><path class="bg" d="M0 -16Q-14 -20 -22 -10Q-12 -12 0 -14ZM0 -16Q14 -22 22 -12Q12 -13 0 -14ZM0 -17Q-6 -30 -16 -32Q-8 -24 -1 -16ZM0 -17Q8 -30 16 -31Q8 -23 1 -16ZM0 -17Q0 -28 3 -34Q3 -24 1 -16Z" fill="#B6D29A"/></g>`
 const scene = `
   <path class="bg" d="M0 0H640V340H0Z" fill="url(#ffy-sky)"/>
-  <path class="bg" d="${C(540, 70, 90)}" fill="url(#ffy-glow)"/>
+  <path class="bg glow" d="${C(540, 70, 90)}" fill="url(#ffy-glow)"/>
   <path class="bg" d="${C(540, 70, 42)}" fill="#F8D77A" opacity="0.35"/>
   <path class="bg" d="${C(540, 70, 30)}" fill="#F8D77A"/>
   <path class="farm" d="M452 58q4-3 8 0q4-3 8 0M474 44q3-2 6 0q3-2 6 0M436 76q3-2 6 0q3-2 6 0" fill="none" stroke="#B6A584" stroke-width="1.1" stroke-linecap="round"/>
@@ -270,9 +275,35 @@ const scene = `
   <path class="farm" d="M10 212Q12 190 28 186Q44 190 46 212M28 186V180M16 200Q28 196 40 200M13 206Q28 202 43 206" fill="none" stroke="#CDB676" stroke-width="1.2"/>
   <path class="bg" d="M0 298H640V340H0Z" fill="url(#ffy-road)"/>
   <path class="farm" d="M0 327Q320 324 640 327M0 335Q320 332 640 335" fill="none" stroke="#DCCDAE" stroke-width="2.4"/>
-  <path class="bg" d="${E(70, 331, 2.4, 1.4)}${E(186, 318, 1.8, 1.1)}${E(262, 337, 2.2, 1.3)}${E(560, 337, 2, 1.2)}${E(612, 316, 1.6, 1)}" fill="#CBB993"/>
+  <g class="road">${["", ' transform="translate(-640 0)"'].map((t) => `<path class="bg" d="${E(70, 331, 2.4, 1.4)}${E(186, 318, 1.8, 1.1)}${E(262, 337, 2.2, 1.3)}${E(560, 337, 2, 1.2)}${E(612, 316, 1.6, 1)}" fill="#CBB993"${t}/>`).join("")}</g>
   <path class="farm" d="${range(4, 636, 9).map((x) => `M${x} 299q1-5 3-7M${x + 3} 299q0-4-1-6`).join("")}" fill="none" stroke="#B9CF9E" stroke-width="1.2"/>`
 
+
+// Gentle movement (CSS, so it also plays when the SVG is shown as an <img>). The wheel turns once per
+// WHEEL_S seconds; the road slides at the same speed as the rim (2πR px per turn) so the cart doesn't skid.
+// Transform origins are in each element's own coordinates (the far bull's tail sits inside its scaled group).
+const WHEEL_S = 6
+const ROAD_S = +((640 / (2 * Math.PI * R)) * WHEEL_S).toFixed(2)
+const MOTION = (c) => `
+  .${c} .spin{transform-origin:${wx}px ${wy}px;animation:ffy-spin ${WHEEL_S}s linear infinite}
+  .${c} .road{animation:ffy-road ${ROAD_S}s linear infinite}
+  .${c} .walk{animation:ffy-walk 1s ease-in-out infinite}
+  .${c} .walk.far{animation-delay:-.5s}
+  .${c} .tail{transform-origin:254px 172px;animation:ffy-swish 2.8s ease-in-out infinite}
+  .${c} .far .tail{animation-delay:-1.3s}
+  .${c} .bump{animation:ffy-bump 2s ease-in-out infinite}
+  .${c} .stick{transform-origin:345px 104px;animation:ffy-flick 3.6s ease-in-out infinite}
+  .${c} .dust{transform-box:fill-box;transform-origin:center;animation:ffy-dust 1.4s ease-in-out infinite}
+  .${c} .glow{transform-box:fill-box;transform-origin:center;animation:ffy-glow 5s ease-in-out infinite}
+  @keyframes ffy-spin{to{transform:rotate(-360deg)}}
+  @keyframes ffy-road{to{transform:translateX(640px)}}
+  @keyframes ffy-walk{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.4px)}}
+  @keyframes ffy-swish{0%,100%{transform:rotate(0)}50%{transform:rotate(9deg)}}
+  @keyframes ffy-bump{0%,100%{transform:translateY(0)}25%{transform:translateY(-1.2px)}55%{transform:translateY(.4px)}}
+  @keyframes ffy-flick{0%,72%,100%{transform:rotate(0)}80%{transform:rotate(-7deg)}88%{transform:rotate(2deg)}}
+  @keyframes ffy-dust{0%,100%{transform:scale(.92);opacity:.85}50%{transform:scale(1.08);opacity:.5}}
+  @keyframes ffy-glow{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  @media (prefers-reduced-motion:reduce){.${c} *{animation:none!important}}`
 
 const svg = (cls, opts = {}) => `<svg class="${cls}" viewBox="0 0 640 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Farmer driving a bullock cart loaded with farm produce">
 <style>
@@ -281,6 +312,7 @@ const svg = (cls, opts = {}) => `<svg class="${cls}" viewBox="0 0 640 340" xmlns
   .${cls} path:not([stroke-width]){stroke-width:2}
   .${cls} path.shade,.${cls} path.bg{stroke:none}
   .${cls} .palm path{stroke:#BFD3B4;stroke-width:2}
+  ${cls === "line" ? "" : MOTION(cls)}
   ${cls === "line" ? `.line path{fill:none!important}.line path[stroke]:not([stroke="#FFFFFF"]){stroke:${INK}!important}.line path[stroke-width]{stroke-width:2!important}.line .skin{stroke:none!important}.line .shade,.line .bg,.line .farm,.line .palm,.line .dust{display:none}` : ""}
 </style>
 <defs>
@@ -294,11 +326,11 @@ ${shade(E(330, 321, 300, 7), 0.06)}
 ${shade(E(230, 304, 70, 3.5), 0.1)}
 ${shade(E(178, 321, 82, 4.5), 0.16)}
 ${shade(E(430, 321, 70, 5), 0.2)}
-${bull("#E4DED1", `translate(${FAR.dx} ${FAR.dy}) scale(${FAR.s})`, false)}
+<g class="walk far">${bull("#E4DED1", `translate(${FAR.dx} ${FAR.dy}) scale(${FAR.s})`, false)}</g>
 ${pole}
-${bull("#F7F4EC", "", true)}
-${yoke()}
-${bed}${load}${rails}${farmer()}${wheel}${ground}
+<g class="walk">${bull("#F7F4EC", "", true)}
+${yoke()}</g>
+<g class="bump">${bed}${load}${rails}${farmer()}</g>${wheel}${ground}
 </svg>`
 
 // Brand mark for small sizes: the cart wheel, with a sprout at the hub.
