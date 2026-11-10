@@ -27,6 +27,7 @@ export type FeatureKey =
   | "whatsappAlerts"
   | "farmRecords"
   | "poultryCare"
+  | "poultryScenes"
   | "whatsappLite"
   | "upiPayments"
   | "subscriptions"
@@ -61,6 +62,8 @@ export const FEATURES: Record<FeatureKey, FeatureDef> = {
   farmRecords: { defaultOn: true, minPlan: "free", requires: [], available: true },
   // Batches of birds, feed store, losses, per-batch profit and vaccinations: for farms that keep poultry and pay for it.
   poultryCare: { defaultOn: false, minPlan: "starter", requires: ["farmRecords"], available: true },
+  // The shop shows the farm's own live pictures (gate, stall, hen) instead of only FarmForYou's bullock cart.
+  poultryScenes: { defaultOn: false, minPlan: "free", requires: [], available: true },
   whatsappLite: { defaultOn: true, minPlan: "free", requires: [], available: true },
   upiPayments: { defaultOn: true, minPlan: "free", requires: [], available: true },
   // Off by default: many small farms can't promise eggs every week.

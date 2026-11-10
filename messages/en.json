@@ -521,6 +521,10 @@
       "poultryCare": {
         "title": "Poultry care",
         "hint": "Batches of birds with age and birds alive, daily feed and losses by cause, the feed store, profit per batch, and vaccinations with reminders."
+      },
+      "poultryScenes": {
+        "title": "Poultry farm pictures",
+        "hint": "Your shop shows your own farm: the gate with country hens, the farm shop stall, and a hen with her eggs. The picture changes each day, the sky follows the time of day, and the bullock cart takes its turn. Off: the bullock cart only."
       }
     },
     "orderForm": {
@@ -1596,5 +1600,11 @@
     "large": "Larger text",
     "largeHint": "Every word and number a size bigger.",
     "thisPhone": "Saved on this phone. Each person can choose on their own phone."
+  },
+  "scene": {
+    "shop": "FARM SHOP",
+    "eggs": "Country eggs",
+    "chicken": "Country chicken",
+    "fresh": "Fresh today"
   }
 }

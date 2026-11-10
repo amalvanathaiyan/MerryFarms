@@ -28,8 +28,10 @@ const bull = (hide, t, stepping) => `
   <path fill="${hide}" d="${HIND_LEG}Z" transform="translate(-16 -2)"/>
   <path d="M137 318L152 318L151 311L141 311Z" fill="#3A3630" stroke-width="1.4"/>
   <path d="M211 318L226 318L225 311L215 311Z" fill="#3A3630" stroke-width="1.4"/>
+  <g class="tail">
   <path d="M254 172Q266 206 261 242" fill="none" stroke-width="2.6" stroke-linecap="round"/>
   ${p(E(261, 247, 3, 6), "#6E6A60", 'transform="rotate(-12 261 247)"')}
+  </g>
   <path fill="${hide}" d="${BODY}"/>
   ${shade("M142 238Q170 240 200 232Q212 231 230 228Q244 226 251 214Q252 226 240 234Q214 240 200 240Q170 246 142 242Z", 0.12)}
   ${shade("M98 226Q102 242 114 246Q126 247 142 238Q128 236 118 232Q106 228 100 214Z", 0.08)}
@@ -72,14 +74,17 @@ for (let i = 0; i < 12; i++) {
   spokes += `M${(wx + 13 * Math.cos(a)).toFixed(1)} ${(wy + 13 * Math.sin(a)).toFixed(1)}L${(wx + 50 * Math.cos(a)).toFixed(1)} ${(wy + 50 * Math.sin(a)).toFixed(1)}`
 }
 const wheel = `
+  <g class="spin">
   <path d="${C(wx, wy, R)}${C(wx, wy, 50)}" fill="${WOOD_DARK}" fill-rule="evenodd"/>
   <path d="${C(wx, wy, R)}" fill="none" stroke-width="4.5" stroke="#3E3A36"/>
   <path d="${spokes}" fill="none" stroke="${WOOD_DARK}" stroke-width="6" stroke-linecap="round"/>
   <path d="${spokes}" fill="none" stroke-width="1.2" opacity="0.6"/>
-  ${shade(`M${wx + 50} ${wy}A50 50 0 0 1 ${wx - 50} ${wy}A60 60 0 0 0 ${wx + 60} ${wy}Z`, 0.22)}
-  <path d="M${wx + 15} ${wy - 52}A55 55 0 0 1 ${wx + 54} ${wy - 12}" fill="none" stroke="#B9844C" stroke-width="3" stroke-linecap="round"/>
   <path d="${C(wx, wy, 14)}" fill="${WOOD}"/>
-  <path d="${C(wx, wy, 5)}" fill="#3E3A36"/>`
+  <path d="M${wx - 9} ${wy}H${wx + 9}" fill="none" stroke="#B9844C" stroke-width="2" stroke-linecap="round"/>
+  <path d="${C(wx, wy, 5)}" fill="#3E3A36"/>
+  </g>
+  ${shade(`M${wx + 50} ${wy}A50 50 0 0 1 ${wx - 50} ${wy}A60 60 0 0 0 ${wx + 60} ${wy}Z`, 0.22)}
+  <path d="M${wx + 15} ${wy - 52}A55 55 0 0 1 ${wx + 54} ${wy - 12}" fill="none" stroke="#B9844C" stroke-width="3" stroke-linecap="round"/>`
 
 // ── Cart: pole, bed (longer, to fit the bigger load), posts and rail. ──
 const pole = `
@@ -203,7 +208,7 @@ const farmer = () => {
     <path d="M314 140L341 172L337 179L309 148Z" fill="#B4432F"/>
     <path d="M321 130h10v11h-10Z" fill="${SKIN}"/>
     ${arm("M318 147L304 170L289 167")}
-    <path d="M350 110L290 48" fill="none" stroke="${ROPE}" stroke-width="3" stroke-linecap="round"/>
+    <g class="stick"><path d="M350 110L290 48" fill="none" stroke="${ROPE}" stroke-width="3" stroke-linecap="round"/></g>
     ${arm("M337 146L349 124L345 104")}
     <path d="${E(287, 167, 4.6, 4)}" fill="${SKIN}"/>
     <path d="M284 165h6M284 169h6" fill="none" stroke-width="1" opacity="0.6"/>
@@ -215,7 +220,7 @@ const farmer = () => {
 // ── Road, dust kicked up behind the wheel, motion lines. ──
 const ground = `
   <path d="M8 320H632" fill="none" stroke-width="2"/>
-  <path d="M30 328H90M150 330H240M330 328H410M480 330H600" fill="none" stroke-width="1.4" opacity="0.5" stroke-dasharray="3 7"/>
+  <g class="road">${["", ' transform="translate(-640 0)"'].map((t) => `<path d="M30 328H90M150 330H240M330 328H410M480 330H600" fill="none" stroke-width="1.4" opacity="0.5" stroke-dasharray="3 7"${t}/>`).join("")}</g>
   <path class="dust" d="${C(494, 314, 6)}${C(506, 308, 8)}${C(522, 312, 6)}${C(536, 306, 5)}${C(548, 311, 4)}" fill="#E7DCC6" stroke-width="1.2" opacity="0.85"/>
   <path d="M560 300h28M570 290h22M566 310h30" fill="none" stroke-width="1.6" opacity="0.4" stroke-linecap="round"/>
   <path d="M618 320q2-10 6-14M624 320q0-8-2-14M20 320q2-8 6-12M26 320q0-8-3-12" fill="none" stroke="#4E8F45" stroke-width="2"/>`
@@ -234,16 +239,46 @@ const range = (a, b, step) => { const o = []; for (let v = a; v <= b; v += step)
 const tree = (x, y, r) => `<path class="bg" d="M${x - 1.2} ${y}V${y - r}H${x + 1.2}V${y}Z" fill="#B9CBAE"/><path class="bg" d="${C(x, y - r - r * 0.5, r)}${C(x - r * 0.75, y - r - r * 0.2, r * 0.75)}${C(x + r * 0.8, y - r - r * 0.15, r * 0.7)}" fill="#CBDCC0"/>`
 const egret = (x, y, k = 1) => `<g transform="translate(${x} ${y}) scale(${k})"><path class="bg" d="M-6 -6Q-6 -11 1 -10Q6 -9 5 -5Q2 -2 -3 -3Z" fill="#FFFFFF"/><path class="farm" d="M-6 -6Q-6 -11 1 -10Q6 -9 5 -5Q2 -2 -3 -3Z" fill="none" stroke="#C9C3B2" stroke-width="0.6"/><path class="farm" d="M3 -9Q7 -13 5 -17Q4 -20 7 -20M-1 -3v5M2 -3v5" fill="none" stroke="#8F8A7A" stroke-width="0.8" stroke-linecap="round"/><path class="farm" d="M7 -20l4 1" fill="none" stroke="#E0A030" stroke-width="1.2"/></g>`
 const bananaClump = (x, y, k) => `<g transform="translate(${x} ${y}) scale(${k})"><path class="bg" d="M-2 0V-16H2V0Z" fill="#A9C38F"/><path class="bg" d="M0 -16Q-14 -20 -22 -10Q-12 -12 0 -14ZM0 -16Q14 -22 22 -12Q12 -13 0 -14ZM0 -17Q-6 -30 -16 -32Q-8 -24 -1 -16ZM0 -17Q8 -30 16 -31Q8 -23 1 -16ZM0 -17Q0 -28 3 -34Q3 -24 1 -16Z" fill="#B6D29A"/></g>`
+// ── The countryside slides past (banner version only). ──
+// The road moves at the wheel's own speed (V px/s). Things further away move slower: speed(y) follows the depth
+// of the ground at that height (a little faster than true perspective far off, so the tree line visibly drifts).
+// Repeating textures (paddy, cane, ripples, grass) slide by exactly one repeat and loop; single objects (trees,
+// egrets, the haystack) slide a full width with copies one and two widths behind, so nothing jumps.
+// Furrow lines that run toward the vanishing point are sheared about the horizon instead of slid, the way real
+// rows look from a moving cart: each line keeps pointing at the vanishing point while it moves.
+const WHEEL_S = 6
+const ROAD_S = +((640 / (2 * Math.PI * R)) * WHEEL_S).toFixed(2)
+const V = 640 / ROAD_S
+const speed = (y) => V * (0.15 + (0.85 * (y - VP[1])) / 140)
+const slide = (loop, y, inner) => `<g style="animation:ffy-s${loop} ${(loop / speed(y)).toFixed(2)}s linear infinite">${inner}</g>`
+const twice = (inner) => `${inner}<g transform="translate(-640 0)">${inner}</g><g transform="translate(-1280 0)">${inner}</g>`
+// [name, line spacing on the bottom row, bottom row y]
+const FANS = [
+  ["plough", 16, 240],
+  ["near", 26, 290],
+]
+const fanAngle = (sp, y) => +((Math.atan(sp / (y - VP[1])) * 180) / Math.PI).toFixed(3)
+const fan = (name, inner) => {
+  const [, sp, y] = FANS.find((f) => f[0] === name)
+  return `<g style="transform-origin:${VP[0]}px ${VP[1]}px;animation:ffy-fan-${name} ${(sp / speed(y)).toFixed(2)}s linear infinite">${inner}</g>`
+}
+const wave = (y, a) => `M-160 ${y}Q-120 ${y - a} -80 ${y}${range(0, 800, 80).map((x) => `T${x} ${y}`).join("")}`
 const scene = `
+  <defs>
+    <clipPath id="ffy-c-paddy"><path d="M0 194H120L112 210H0ZM380 194H510L522 210H384Z"/></clipPath>
+    <clipPath id="ffy-c-cane"><path d="M0 200H174L160 240H0Z"/></clipPath>
+    <clipPath id="ffy-c-plough"><path d="M172 210H420L440 240H160Z"/></clipPath>
+    <clipPath id="ffy-c-banana"><path d="M420 180H640V240H440Z"/></clipPath>
+  </defs>
   <path class="bg" d="M0 0H640V340H0Z" fill="url(#ffy-sky)"/>
-  <path class="bg" d="${C(540, 70, 90)}" fill="url(#ffy-glow)"/>
+  <path class="bg glow" d="${C(540, 70, 90)}" fill="url(#ffy-glow)"/>
   <path class="bg" d="${C(540, 70, 42)}" fill="#F8D77A" opacity="0.35"/>
   <path class="bg" d="${C(540, 70, 30)}" fill="#F8D77A"/>
-  <path class="farm" d="M452 58q4-3 8 0q4-3 8 0M474 44q3-2 6 0q3-2 6 0M436 76q3-2 6 0q3-2 6 0" fill="none" stroke="#B6A584" stroke-width="1.1" stroke-linecap="round"/>
+  <g style="animation:ffy-s640 110s linear infinite">${twice(`<path class="farm" d="M452 58q4-3 8 0q4-3 8 0M474 44q3-2 6 0q3-2 6 0M436 76q3-2 6 0q3-2 6 0" fill="none" stroke="#B6A584" stroke-width="1.1" stroke-linecap="round"/>`)}</g>
   <path class="bg" d="M0 176Q70 150 140 166Q200 146 270 162Q340 140 420 160Q480 148 540 164Q600 150 640 160V200H0Z" fill="#E8EDE4"/>
   <path class="bg" d="M0 186Q90 170 180 182Q260 168 340 180Q430 168 520 182Q590 172 640 180V200H0Z" fill="#DFE7D7"/>
-  ${tree(70, 194, 7)}${tree(118, 194, 9)}${tree(286, 192, 8)}${tree(400, 193, 7)}${tree(470, 194, 9)}${tree(612, 193, 8)}
-  ${[[14, 196, 0.42], [36, 196, 0.52], [92, 196, 0.4], [250, 195, 0.46], [306, 195, 0.38], [430, 195, 0.44], [520, 196, 0.5], [584, 195, 0.42], [632, 196, 0.48]].map(([x, y, k]) => palm(x, y, k)).join("")}
+  ${slide(640, 194, twice(`${tree(70, 194, 7)}${tree(118, 194, 9)}${tree(286, 192, 8)}${tree(400, 193, 7)}${tree(470, 194, 9)}${tree(612, 193, 8)}
+  ${[[14, 196, 0.42], [36, 196, 0.52], [92, 196, 0.4], [250, 195, 0.46], [306, 195, 0.38], [430, 195, 0.44], [520, 196, 0.5], [584, 195, 0.42], [632, 196, 0.48]].map(([x, y, k]) => palm(x, y, k)).join("")}`))}
   <path class="bg" d="M0 194H640V298H0Z" fill="#DCE8CA"/>
   <path class="bg" d="M0 194H120L112 210H0Z" fill="#E6E1AE"/>
   <path class="bg" d="M120 194H250L246 210H112Z" fill="#D3E3BA"/>
@@ -251,28 +286,54 @@ const scene = `
   <path class="farm" d="M262 199H372M258 204H378" fill="none" stroke="#F3F8F6" stroke-width="1.4"/>
   <path class="bg" d="M380 194H510L522 210H384Z" fill="#E6E1AE"/>
   <path class="bg" d="M510 194H640V210H522Z" fill="#D3E3BA"/>
-  <path class="farm" d="${range(4, 116, 6).map((x) => `M${x} 209q1-4 0-7`).join("")}${range(386, 516, 6).map((x) => `M${x} 209q1-4 0-7`).join("")}" fill="none" stroke="#D6CF8E" stroke-width="1"/>
+  <g clip-path="url(#ffy-c-paddy)">${slide(6, 205, `<path class="farm" d="${range(-8, 530, 6).map((x) => `M${x} 209q1-4 0-7`).join("")}" fill="none" stroke="#D6CF8E" stroke-width="1"/>`)}</g>
+  ${slide(640, 206, twice(`<path class="bg" d="M10 212Q12 190 28 186Q44 190 46 212Z" fill="#E4CF8E"/>
+  <path class="farm" d="M10 212Q12 190 28 186Q44 190 46 212M28 186V180M16 200Q28 196 40 200M13 206Q28 202 43 206" fill="none" stroke="#CDB676" stroke-width="1.2"/>`))}
   <path class="bg" d="M0 210H172L160 240H0Z" fill="#B9D49E"/>
-  <path class="farm" d="${range(2, 160, 5).map((x, i) => `M${x} 240L${x + 2} ${213 + (i % 3) * 2}M${x + 2} ${215 + (i % 3) * 2}l-4-5M${x + 2} ${217 + (i % 3) * 2}l4-5`).join("")}" fill="none" stroke="#9EBF83" stroke-width="1.1" stroke-linecap="round"/>
+  <g clip-path="url(#ffy-c-cane)">${slide(15, 228, `<path class="farm" d="${range(-28, 182, 5).map((x, i) => `M${x} 240L${x + 2} ${213 + (i % 3) * 2}M${x + 2} ${215 + (i % 3) * 2}l-4-5M${x + 2} ${217 + (i % 3) * 2}l4-5`).join("")}" fill="none" stroke="#9EBF83" stroke-width="1.1" stroke-linecap="round"/>`)}</g>
   <path class="bg" d="M172 210H420L440 240H160Z" fill="#E8D8B9"/>
-  <path class="farm" d="${range(166, 440, 16).map((x) => { const [tx, ty] = toward(x, 240, 0.6); return `M${x} 240L${tx} ${ty}` }).join("")}" fill="none" stroke="#D5C29E" stroke-width="1.2"/>
+  <g clip-path="url(#ffy-c-plough)">${fan("plough", `<path class="farm" d="${range(-74, 598, 16).map((x) => { const [tx, ty] = toward(x, 240, 0.6); return `M${x} 240L${tx} ${ty}` }).join("")}" fill="none" stroke="#D5C29E" stroke-width="1.2"/>`)}</g>
   <path class="bg" d="M420 210H640V240H440Z" fill="#D2E4BC"/>
-  ${[[452, 238, 0.7], [478, 236, 0.85], [506, 238, 0.75], [534, 236, 0.9], [560, 238, 0.7], [588, 236, 0.85], [618, 238, 0.8]].map(([x, y, k]) => bananaClump(x, y, k)).join("")}
+  <g clip-path="url(#ffy-c-banana)">${slide(56, 236, range(-2, 11, 1).map((i) => bananaClump(368 + i * 28, Math.abs(i % 2) ? 236 : 238, Math.abs(i % 2) ? 0.86 : 0.74)).join(""))}</g>
   <path class="bg" d="M0 240H640V290H0Z" fill="url(#ffy-near)"/>
-  <path class="farm" d="${range(-200, 840, 26).map((x) => { const [tx, ty] = toward(x, 290, 0.5); return `M${x} 290L${tx} ${ty}` }).join("")}" fill="none" stroke="#B3D094" stroke-width="1"/>
-  <path class="farm" d="M0 252Q40 248 80 252T160 252T240 252T320 252T400 252T480 252T560 252T640 252M0 268Q40 263 80 268T160 268T240 268T320 268T400 268T480 268T560 268T640 268M0 282Q40 277 80 282T160 282T240 282T320 282T400 282T480 282T560 282T640 282" fill="none" stroke="#D5E8C0" stroke-width="1.4"/>
+  ${fan("near", `<path class="farm" d="${range(-382, 996, 26).map((x) => { const [tx, ty] = toward(x, 290, 0.5); return `M${x} 290L${tx} ${ty}` }).join("")}" fill="none" stroke="#B3D094" stroke-width="1"/>`)}
+  ${[[252, 4], [268, 5], [282, 5]].map(([y, a]) => slide(160, y, `<path class="farm" d="${wave(y, a)}" fill="none" stroke="#D5E8C0" stroke-width="1.4"/>`)).join("")}
   <path class="farm" d="M0 210H640M0 240H640M172 210L160 240M420 210L440 240M120 194L112 210M250 194L246 210M380 194L384 210M510 194L522 210" fill="none" stroke="#C3D6A8" stroke-width="1.6"/>
-  ${egret(24, 278, 1)}${egret(300, 268, 0.85)}${egret(526, 282, 1.05)}${egret(616, 262, 0.8)}
+  ${slide(640, 274, twice(`${egret(24, 278, 1)}${egret(300, 268, 0.85)}${egret(526, 282, 1.05)}${egret(616, 262, 0.8)}`))}
   <path class="bg" d="M0 290H640V298H0Z" fill="#CFE2E4"/>
-  <path class="farm" d="M10 294h16M60 293h10M140 295h18M230 293h12M330 294h16M420 295h12M500 293h18M590 294h14" fill="none" stroke="#F4FAFA" stroke-width="1.2" stroke-linecap="round"/>
+  ${slide(640, 294, twice(`<path class="farm" d="M10 294h16M60 293h10M140 295h18M230 293h12M330 294h16M420 295h12M500 293h18M590 294h14" fill="none" stroke="#F4FAFA" stroke-width="1.2" stroke-linecap="round"/>`))}
   <path class="farm" d="M0 290H640M0 298H640" fill="none" stroke="#BCD2B0" stroke-width="1.2"/>
-  <path class="bg" d="M10 212Q12 190 28 186Q44 190 46 212Z" fill="#E4CF8E"/>
-  <path class="farm" d="M10 212Q12 190 28 186Q44 190 46 212M28 186V180M16 200Q28 196 40 200M13 206Q28 202 43 206" fill="none" stroke="#CDB676" stroke-width="1.2"/>
   <path class="bg" d="M0 298H640V340H0Z" fill="url(#ffy-road)"/>
   <path class="farm" d="M0 327Q320 324 640 327M0 335Q320 332 640 335" fill="none" stroke="#DCCDAE" stroke-width="2.4"/>
-  <path class="bg" d="${E(70, 331, 2.4, 1.4)}${E(186, 318, 1.8, 1.1)}${E(262, 337, 2.2, 1.3)}${E(560, 337, 2, 1.2)}${E(612, 316, 1.6, 1)}" fill="#CBB993"/>
-  <path class="farm" d="${range(4, 636, 9).map((x) => `M${x} 299q1-5 3-7M${x + 3} 299q0-4-1-6`).join("")}" fill="none" stroke="#B9CF9E" stroke-width="1.2"/>`
+  <g class="road">${["", ' transform="translate(-640 0)"'].map((t) => `<path class="bg" d="${E(70, 331, 2.4, 1.4)}${E(186, 318, 1.8, 1.1)}${E(262, 337, 2.2, 1.3)}${E(560, 337, 2, 1.2)}${E(612, 316, 1.6, 1)}" fill="#CBB993"${t}/>`).join("")}</g>
+  ${slide(9, 299, `<path class="farm" d="${range(-14, 650, 9).map((x) => `M${x} 299q1-5 3-7M${x + 3} 299q0-4-1-6`).join("")}" fill="none" stroke="#B9CF9E" stroke-width="1.2"/>`)}`
 
+
+// Gentle movement (CSS, so it also plays when the SVG is shown as an <img>). The wheel turns once per
+// WHEEL_S seconds; the road slides at the same speed as the rim (2πR px per turn) so the cart doesn't skid.
+// Transform origins are in each element's own coordinates (the far bull's tail sits inside its scaled group).
+const MOTION = (c) => `
+  .${c} .spin{transform-origin:${wx}px ${wy}px;animation:ffy-spin ${WHEEL_S}s linear infinite}
+  .${c} .road{animation:ffy-road ${ROAD_S}s linear infinite}
+  .${c} .walk{animation:ffy-walk 1s ease-in-out infinite}
+  .${c} .walk.far{animation-delay:-.5s}
+  .${c} .tail{transform-origin:254px 172px;animation:ffy-swish 2.8s ease-in-out infinite}
+  .${c} .far .tail{animation-delay:-1.3s}
+  .${c} .bump{animation:ffy-bump 2s ease-in-out infinite}
+  .${c} .stick{transform-origin:345px 104px;animation:ffy-flick 3.6s ease-in-out infinite}
+  .${c} .dust{transform-box:fill-box;transform-origin:center;animation:ffy-dust 1.4s ease-in-out infinite}
+  .${c} .glow{transform-box:fill-box;transform-origin:center;animation:ffy-glow 5s ease-in-out infinite}
+  @keyframes ffy-spin{to{transform:rotate(-360deg)}}
+  @keyframes ffy-road{to{transform:translateX(640px)}}
+  ${[640, 6, 15, 56, 160, 9].map((L) => `@keyframes ffy-s${L}{to{transform:translateX(${L}px)}}`).join("")}
+  ${FANS.map(([n, sp, y]) => `@keyframes ffy-fan-${n}{to{transform:skewX(${fanAngle(sp, y)}deg)}}`).join("")}
+  @keyframes ffy-walk{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.4px)}}
+  @keyframes ffy-swish{0%,100%{transform:rotate(0)}50%{transform:rotate(9deg)}}
+  @keyframes ffy-bump{0%,100%{transform:translateY(0)}25%{transform:translateY(-1.2px)}55%{transform:translateY(.4px)}}
+  @keyframes ffy-flick{0%,72%,100%{transform:rotate(0)}80%{transform:rotate(-7deg)}88%{transform:rotate(2deg)}}
+  @keyframes ffy-dust{0%,100%{transform:scale(.92);opacity:.85}50%{transform:scale(1.08);opacity:.5}}
+  @keyframes ffy-glow{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  @media (prefers-reduced-motion:reduce){.${c} *{animation:none!important}}`
 
 const svg = (cls, opts = {}) => `<svg class="${cls}" viewBox="0 0 640 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Farmer driving a bullock cart loaded with farm produce">
 <style>
@@ -281,6 +342,7 @@ const svg = (cls, opts = {}) => `<svg class="${cls}" viewBox="0 0 640 340" xmlns
   .${cls} path:not([stroke-width]){stroke-width:2}
   .${cls} path.shade,.${cls} path.bg{stroke:none}
   .${cls} .palm path{stroke:#BFD3B4;stroke-width:2}
+  ${cls === "line" ? "" : MOTION(cls)}
   ${cls === "line" ? `.line path{fill:none!important}.line path[stroke]:not([stroke="#FFFFFF"]){stroke:${INK}!important}.line path[stroke-width]{stroke-width:2!important}.line .skin{stroke:none!important}.line .shade,.line .bg,.line .farm,.line .palm,.line .dust{display:none}` : ""}
 </style>
 <defs>
@@ -294,11 +356,11 @@ ${shade(E(330, 321, 300, 7), 0.06)}
 ${shade(E(230, 304, 70, 3.5), 0.1)}
 ${shade(E(178, 321, 82, 4.5), 0.16)}
 ${shade(E(430, 321, 70, 5), 0.2)}
-${bull("#E4DED1", `translate(${FAR.dx} ${FAR.dy}) scale(${FAR.s})`, false)}
+<g class="walk far">${bull("#E4DED1", `translate(${FAR.dx} ${FAR.dy}) scale(${FAR.s})`, false)}</g>
 ${pole}
-${bull("#F7F4EC", "", true)}
-${yoke()}
-${bed}${load}${rails}${farmer()}${wheel}${ground}
+<g class="walk">${bull("#F7F4EC", "", true)}
+${yoke()}</g>
+<g class="bump">${bed}${load}${rails}${farmer()}</g>${wheel}${ground}
 </svg>`
 
 // Brand mark for small sizes: the cart wheel, with a sprout at the hub.
