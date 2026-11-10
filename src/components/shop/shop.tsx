@@ -20,7 +20,7 @@ import { EnablePush } from "@/components/push/enable-push"
 import { ProductPicture } from "@/components/product-picture"
 import type { ArtKind } from "@/domain/product-art"
 import { FarmBanner } from "@/components/farm-banner"
-import { CartArt } from "@/components/art/cart-art"
+import { FarmScene, type SceneProps } from "@/components/art/farm-scene"
 import { HelpButton } from "./help-button"
 import { HowTo } from "./how-to"
 import { KindDrawing } from "@/components/art/kind-drawing"
@@ -29,6 +29,8 @@ import { ArtStrip } from "@/components/art/art-strip"
 export interface ShopData {
   farm: {
     name: string
+    /** The welcome picture and the small one (order placed, empty shop): the farm's own scene or the cart. */
+    scenes: { hero: SceneProps; small: SceneProps }
     phone: string
     whatsappNumber: string
     orderPrefix: string
@@ -201,7 +203,7 @@ export function Shop({ data }: { data: ShopData }) {
       <div className="min-h-dvh">
         {header}
         <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-6">
-          <CartArt variant="plain" className="mx-auto max-w-sm" />
+          <FarmScene scene={data.farm.scenes.small} className="mx-auto max-w-sm" />
           <h1 className="text-2xl font-bold">{t("placedTitle", { code: placed.code })}</h1>
           <p className="text-lg">{placed.needsCall ? t("placedCall", { farm: data.farm.name }) : t("placedConfirmed")}</p>
           <pre className="whitespace-pre-wrap rounded-xl border bg-card p-4 font-sans text-base">
@@ -396,9 +398,9 @@ export function Shop({ data }: { data: ShopData }) {
     <div className="min-h-dvh pb-28">
       {header}
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 pt-4 sm:px-6">
-        {/* Welcome: the bullock cart bringing the farm to you. Side by side from tablet width up. */}
+        {/* Welcome: the farm's own live picture (or the bullock cart bringing the farm to you). Side by side from tablet width up. */}
         <section className="grid overflow-hidden rounded-3xl border bg-card md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] md:items-center">
-          <CartArt variant="scene" priority className="md:order-2" />
+          <FarmScene scene={data.farm.scenes.hero} priority className="md:order-2" />
           <div className="flex flex-col gap-3 p-4 sm:p-6">
             <div>
               <h1 className="text-2xl font-bold sm:text-3xl">{t("hello")}</h1>
@@ -449,7 +451,7 @@ export function Shop({ data }: { data: ShopData }) {
 
         {data.categories.length === 0 && (
           <div className="flex flex-col items-center gap-3 py-8 text-center text-muted-foreground">
-            <CartArt variant="plain" className="max-w-xs opacity-80" />
+            <FarmScene scene={data.farm.scenes.small} className="max-w-xs opacity-80" />
             <p>{t("noProducts")}</p>
           </div>
         )}

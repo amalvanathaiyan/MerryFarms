@@ -1,4 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server"
+import { sceneProps } from "@/lib/scene"
 import { getTenant } from "@/lib/tenant"
 import { tenantDb } from "@/lib/tenant-db"
 import { dayLabel, istTime, pick } from "@/lib/i18n-helpers"
@@ -77,6 +78,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       messages: features.messages,
       calls: features.callConfirmation,
       logoUrl: tenant.logoUrl,
+      scenes: { hero: await sceneProps(tenant, locale, "hero"), small: await sceneProps(tenant, locale, "small") },
     },
     me: me
       ? {

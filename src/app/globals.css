@@ -555,3 +555,39 @@
     }
   }
 }
+
+/* ── The farm's live pictures (src/components/art/farm-scene-svg.ts) ─────────────────────────────────────────
+   Gentle, slow movement; all of it stops for "reduce motion" (the rule in the base layer above).
+   Origins are in each part's own drawing coordinates. Nothing animated also carries a position of its own. */
+.farm-scene { display: block; width: 100%; height: auto; }
+.fs-head { transform-origin: 16px -38px; animation: fs-peck 5s ease-in-out infinite; }
+.fs-hop { animation: fs-hop 1.8s ease-in-out infinite; }
+.fs-breathe { transform-origin: 0 0; animation: fs-breathe 3.6s ease-in-out infinite; }
+.fs-sway { transform-origin: 0 0; animation: fs-sway 6s ease-in-out infinite; }
+.fs-cloud { animation: fs-cloud 80s linear infinite; }
+.fs-glow { transform-box: fill-box; transform-origin: center; animation: fs-glow 5s ease-in-out infinite; }
+.fs-twinkle { animation: fs-twinkle 3s ease-in-out infinite; }
+.fs-firefly { animation: fs-firefly 4.5s ease-in-out infinite; }
+.fs-flicker { animation: fs-flicker 2.4s ease-in-out infinite; }
+.fs-birds { animation: fs-birds 38s linear infinite; }
+.fs-flap { transform-box: fill-box; transform-origin: center; animation: fs-flap 0.7s ease-in-out infinite; }
+@keyframes fs-peck { 0%, 40%, 100% { transform: rotate(0); } 46% { transform: rotate(38deg); } 52% { transform: rotate(0); } 58% { transform: rotate(38deg); } 64% { transform: rotate(0); } }
+@keyframes fs-hop { 0%, 30%, 70%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes fs-breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.03); } }
+@keyframes fs-sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+@keyframes fs-cloud { from { transform: translateX(0); } to { transform: translateX(760px); } }
+@keyframes fs-glow { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes fs-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+@keyframes fs-firefly { 0%, 100% { opacity: 0; transform: translate(0, 0); } 40% { opacity: 1; } 60% { opacity: 1; transform: translate(6px, -8px); } }
+@keyframes fs-flicker { 0%, 100% { opacity: 0.85; } 45% { opacity: 1; } 70% { opacity: 0.9; } }
+@keyframes fs-birds { from { transform: translate(-60px, 96px); } to { transform: translate(700px, 52px); } }
+@keyframes fs-flap { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.4); } }
+
+/* Dark theme: a touch dimmer. Soft colours: calmer. Both: both. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .farm-scene { filter: brightness(0.9) saturate(0.92); }
+  :root[data-soft="on"]:not([data-theme="light"]) .farm-scene { filter: brightness(0.88) saturate(0.78); }
+}
+:root[data-theme="dark"] .farm-scene { filter: brightness(0.9) saturate(0.92); }
+:root[data-soft="on"] .farm-scene { filter: saturate(0.8) brightness(0.97); }
+:root[data-soft="on"][data-theme="dark"] .farm-scene { filter: brightness(0.88) saturate(0.78); }
