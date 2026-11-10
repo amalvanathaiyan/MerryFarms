@@ -1,6 +1,7 @@
 import {
   BarChart3,
   CheckCircle2,
+  Clapperboard,
   Phone,
   Bird,
   CalendarClock,
@@ -58,6 +59,7 @@ const ICONS: Record<string, LucideIcon> = {
   delivery: Truck,
   look: Palette,
   switches: ToggleRight,
+  videos: Clapperboard,
   calendar: CalendarClock,
   to_confirm: Phone,
   open: ClipboardList,

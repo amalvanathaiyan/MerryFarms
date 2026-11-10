@@ -1,4 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server"
+import { listVideos } from "@/server/videos"
+import { shopVideos } from "@/domain/videos"
 import { sceneProps } from "@/lib/scene"
 import { getTenant } from "@/lib/tenant"
 import { tenantDb } from "@/lib/tenant-db"
@@ -79,6 +81,12 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       calls: features.callConfirmation,
       logoUrl: tenant.logoUrl,
       scenes: { hero: await sceneProps(tenant, locale, "hero"), small: await sceneProps(tenant, locale, "small") },
+      // YouTube links when the farm has videos on; its own uploads only while its plan includes them.
+      videos: shopVideos(
+        (features.farmVideos ? await listVideos(tenant.id) : [])
+          .filter((v) => v.kind === "youtube" || features.videoUploads)
+          .map((v) => ({ id: v.id, kind: v.kind === "youtube" ? ("youtube" as const) : ("upload" as const), src: v.src, posterUrl: v.posterUrl, title: v.title, banner: v.banner, watch: v.watch, sortOrder: v.sortOrder }))
+      ),
     },
     me: me
       ? {

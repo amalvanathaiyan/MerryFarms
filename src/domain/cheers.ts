@@ -45,6 +45,7 @@ export const CHEER_KINDS = {
   slot: "calm",
   plan: "happy",
   settings: "calm",
+  video: "happy",
   deleted: "gentle",
 } as const satisfies Record<string, CheerTone>
 

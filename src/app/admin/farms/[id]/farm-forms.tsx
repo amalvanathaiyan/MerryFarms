@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { addOwnerAction, resetPasswordAction, updateFarmAction } from "@/app/actions/admin"
 import { cn } from "@/lib/utils"
+import { DEFAULT_VIDEO_SPACE_MB } from "@/domain/videos"
 
 const PLANS = ["free", "starter", "growth", "pro"] as const
 const STATUSES = ["trial", "active", "suspended"] as const
@@ -22,12 +23,13 @@ type Farm = {
   plan: (typeof PLANS)[number]
   status: (typeof STATUSES)[number]
   trialEndsOn: string | null
+  videoSpaceMb: number | null
 }
 
 const chip = (on: boolean) => cn("rounded-full border px-4 py-2 text-sm font-medium", on ? "border-primary bg-accent" : "bg-card")
 
 /** Plan, status, trial end and the farm's basic details. Suspending pauses the farm's shop at once. */
-export function EditFarmForm({ farm }: { farm: Farm }) {
+export function EditFarmForm({ farm, videoUsedMb }: { farm: Farm; videoUsedMb: number }) {
   const t = useTranslations("admin")
   const te = useTranslations("errors")
   const router = useRouter()
@@ -78,6 +80,24 @@ export function EditFarmForm({ farm }: { farm: Farm }) {
           <Input id="trialEnd" type="date" value={f.trialEndsOn ?? ""} onChange={(e) => setF({ ...f, trialEndsOn: e.target.value || null })} className="h-12 max-w-48" />
         </div>
       )}
+
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="videoSpace" className="text-sm font-semibold">
+          {t("videoSpace")}
+        </label>
+        <Input
+          id="videoSpace"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={10000}
+          placeholder={String(DEFAULT_VIDEO_SPACE_MB)}
+          value={f.videoSpaceMb ?? ""}
+          onChange={(e) => setF({ ...f, videoSpaceMb: e.target.value === "" ? null : Math.max(0, Math.round(Number(e.target.value))) })}
+          className="h-12 max-w-48"
+        />
+        <p className="text-sm text-muted-foreground">{t("videoSpaceHint", { used: videoUsedMb, standard: DEFAULT_VIDEO_SPACE_MB })}</p>
+      </div>
 
       <h2 className="mt-2 text-lg font-bold">{t("farmDetails")}</h2>
       <div className="grid gap-4 sm:grid-cols-2">

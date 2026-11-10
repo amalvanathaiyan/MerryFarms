@@ -1,4 +1,5 @@
 import "server-only"
+import { usedVideoBytes } from "./videos"
 import { prisma } from "@/lib/prisma"
 import { checkSlug, isInvoicePrefix, trialEnd, type FarmStatus } from "@/domain/tenants"
 import { farmUrl } from "@/lib/farm-url"
@@ -40,12 +41,13 @@ export async function farmDetail(id: string) {
   const farm = await prisma.tenant.findUnique({ where: { id }, omit: { whatsappAccessToken: true } })
   if (!farm) return null
   const staff = await prisma.staffMember.findMany({ where: { tenantId: id }, orderBy: [{ isActive: "desc" }, { createdAt: "asc" }] })
-  const [products, customers, orders] = await Promise.all([
+  const [products, customers, orders, videoBytes] = await Promise.all([
     prisma.product.count({ where: { tenantId: id, deletedAt: null } }),
     prisma.customer.count({ where: { tenantId: id } }),
     prisma.order.count({ where: { tenantId: id } }),
+    usedVideoBytes(id),
   ])
-  return { farm, staff, counts: { products, customers, orders } }
+  return { farm, staff, counts: { products, customers, orders }, videoBytes }
 }
 
 export interface NewFarm {
@@ -121,6 +123,8 @@ export interface FarmChanges {
   status: FarmStatus
   /** "YYYY-MM-DD" or null; only kept while on trial. */
   trialEndsOn: string | null
+  /** Storage for the farm's uploaded videos in MB; null = the default, left out = unchanged. */
+  videoSpaceMb?: number | null
 }
 
 export async function updateFarm(id: string, c: FarmChanges) {
@@ -138,6 +142,7 @@ export async function updateFarm(id: string, c: FarmChanges) {
       plan: c.plan,
       status: c.status,
       trialEndsAt: c.status === "trial" && c.trialEndsOn ? new Date(`${c.trialEndsOn}T23:59:59+05:30`) : null,
+      videoSpaceMb: c.videoSpaceMb,
     },
   })
 }

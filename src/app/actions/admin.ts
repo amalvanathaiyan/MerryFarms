@@ -64,6 +64,7 @@ export async function updateFarmAction(raw: unknown): Promise<Result> {
       plan: z.enum(PLANS),
       status: z.enum(["trial", "active", "suspended"]),
       trialEndsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+      videoSpaceMb: z.number().int().min(0).max(10_000).nullable(),
     })
     .safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_form" }
