@@ -24,7 +24,7 @@ export function EntryBlock({
 }) {
   const head = (
     <>
-      <span className={cn("grid size-8 shrink-0 place-items-center rounded-full", tone === "bad" ? "bg-destructive/15 text-destructive" : "bg-sec-poultry-tint text-sec-poultry")}>
+      <span className={cn("grid size-8 shrink-0 place-items-center rounded-full", tone === "bad" ? "bg-destructive/10 text-destructive" : "bg-muted text-sec-poultry")}>
         <Icon className="size-4" aria-hidden />
       </span>
       {/* The summary sits under the title (not beside it), so long Tamil words never squeeze or overlap. */}
@@ -36,7 +36,7 @@ export function EntryBlock({
     </>
   )
   return (
-    <div className={cn("flex flex-col gap-2 rounded-xl border p-3", tone === "bad" ? "border-destructive/30 bg-destructive/5" : "bg-muted/30")}>
+    <div className={cn("flex flex-col gap-2 rounded-xl border p-3", tone === "bad" ? "border-destructive/35 bg-card" : "bg-muted/30")}>
       {onToggle ? (
         <button type="button" aria-expanded={open} onClick={onToggle} className="-m-1 flex items-center gap-2 rounded-lg p-1">
           {head}

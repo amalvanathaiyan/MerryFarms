@@ -121,7 +121,7 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
       </Link>
 
       {/* A thin, light bar that stays pinned under the app header: which batch this page is about, while scrolling. */}
-      <div className="sticky z-10 -mx-4 -my-2 flex items-center gap-2 border-b bg-sec-poultry-tint/95 px-4 py-2 text-sm backdrop-blur sm:-mx-6 sm:px-6 lg:mx-0 lg:rounded-xl lg:border" style={{ top: "var(--app-header-h, 66px)" }}>
+      <div className="sticky z-10 -mx-4 -my-2 flex items-center gap-2 border-b bg-card/95 px-4 py-2 text-sm backdrop-blur sm:-mx-6 sm:px-6 lg:mx-0 lg:rounded-xl lg:border" style={{ top: "var(--app-header-h, 66px)" }}>
         <span className="line-clamp-2 min-w-0 leading-snug">
           <b className="text-base">{batch.name}</b> · {t("batchNo", { number: batch.number })} · {t("ageDays", { days: Math.max(0, s.ageDays) })} · {t("aliveCount", { count: s.alive })}
         </span>
@@ -206,7 +206,7 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
             {line(t("moneyFeed", { kg: s.feedKg }), m.feedPaise == null ? t("feedPriceUnknown") : formatRupees(m.feedPaise))}
             {line(t("moneyOther"), formatRupees(m.otherPaise))}
           </ul>
-          <div className="flex items-center justify-between gap-3 rounded-xl bg-sec-poultry-tint px-3 py-2 text-lg font-bold tabular-nums">
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-muted px-3 py-2 text-lg font-bold tabular-nums">
             <span>{t("moneyCost")}</span>
             <span>{formatRupees(m.costPaise)}</span>
           </div>

@@ -105,7 +105,7 @@ export function AllBatchesDay({ date, today, minDate, batches }: { date: string;
           <section key={b.id} className={cn("flex flex-col gap-3 rounded-2xl border-2 bg-card p-4", res?.ok ? "border-primary/50" : res ? "border-destructive/50" : "border-border")}>
             {/* A thin, light bar pinned under the app header while this batch is on screen, so the numbers below
                 always say which batch they're for. */}
-            <div className="sticky z-10 -mx-4 -mt-4 flex items-center justify-between gap-2 rounded-t-2xl border-b bg-sec-poultry-tint/95 px-4 py-2 backdrop-blur" style={{ top: "var(--app-header-h, 66px)" }}>
+            <div className="sticky z-10 -mx-4 -mt-4 flex items-center justify-between gap-2 rounded-t-2xl border-b bg-card/95 px-4 py-2 backdrop-blur" style={{ top: "var(--app-header-h, 66px)" }}>
               <Link href={`/farm/poultry/batches/${b.id}`} className="line-clamp-2 min-w-0 leading-snug">
                 <span className="font-bold">{b.name}</span>
                 <span className="text-sm text-muted-foreground">
