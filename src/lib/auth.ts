@@ -65,3 +65,24 @@ export const requirePlatformAdmin = cache(async () => {
 
 export const OWNER_ONLY: StaffRole[] = ["owner"]
 export const ORDER_DESK: StaffRole[] = ["owner", "order_desk"]
+
+/**
+ * Who is looking at the shop, when it isn't a customer: this farm's staff, or the FarmForYou super admin.
+ * Never redirects. Customers never carry a staff sign-in cookie, so for them it returns at once without asking
+ * Supabase anything; the shop stays as fast for them as before.
+ */
+export const shopViewer = cache(async (tenantId: string): Promise<"staff" | "admin" | null> => {
+  const jar = await cookies()
+  const demo = isDemoLoginEnabled() && jar.get(DEMO_COOKIE)?.value.startsWith(DEMO_AUTH_PREFIX)
+  const supabaseCookie = jar.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"))
+  if (!demo && !supabaseCookie) return null
+  let authUserId: string | null = demo ? jar.get(DEMO_COOKIE)!.value : null
+  if (!authUserId && process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    const supabase = await createSSRClient()
+    authUserId = (await supabase.auth.getUser()).data.user?.id ?? null
+  }
+  if (!authUserId) return null
+  if (await tenantDb(tenantId).staffMember.findFirst({ where: { authUserId, isActive: true }, select: { id: true } })) return "staff"
+  if (await prisma.platformAdmin.findUnique({ where: { authUserId }, select: { id: true } })) return "admin"
+  return null
+})

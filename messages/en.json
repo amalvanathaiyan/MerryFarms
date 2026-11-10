@@ -132,6 +132,12 @@
       "pause": "Pause the banner",
       "play": "Play the banner",
       "more": "More videos"
+    },
+    "viewer": {
+      "staff": "You're seeing your shop as customers do.",
+      "admin": "FarmForYou admin: you're seeing this farm's shop as customers do.",
+      "backFarm": "Farm app",
+      "backAdmin": "Admin"
     }
   },
   "farm": {
@@ -1168,7 +1174,7 @@
       "display": "Easy on the eyes",
       "displayHint": "Soft colours, dark or light, larger text",
       "yourShop": "Your shop",
-      "yourShopHint": "See it as customers do. Opens in a new window."
+      "yourShopHint": "See it as customers do. The bar at the top brings you back."
     },
     "feed": {
       "buyTitle": "Feed bought",
