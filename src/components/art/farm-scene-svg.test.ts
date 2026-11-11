@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { farmSceneSvg, type SceneWords } from "./farm-scene-svg"
+import { cartSceneSvg, farmSceneSvg, type SceneWords } from "./farm-scene-svg"
 
 const words: SceneWords = { name: "Merry Farms", shop: "FARM SHOP", eggs: "Country eggs", chicken: "Country chicken", fresh: "Fresh today" }
 const KINDS = ["gate", "stall", "hen"] as const
@@ -46,6 +46,19 @@ describe("the farm's live pictures", () => {
     expect(night).toContain("fs-flicker")
     expect(farmSceneSvg("stall", "evening", words)).toContain("fs-flicker")
     expect(farmSceneSvg("stall", "day", words)).not.toContain("fs-flicker")
+  })
+
+  it("draws the bullock cart in every light, on the road or on its own, with every tag closed", () => {
+    for (const p of PHASES) for (const plain of [false, true]) {
+      const svg = cartSceneSvg(p, plain)
+      expect(svg.startsWith("<svg") && svg.endsWith("</svg>")).toBe(true)
+      expect((svg.match(/<g[\s>]/g) ?? []).length).toBe((svg.match(/<\/g>/g) ?? []).length)
+      expect(svg).toContain("fs-wheel")
+      expect(svg).toContain("fs-step")
+      expect(svg.includes(`id="fs-cart-${p}-sky"`)).toBe(!plain)
+    }
+    expect(cartSceneSvg("night")).toContain("fs-twinkle")
+    expect(cartSceneSvg("day")).not.toContain("fs-twinkle")
   })
 
   it("keeps an id per scene and light, so two different skies on one page never share a gradient", () => {

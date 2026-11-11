@@ -26,20 +26,17 @@ export function phaseAt(at: Date): ScenePhase {
 }
 
 /**
- * The welcome pictures take turns, one a day. The cart only drives by daylight (its drawing has a daytime sky),
- * so after dark the farm's own scenes take turns.
+ * All the pictures take turns, one a day, and keep it all day long (each draws its own dawn, day, evening and
+ * night). Welcome: the farm gate, the farm shop, the bullock cart. Small spots: the hen with her eggs, the cart.
  */
-const HERO_BY_DAY: SceneKind[] = ["gate", "stall", "cart"]
-const HERO_AFTER_DARK: SceneKind[] = ["gate", "stall"]
+const HERO: SceneKind[] = ["gate", "stall", "cart"]
+const SMALL: SceneKind[] = ["hen", "cart"]
 
 export function sceneFor(opts: { farmScenes: boolean; spot: SceneSpot; at: Date }): SceneKind {
   if (!opts.farmScenes) return "cart"
-  if (opts.spot === "small") return "hen"
-  const light = phaseAt(opts.at)
-  const turn = HERO_BY_DAY.length * HERO_AFTER_DARK.length // the same day lands on the same scene all day long
-  const day = ((daysBetween("2026-01-01", istDate(opts.at)) % turn) + turn) % turn
-  const list = light === "day" || light === "dawn" ? HERO_BY_DAY : HERO_AFTER_DARK
-  return list[day % list.length]
+  const list = opts.spot === "small" ? SMALL : HERO
+  const day = daysBetween("2026-01-01", istDate(opts.at))
+  return list[((day % list.length) + list.length) % list.length]
 }
 
 /** How long until the light changes, so an open page can redraw the sky then (at most an hour). */

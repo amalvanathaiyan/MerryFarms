@@ -378,10 +378,9 @@ export { svg, mark }
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const art = path.join(root, "public", "art")
   fs.mkdirSync(art, { recursive: true })
-  fs.writeFileSync(path.join(art, "cart-scene.svg"), svg("colour", { scene: true }))
-  fs.writeFileSync(path.join(art, "cart.svg"), svg("colour"))
+  // cart-scene.svg and cart.svg now come from the farm pictures' cart: scripts/art/cart-files.ts
   fs.writeFileSync(path.join(art, "cart-line.svg"), svg("line"))
   fs.writeFileSync(path.join(art, "wheel.svg"), mark(512, "#1E6B45", "#FFF1C7", "#F5B700").replace("<svg ", "<svg xmlns=\"http://www.w3.org/2000/svg\" "))
   fs.writeFileSync(path.join(root, "src", "app", "icon.svg"), mark(64, "#1E6B45", "#FFF1C7", "#F5B700").replace("<svg ", "<svg xmlns=\"http://www.w3.org/2000/svg\" "))
-  console.log("Wrote public/art/{cart-scene,cart,cart-line,wheel}.svg and src/app/icon.svg")
+  console.log("Wrote public/art/{cart-line,wheel}.svg and src/app/icon.svg")
 }
