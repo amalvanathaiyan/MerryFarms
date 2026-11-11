@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { appIdentity } from "./install-apps"
+import { appIdentity, shopIcon } from "./install-apps"
 
 const tamilFarm = { nameTa: "மெர்ரி ஃபார்ம்ஸ்", nameEn: "Merry Farms", defaultLanguage: "ta" }
 const englishFarm = { nameTa: "பசுமை தோட்டம்", nameEn: "Green Acre", defaultLanguage: "en" }
@@ -27,5 +27,19 @@ describe("install apps", () => {
 
   it("keeps home-screen labels short enough not to be cut", () => {
     for (const farm of [tamilFarm, englishFarm]) for (const a of ["farm", "admin"] as const) expect(appIdentity(a, farm).shortName.length).toBeLessThanOrEqual(10)
+  })
+})
+
+describe("shopIcon", () => {
+  it("keeps the cream FarmForYou icon until the farm has a logo", () => {
+    expect(shopIcon(null, 192)).toBe("/icons/shop-192.png")
+    expect(shopIcon(null, 512, true)).toBe("/icons/shop-maskable-512.png")
+    expect(shopIcon(undefined, 180)).toBe("/icons/shop-apple.png")
+  })
+
+  it("is made from the farm's logo once it has one, renewed when the logo changes", () => {
+    expect(shopIcon("/img/logo?v=123", 192)).toBe("/img/app-icon?size=192&v=123")
+    expect(shopIcon("/img/logo?v=123", 512, true)).toBe("/img/app-icon?size=512&maskable=1&v=123")
+    expect(shopIcon("/img/logo?v=456", 180)).toBe("/img/app-icon?size=180&v=456")
   })
 })

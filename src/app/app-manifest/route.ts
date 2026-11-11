@@ -1,5 +1,5 @@
 import { getTenant } from "@/lib/tenant"
-import { appIdentity, type InstallApp } from "@/domain/install-apps"
+import { appIdentity, shopIcon, type InstallApp } from "@/domain/install-apps"
 
 /**
  * The install manifest. Three apps can be installed, one per role, each with its own id, icon colour and name:
@@ -25,10 +25,16 @@ export async function GET(request: Request) {
     background_color: id.colour,
     theme_color: "#f4f6ee",
     lang: id.lang,
+    // The shop's icon is the farm's own logo once it has one; the farm and admin apps keep their fixed icons.
     icons: [
-      { src: `/icons/${app}-192.png`, sizes: "192x192", type: "image/png" },
-      { src: `/icons/${app}-512.png`, sizes: "512x512", type: "image/png" },
-      { src: `/icons/${app}-maskable-512.png`, sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: app === "shop" ? shopIcon(tenant?.logoUrl, 192) : `/icons/${app}-192.png`, sizes: "192x192", type: "image/png" },
+      { src: app === "shop" ? shopIcon(tenant?.logoUrl, 512) : `/icons/${app}-512.png`, sizes: "512x512", type: "image/png" },
+      {
+        src: app === "shop" ? shopIcon(tenant?.logoUrl, 512, true) : `/icons/${app}-maskable-512.png`,
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
     ],
   }
   return Response.json(manifest, { headers: { "content-type": "application/manifest+json", "cache-control": "public, max-age=3600" } })
