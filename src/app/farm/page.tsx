@@ -43,7 +43,8 @@ async function birdsOnFarm(tenantId: string, today: string) {
   return live.reduce((a, b) => a + batchStatus(asInfo(b), d, l, today).alive, 0)
 }
 
-export default async function TodayPage() {
+export default async function TodayPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const { error } = await searchParams
   const { db, tenant, staff } = await requireStaff()
   const locale = await getLocale()
   const t = await getTranslations("farm.today")
@@ -194,6 +195,11 @@ export default async function TodayPage() {
   return (
     <div className="flex flex-col gap-4">
       <AutoRefresh seconds={60} />
+      {error === "support_blocked" && (
+        <p role="alert" className="rounded-xl bg-yolk p-3 font-medium text-yolk-foreground">
+          {(await getTranslations("farm.support"))("blocked")}
+        </p>
+      )}
       {features.pushNotifications && <EnablePush who="staff" />}
       <TodayWelcome
         scene={await sceneProps(tenant, locale, "hero")}

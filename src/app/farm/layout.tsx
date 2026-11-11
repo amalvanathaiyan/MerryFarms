@@ -12,6 +12,7 @@ import { getTenant } from "@/lib/tenant"
 import { appIdentity } from "@/domain/install-apps"
 import { InstallCatcher } from "@/components/install-app"
 import { HeaderHeight } from "@/components/header-height"
+import { SupportBar } from "@/components/farm/support-bar"
 
 export const dynamic = "force-dynamic"
 
@@ -22,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function FarmLayout({ children }: { children: React.ReactNode }) {
-  const { tenant, staff, db } = await requireStaff()
+  const { tenant, staff, db, support } = await requireStaff()
   const locale = await getLocale()
   const features = featuresOf(tenant)
   const items = mainMenu({ roles: staff.roles, features })
@@ -32,6 +33,7 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
   return (
     <div className="flex min-h-dvh flex-col">
       <InstallCatcher />
+      {support && <SupportBar farm={pick(locale, tenant.nameTa, tenant.nameEn)} endsAt={support.endsAt} />}
       {/* Only the farm and the language here: everything else is one tap away in the menu (More). */}
       <HeaderHeight id="app-header" />
       <header id="app-header" className="sticky top-0 z-20 border-b bg-header/95 text-header-foreground backdrop-blur print:hidden">

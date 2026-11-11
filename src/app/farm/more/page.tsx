@@ -5,6 +5,7 @@ import { requireStaff } from "@/lib/auth"
 import { featuresOf } from "@/lib/features"
 import { moreTiles, SECTION_LOOK } from "@/lib/farm-sections"
 import { signOut } from "@/app/actions/auth"
+import { endSupportAction } from "@/app/actions/support"
 import { SectionHeader } from "@/components/farm/section-header"
 import { SectionIcon } from "@/components/farm/section-icon"
 import { cn } from "@/lib/utils"
@@ -12,11 +13,12 @@ import { InstallApp } from "@/components/install-app"
 
 /** Everything that isn't a daily job, as big coloured tiles: one picture, one word, one line of help. */
 export default async function MorePage() {
-  const { tenant, staff, db } = await requireStaff()
+  const { tenant, staff, db, support } = await requireStaff()
   const t = await getTranslations("farm.sections")
   const tm = await getTranslations("farm.more")
   const features = featuresOf(tenant)
-  const tiles = moreTiles({ roles: staff.storedRoles, features })
+  // Logins (staff list, own account) stay in FarmForYou admin during a support visit.
+  const tiles = moreTiles({ roles: staff.storedRoles, features }).filter((t) => !(support && (t.key === "staff" || t.key === "account")))
   const unread = features.messages ? await db.message.count({ where: { sender: "customer", seenAt: null } }) : 0
 
   return (
@@ -62,9 +64,10 @@ export default async function MorePage() {
         <span aria-hidden>→</span>
       </Link>
       <InstallApp variant="panel" />
-      <form action={signOut}>
+      {/* In support mode the way out is Exit (back to admin), never signing the super admin out. */}
+      <form action={support ? endSupportAction : signOut}>
         <button type="submit" className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl border-2 border-destructive/30 bg-card text-base font-bold text-destructive hover:bg-destructive/10">
-          <LogOut className="size-5" aria-hidden /> {tm("signOut")}
+          <LogOut className="size-5" aria-hidden /> {support ? tm("exitSupport") : tm("signOut")}
         </button>
       </form>
     </div>

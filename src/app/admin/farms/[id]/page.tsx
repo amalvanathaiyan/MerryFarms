@@ -9,6 +9,8 @@ import { farmUrl } from "@/lib/farm-url"
 import { Button } from "@/components/ui/button"
 import { FarmMark, StatusBadge } from "../../farm-bits"
 import { EditFarmForm, OwnerForm, StaffRow } from "./farm-forms"
+import { SupportForm } from "./support-form"
+import { SupportLog } from "@/components/farm/support-log"
 
 /** One farm: change its plan, trial, status and details; help its staff back in. */
 export default async function FarmAdminPage({ params }: { params: Promise<{ id: string }> }) {
@@ -21,7 +23,6 @@ export default async function FarmAdminPage({ params }: { params: Promise<{ id: 
   const locale = await getLocale()
   const label = statusLabel(farm.status, farm.trialEndsAt, new Date())
   const shop = farmUrl(farm.slug)
-  const app = farmUrl(farm.slug, "/login")
   const hasOwner = staff.some((s) => s.isActive && s.roles.includes("owner"))
 
   return (
@@ -49,14 +50,10 @@ export default async function FarmAdminPage({ params }: { params: Promise<{ id: 
             </a>
           </Button>
         )}
-        {app && (
-          <Button asChild variant="outline">
-            <a href={app} target="_blank" rel="noreferrer">
-              <ExternalLink /> {t("openFarmApp")}
-            </a>
-          </Button>
-        )}
       </div>
+
+      {/* Into the farm's app as FarmForYou support: with a reason, for an hour, every change logged for the farm. */}
+      <SupportForm tenantId={farm.id} />
 
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {[
@@ -86,6 +83,8 @@ export default async function FarmAdminPage({ params }: { params: Promise<{ id: 
         }}
         videoUsedMb={Math.round((videoBytes / 1024 / 1024) * 10) / 10}
       />
+
+      <SupportLog tenantId={farm.id} forAdmin />
 
       <section className="flex flex-col gap-3 rounded-3xl border bg-card p-4 sm:p-5">
         <h2 className="text-lg font-bold">{t("staff")}</h2>

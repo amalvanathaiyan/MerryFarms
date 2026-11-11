@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { OWNER_ONLY, requireStaff } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { noteSupportWrite } from "@/server/support"
 import { MAX_PHOTO_BYTES, sniffImage } from "@/domain/product-art"
 import { DRAWINGS, MAX_SHOP_ART } from "@/components/art/drawing-library"
 
@@ -29,6 +30,7 @@ export async function setFarmLogo(raw: unknown): Promise<Result> {
   const { tenant } = await requireStaff(OWNER_ONLY)
   await prisma.tenantLogo.upsert({ where: { tenantId: tenant.id }, update: { mime, data: bytes }, create: { tenantId: tenant.id, mime, data: bytes } })
   await prisma.tenant.update({ where: { id: tenant.id }, data: { logoUrl: `/img/logo?v=${Date.now()}` } })
+  await noteSupportWrite(tenant.id, "TenantLogo", "update", { id: tenant.id })
   return refresh()
 }
 
@@ -36,6 +38,7 @@ export async function removeFarmLogo(): Promise<Result> {
   const { tenant } = await requireStaff(OWNER_ONLY)
   await prisma.tenantLogo.deleteMany({ where: { tenantId: tenant.id } })
   await prisma.tenant.update({ where: { id: tenant.id }, data: { logoUrl: null } })
+  await noteSupportWrite(tenant.id, "TenantLogo", "delete", { id: tenant.id })
   return refresh()
 }
 
@@ -46,5 +49,6 @@ export async function setShopArt(raw: unknown): Promise<Result> {
   if (parsed.data.some((id) => !DRAWINGS.has(id))) return { ok: false, error: "invalid_form" }
   const { tenant } = await requireStaff(OWNER_ONLY)
   await prisma.tenant.update({ where: { id: tenant.id }, data: { shopArt: [...new Set(parsed.data)] } })
+  await noteSupportWrite(tenant.id, "Tenant", "update", { id: tenant.id })
   return refresh()
 }

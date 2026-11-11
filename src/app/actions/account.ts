@@ -47,7 +47,9 @@ export async function saveAccount(raw: unknown): Promise<{ error?: string }> {
   const parsed = input.safeParse(raw)
   if (!parsed.success) return { error: "password_short" }
   const { name, username, currentPassword, newPassword } = parsed.data
-  const { db, staff } = await requireStaff()
+  const { db, staff, support } = await requireStaff()
+  // A super admin in support mode never changes logins from inside a farm.
+  if (support) return { error: "support_blocked" }
 
   const usernameError = await saveUsername(staff.authUserId, staff.storedRoles.includes("owner") ? username : undefined)
   if (usernameError) return { error: usernameError }
