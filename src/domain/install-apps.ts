@@ -49,3 +49,13 @@ export function appIdentity(app: InstallApp, farm: Farm): AppIdentity {
     lang,
   }
 }
+
+/**
+ * The shop app's icon: made from the farm's logo once it has one (src/app/img/app-icon), else the cream
+ * FarmForYou icon. The logo's upload time rides along (?v), so phones fetch the icon again when the logo changes.
+ */
+export function shopIcon(logoUrl: string | null | undefined, size: 180 | 192 | 512, maskable = false): string {
+  const v = logoUrl ? new URL(logoUrl, "http://x").searchParams.get("v") : null
+  if (!v) return size === 180 ? "/icons/shop-apple.png" : `/icons/shop-${maskable ? "maskable-" : ""}${size}.png`
+  return `/img/app-icon?size=${size}${maskable ? "&maskable=1" : ""}&v=${v}`
+}
