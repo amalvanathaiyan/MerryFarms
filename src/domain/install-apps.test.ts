@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { appIdentity, shopIcon } from "./install-apps"
+import { appIcon, appIdentity } from "./install-apps"
 
 const tamilFarm = { nameTa: "மெர்ரி ஃபார்ம்ஸ்", nameEn: "Merry Farms", defaultLanguage: "ta" }
 const englishFarm = { nameTa: "பசுமை தோட்டம்", nameEn: "Green Acre", defaultLanguage: "en" }
@@ -30,16 +30,23 @@ describe("install apps", () => {
   })
 })
 
-describe("shopIcon", () => {
-  it("keeps the cream FarmForYou icon until the farm has a logo", () => {
-    expect(shopIcon(null, 192)).toBe("/icons/shop-192.png")
-    expect(shopIcon(null, 512, true)).toBe("/icons/shop-maskable-512.png")
-    expect(shopIcon(undefined, 180)).toBe("/icons/shop-apple.png")
+describe("appIcon", () => {
+  it("keeps the fixed FarmForYou icons until the farm has a logo", () => {
+    expect(appIcon("shop", null, 192)).toBe("/icons/shop-192.png")
+    expect(appIcon("shop", null, 512, true)).toBe("/icons/shop-maskable-512.png")
+    expect(appIcon("shop", undefined, 180)).toBe("/icons/shop-apple.png")
+    expect(appIcon("farm", null, 512, true)).toBe("/icons/farm-maskable-512.png")
+    expect(appIcon("farm", null, 180)).toBe("/icons/farm-apple.png")
   })
 
   it("is made from the farm's logo once it has one, renewed when the logo changes", () => {
-    expect(shopIcon("/img/logo?v=123", 192)).toBe("/img/app-icon?size=192&v=123")
-    expect(shopIcon("/img/logo?v=123", 512, true)).toBe("/img/app-icon?size=512&maskable=1&v=123")
-    expect(shopIcon("/img/logo?v=456", 180)).toBe("/img/app-icon?size=180&v=456")
+    expect(appIcon("shop", "/img/logo?v=123", 192)).toBe("/img/app-icon?size=192&v=123")
+    expect(appIcon("shop", "/img/logo?v=123", 512, true)).toBe("/img/app-icon?size=512&maskable=1&v=123")
+    expect(appIcon("shop", "/img/logo?v=456", 180)).toBe("/img/app-icon?size=180&v=456")
+  })
+
+  it("marks the farm app's icon so it is drawn on the farm app's green", () => {
+    expect(appIcon("farm", "/img/logo?v=123", 192)).toBe("/img/app-icon?app=farm&size=192&v=123")
+    expect(appIcon("farm", "/img/logo?v=123", 512, true)).toBe("/img/app-icon?app=farm&size=512&maskable=1&v=123")
   })
 })

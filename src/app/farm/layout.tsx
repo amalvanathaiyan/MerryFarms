@@ -9,7 +9,7 @@ import { mainMenu } from "@/lib/farm-sections"
 import { WheelMark } from "@/components/art/wheel-mark"
 import type { Metadata } from "next"
 import { getTenant } from "@/lib/tenant"
-import { appIdentity } from "@/domain/install-apps"
+import { appIcon, appIdentity } from "@/domain/install-apps"
 import { InstallCatcher } from "@/components/install-app"
 import { HeaderHeight } from "@/components/header-height"
 import { SupportBar } from "@/components/farm/support-bar"
@@ -18,8 +18,9 @@ export const dynamic = "force-dynamic"
 
 /** Installing from the farm app gives its own green icon that opens straight into the farm app (not the shop). */
 export async function generateMetadata(): Promise<Metadata> {
-  const id = appIdentity("farm", await getTenant())
-  return { manifest: "/app-manifest?app=farm", appleWebApp: { capable: true, title: id.shortName, statusBarStyle: "default" }, icons: { apple: "/icons/farm-apple.png" } }
+  const tenant = await getTenant()
+  const id = appIdentity("farm", tenant)
+  return { manifest: "/app-manifest?app=farm", appleWebApp: { capable: true, title: id.shortName, statusBarStyle: "default" }, icons: { apple: appIcon("farm", tenant?.logoUrl, 180) } }
 }
 
 export default async function FarmLayout({ children }: { children: React.ReactNode }) {
