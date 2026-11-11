@@ -15,7 +15,7 @@ export default async function FarmAdminPage({ params }: { params: Promise<{ id: 
   const { id } = await params
   const detail = await farmDetail(id)
   if (!detail) notFound()
-  const { farm, staff, counts } = detail
+  const { farm, staff, counts, videoBytes } = detail
   const t = await getTranslations("admin")
   const tr = await getTranslations("farm.staff")
   const locale = await getLocale()
@@ -82,7 +82,9 @@ export default async function FarmAdminPage({ params }: { params: Promise<{ id: 
           plan: farm.plan,
           status: farm.status,
           trialEndsOn: farm.trialEndsAt ? new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(farm.trialEndsAt) : null,
+          videoSpaceMb: farm.videoSpaceMb,
         }}
+        videoUsedMb={Math.round((videoBytes / 1024 / 1024) * 10) / 10}
       />
 
       <section className="flex flex-col gap-3 rounded-3xl border bg-card p-4 sm:p-5">

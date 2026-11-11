@@ -94,12 +94,13 @@ export function moneyTabs(who: Who): Tab[] {
   return tabs
 }
 
-/** Settings' tabs (owner only; the pages check that). */
-export function settingsTabs(): Tab[] {
+/** Settings' tabs (owner only; the pages check that). Videos only when the farm has them switched on. */
+export function settingsTabs(features: { farmVideos: boolean }): Tab[] {
   return [
     { key: "shop", href: "/farm/settings" },
     { key: "delivery", href: "/farm/settings/delivery" },
     { key: "look", href: "/farm/settings/look" },
+    ...(features.farmVideos ? [{ key: "videos", href: "/farm/settings/videos" }] : []),
     { key: "switches", href: "/farm/settings/switches" },
   ]
 }

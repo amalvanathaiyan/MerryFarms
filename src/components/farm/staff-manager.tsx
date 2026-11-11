@@ -89,9 +89,11 @@ export function StaffManager({ rows, demo }: { rows: StaffRow[]; demo: boolean }
           </label>
           {!draft.id && (
             <label className="flex flex-col gap-1.5 text-sm font-semibold">
-              {t("email")}
+              {draft.roles.includes("owner") ? t("emailOwner") : t("email")}
               <Input required={draft.roles.includes("owner")} type="email" autoComplete="off" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} className="font-normal" />
-              <span className="font-normal text-muted-foreground">{demo ? t("emailHintDemo") : t("emailHint")}</span>
+              <span className="font-normal text-muted-foreground">
+                {demo ? t("emailHintDemo") : draft.roles.includes("owner") ? t("emailHintOwner") : t("emailHint")}
+              </span>
             </label>
           )}
           <label className="flex flex-col gap-1.5 text-sm font-semibold">

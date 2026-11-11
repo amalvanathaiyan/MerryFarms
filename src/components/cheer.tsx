@@ -6,6 +6,7 @@ import {
   Bird,
   CalendarCheck,
   CheckCheck,
+  Clapperboard,
   ClipboardCheck,
   ClipboardList,
   Clock,
@@ -76,6 +77,7 @@ const LOOK: Record<CheerKind, { icon: LucideIcon; section: SectionKey }> = {
   slot: { icon: Clock, section: "slots" },
   plan: { icon: Repeat, section: "plans" },
   settings: { icon: SlidersHorizontal, section: "more" },
+  video: { icon: Clapperboard, section: "more" },
   deleted: { icon: Trash2, section: "more" },
 }
 

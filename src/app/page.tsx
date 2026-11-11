@@ -1,4 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server"
+import { listVideos } from "@/server/videos"
+import { shopVideos } from "@/domain/videos"
 import { sceneProps } from "@/lib/scene"
 import { getTenant } from "@/lib/tenant"
 import { tenantDb } from "@/lib/tenant-db"
@@ -13,6 +15,8 @@ import { artFor } from "@/domain/product-art"
 import { shopArt } from "@/components/art/drawing-library"
 import { otpOn } from "@/server/otp"
 import { SignInGate } from "@/components/shop/sign-in-gate"
+import { ViewerBar } from "@/components/shop/viewer-bar"
+import { shopViewer } from "@/lib/auth"
 import { currentPrice, offerActive, percentOff } from "@/domain/offers"
 import { customerMayChange, orderCode } from "@/domain/orders"
 
@@ -31,8 +35,12 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     )
   }
 
+  // The farm's own staff (or the super admin) looking at the shop: a bar back to their app, and no customer sign-in.
+  const viewer = await shopViewer(tenant.id)
+  const viewerBar = viewer && <ViewerBar viewer={viewer} />
+
   // Code sign-in: ask for the mobile number first; "just look" is one tap away.
-  if (otpOn(tenant) && browse === undefined && !reorder && !(await getSessionCustomer())) {
+  if (!viewer && otpOn(tenant) && browse === undefined && !reorder && !(await getSessionCustomer())) {
     return <SignInGate tenant={tenant} />
   }
 
@@ -79,6 +87,12 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       calls: features.callConfirmation,
       logoUrl: tenant.logoUrl,
       scenes: { hero: await sceneProps(tenant, locale, "hero"), small: await sceneProps(tenant, locale, "small") },
+      // YouTube links when the farm has videos on; its own uploads only while its plan includes them.
+      videos: shopVideos(
+        (features.farmVideos ? await listVideos(tenant.id) : [])
+          .filter((v) => v.kind === "youtube" || features.videoUploads)
+          .map((v) => ({ id: v.id, kind: v.kind === "youtube" ? ("youtube" as const) : ("upload" as const), src: v.src, posterUrl: v.posterUrl, title: v.title, banner: v.banner, watch: v.watch, sortOrder: v.sortOrder }))
+      ),
     },
     me: me
       ? {
@@ -150,5 +164,10 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       : null,
   }
 
-  return <Shop data={data} />
+  return (
+    <>
+      {viewerBar}
+      <Shop data={data} />
+    </>
+  )
 }

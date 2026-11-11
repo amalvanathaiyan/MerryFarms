@@ -28,6 +28,8 @@ export type FeatureKey =
   | "farmRecords"
   | "poultryCare"
   | "poultryScenes"
+  | "farmVideos"
+  | "videoUploads"
   | "whatsappLite"
   | "upiPayments"
   | "subscriptions"
@@ -64,6 +66,10 @@ export const FEATURES: Record<FeatureKey, FeatureDef> = {
   poultryCare: { defaultOn: false, minPlan: "starter", requires: ["farmRecords"], available: true },
   // The shop shows the farm's own live pictures (gate, stall, hen) instead of only FarmForYou's bullock cart.
   poultryScenes: { defaultOn: false, minPlan: "free", requires: [], available: true },
+  // Videos on the shop. YouTube links cost the platform nothing, so every farm has them.
+  farmVideos: { defaultOn: true, minPlan: "free", requires: [], available: true },
+  // Videos uploaded from the phone use the platform's shared storage: a paid plan, within the farm's space limit.
+  videoUploads: { defaultOn: true, minPlan: "starter", requires: ["farmVideos"], available: true },
   whatsappLite: { defaultOn: true, minPlan: "free", requires: [], available: true },
   upiPayments: { defaultOn: true, minPlan: "free", requires: [], available: true },
   // Off by default: many small farms can't promise eggs every week.

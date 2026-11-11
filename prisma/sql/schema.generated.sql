@@ -79,6 +79,7 @@ CREATE TABLE "tenants" (
     "freeAbovePaise" INTEGER NOT NULL DEFAULT 50000,
     "logoUrl" TEXT,
     "shopArt" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "videoSpaceMb" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -629,6 +630,28 @@ CREATE TABLE "batch_vaccinations" (
 );
 
 -- CreateTable
+CREATE TABLE "farm_videos" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "kind" TEXT NOT NULL,
+    "src" TEXT NOT NULL,
+    "storagePath" TEXT,
+    "posterPath" TEXT,
+    "posterUrl" TEXT,
+    "title" TEXT,
+    "banner" BOOLEAN NOT NULL DEFAULT false,
+    "watch" BOOLEAN NOT NULL DEFAULT true,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "seconds" INTEGER,
+    "bytes" INTEGER,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "farm_videos_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "batch_weights" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
@@ -814,6 +837,9 @@ CREATE INDEX "batch_vaccinations_batchId_idx" ON "batch_vaccinations"("batchId")
 
 -- CreateIndex
 CREATE INDEX "batch_vaccinations_tenantId_givenDate_dueDate_idx" ON "batch_vaccinations"("tenantId", "givenDate", "dueDate");
+
+-- CreateIndex
+CREATE INDEX "farm_videos_tenantId_sortOrder_idx" ON "farm_videos"("tenantId", "sortOrder");
 
 -- CreateIndex
 CREATE INDEX "batch_weights_tenantId_date_idx" ON "batch_weights"("tenantId", "date");

@@ -22,15 +22,30 @@ const candidates = [
 const browser = candidates.find((p) => existsSync(p))
 if (!browser) throw new Error("No Chromium browser found; set BROWSER to its path.")
 
-const LEAF = "#1E6B45", CREAM = "#FFF1C7", YOLK = "#F5B700"
+const LEAF = "#1E6B45", CREAM = "#FFF1C7", YOLK = "#F5B700", INK = "#16301F", FIELD = "#FBF3DC"
 // Maskable icons are cropped to a circle or squircle by the phone: full-bleed background, mark inside the safe zone.
-const maskable = (size) =>
-  `<svg width="${size}" height="${size}" viewBox="0 0 64 64"><rect width="64" height="64" fill="${LEAF}"/><g transform="translate(9.6 9.6) scale(0.7)">${mark(64, LEAF, CREAM, YOLK).replace(/^<svg[^>]*>/, "").replace(/<\/svg>$/, "")}</g></svg>`
+const maskable = (size, bg, fg, hub) =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 64 64"><rect width="64" height="64" fill="${bg}"/><g transform="translate(9.6 9.6) scale(0.7)">${mark(64, bg, fg, hub).replace(/^<svg[^>]*>/, "").replace(/<\/svg>$/, "")}</g></svg>`
+
+/**
+ * One icon set per installable app, told apart by colour (see src/app/app-manifest/route.ts):
+ *   shop  (customers)          cream, green wheel
+ *   farm  (farm admin, staff)  leaf green, cream wheel
+ *   admin (super admin)        dark ink, gold wheel
+ * The older icon-*.png files stay for push notifications.
+ */
+const APPS = { shop: [FIELD, LEAF, YOLK], farm: [LEAF, CREAM, YOLK], admin: [INK, YOLK, CREAM] }
 const icons = [
   ["icon-192.png", 192, mark(192, LEAF, CREAM, YOLK)],
   ["icon-512.png", 512, mark(512, LEAF, CREAM, YOLK)],
-  ["icon-maskable-512.png", 512, maskable(512)],
-  ["apple-touch-icon.png", 180, maskable(180)],
+  ["icon-maskable-512.png", 512, maskable(512, LEAF, CREAM, YOLK)],
+  ["apple-touch-icon.png", 180, maskable(180, LEAF, CREAM, YOLK)],
+  ...Object.entries(APPS).flatMap(([app, [bg, fg, hub]]) => [
+    [`${app}-192.png`, 192, mark(192, bg, fg, hub)],
+    [`${app}-512.png`, 512, mark(512, bg, fg, hub)],
+    [`${app}-maskable-512.png`, 512, maskable(512, bg, fg, hub)],
+    [`${app}-apple.png`, 180, maskable(180, bg, fg, hub)],
+  ]),
 ]
 
 const work = mkdtempSync(path.join(tmpdir(), "ffy-icons-"))

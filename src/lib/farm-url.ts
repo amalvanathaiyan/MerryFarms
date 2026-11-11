@@ -9,3 +9,9 @@ export function farmUrl(slug: string, path = ""): string | null {
   if (process.env.NODE_ENV !== "production") return `http://${slug}.localhost:${process.env.PORT ?? "3000"}${path}`
   return null
 }
+
+/** FarmForYou admin's address: its own host (admin.farmforyou.in) once farms have their own addresses, else /admin here. */
+export function adminUrl(): string {
+  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN
+  return root ? `https://admin.${root}/admin` : "/admin"
+}

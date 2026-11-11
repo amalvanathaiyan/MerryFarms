@@ -47,8 +47,9 @@ export async function SectionHeader({
           {(hint === undefined ? t(`${section}.hint`) : hint) && <p className="text-sm text-muted-foreground">{hint === undefined ? t(`${section}.hint`) : hint}</p>}
         </div>
       </div>
+      {/* One row of up to four tabs; more go in rows of three, so no word has to break on a phone. */}
       {tabs.length > 1 && (
-        <nav aria-label={t(`${section}.title`)} className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
+        <nav aria-label={t(`${section}.title`)} className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${tabs.length <= 4 ? tabs.length : 3}, minmax(0, 1fr))` }}>
           {tabs.map((tab) => {
             const on = tab.key === active
             return (

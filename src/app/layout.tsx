@@ -29,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: tenant ? `${tenant.nameEn} — farm-fresh orders` : "Farm-fresh orders from local farms",
     manifest: "/app-manifest",
     appleWebApp: { capable: true, title: name, statusBarStyle: "default" },
-    icons: { apple: "/icons/apple-touch-icon.png" },
+    icons: { apple: "/icons/shop-apple.png" },
   }
 }
 

@@ -1,4 +1,5 @@
 import { OWNER_ONLY, requireStaff } from "@/lib/auth"
+import { featuresOf } from "@/lib/features"
 import { settingsTabs } from "@/lib/farm-sections"
 import { LogoForm } from "@/components/farm/logo-form"
 import { ShopArtPicker } from "@/components/farm/shop-art-picker"
@@ -16,7 +17,7 @@ export default async function SettingsLookPage() {
   const picked = tenant.shopArt.filter((id) => DRAWINGS.has(id))
   return (
     <div className="flex flex-col gap-4">
-      <SectionHeader section="settings" tabs={settingsTabs()} active="look" back={{ href: "/farm/more" }} />
+      <SectionHeader section="settings" tabs={settingsTabs(featuresOf(tenant))} active="look" back={{ href: "/farm/more" }} />
       <LogoForm logoUrl={tenant.logoUrl} initials={tenant.invoicePrefix} />
       <ShopArtPicker picked={picked.length ? picked : suggested} isDefault={picked.length === 0} kinds={kinds} suggested={suggested} />
     </div>

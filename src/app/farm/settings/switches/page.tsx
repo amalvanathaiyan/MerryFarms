@@ -1,5 +1,6 @@
 import { OWNER_ONLY, requireStaff } from "@/lib/auth"
 import { cannotEnable, FEATURE_KEYS, FEATURES, parseChoices, resolveFeatures } from "@/domain/features"
+import { featuresOf } from "@/lib/features"
 import { settingsTabs } from "@/lib/farm-sections"
 import { FeatureSwitches, type FeatureRow } from "@/components/farm/feature-switches"
 import { SectionHeader } from "@/components/farm/section-header"
@@ -21,7 +22,7 @@ export default async function SettingsSwitchesPage() {
   })
   return (
     <div className="flex flex-col gap-4">
-      <SectionHeader section="settings" tabs={settingsTabs()} active="switches" back={{ href: "/farm/more" }} />
+      <SectionHeader section="settings" tabs={settingsTabs(featuresOf(tenant))} active="switches" back={{ href: "/farm/more" }} />
       <FeatureSwitches rows={rows} />
     </div>
   )

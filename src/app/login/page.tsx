@@ -8,8 +8,13 @@ import { prisma } from "@/lib/prisma"
 import { demoSignIn } from "@/app/actions/auth"
 import { AuthShell } from "@/components/auth-shell"
 
-/** Staff sign in here, so installing from this page gives the farm app's icon (it opens /farm). */
-export const metadata: Metadata = { manifest: "/app-manifest?app=farm" }
+/** Installing from the sign-in page gives the app being signed in to: the farm app, or FarmForYou admin. */
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ next?: string }> }): Promise<Metadata> {
+  const admin = (await searchParams).next?.startsWith("/admin")
+  return admin
+    ? { manifest: "/app-manifest?app=admin", icons: { apple: "/icons/admin-apple.png" } }
+    : { manifest: "/app-manifest?app=farm", icons: { apple: "/icons/farm-apple.png" } }
+}
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
   const { next, error } = await searchParams
