@@ -4,7 +4,7 @@ import { NextIntlClientProvider } from "next-intl"
 import { getLocale } from "next-intl/server"
 import { headers } from "next/headers"
 import { getTenant } from "@/lib/tenant"
-import { shopIcon } from "@/domain/install-apps"
+import { appIcon } from "@/domain/install-apps"
 import "./globals.css"
 import { DISPLAY_SCRIPT } from "@/lib/display"
 
@@ -41,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: { card: "summary_large_image", title: name, description, images: [image.url] },
     manifest: "/app-manifest",
     appleWebApp: { capable: true, title: name, statusBarStyle: "default" },
-    icons: { apple: shopIcon(tenant?.logoUrl, 180) },
+    icons: { apple: appIcon("shop", tenant?.logoUrl, 180) },
   }
 }
 

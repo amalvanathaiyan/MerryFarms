@@ -1,5 +1,5 @@
 import { getTenant } from "@/lib/tenant"
-import { appIdentity, shopIcon, type InstallApp } from "@/domain/install-apps"
+import { appIdentity, appIcon, type InstallApp } from "@/domain/install-apps"
 
 /**
  * The install manifest. Three apps can be installed, one per role, each with its own id, icon colour and name:
@@ -25,12 +25,12 @@ export async function GET(request: Request) {
     background_color: id.colour,
     theme_color: "#f4f6ee",
     lang: id.lang,
-    // The shop's icon is the farm's own logo once it has one; the farm and admin apps keep their fixed icons.
+    // The shop and farm apps' icons are the farm's own logo once it has one; the admin app keeps its fixed icon.
     icons: [
-      { src: app === "shop" ? shopIcon(tenant?.logoUrl, 192) : `/icons/${app}-192.png`, sizes: "192x192", type: "image/png" },
-      { src: app === "shop" ? shopIcon(tenant?.logoUrl, 512) : `/icons/${app}-512.png`, sizes: "512x512", type: "image/png" },
+      { src: app !== "admin" ? appIcon(app, tenant?.logoUrl, 192) : `/icons/${app}-192.png`, sizes: "192x192", type: "image/png" },
+      { src: app !== "admin" ? appIcon(app, tenant?.logoUrl, 512) : `/icons/${app}-512.png`, sizes: "512x512", type: "image/png" },
       {
-        src: app === "shop" ? shopIcon(tenant?.logoUrl, 512, true) : `/icons/${app}-maskable-512.png`,
+        src: app !== "admin" ? appIcon(app, tenant?.logoUrl, 512, true) : `/icons/${app}-maskable-512.png`,
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",
