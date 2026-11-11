@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma"
+import { WRITE_OPS } from "@/domain/support"
+import { noteSupportWrite } from "@/server/support"
 
 /** Models that belong to a farm. Every query on them is pinned to one tenantId. */
 const TENANT_MODELS = new Set([
@@ -83,7 +85,10 @@ export function tenantDb(tenantId: string) {
             a.where = { ...a.where, tenantId }
             a.create = { ...a.create, tenantId }
           }
-          return query(a)
+          const result = await query(a)
+          // Inside a FarmForYou support visit, every write is logged for the farm admin to see.
+          if (WRITE_OPS.has(operation)) await noteSupportWrite(tenantId, model, operation, result)
+          return result
         },
       },
     },

@@ -1174,7 +1174,8 @@
       "display": "Easy on the eyes",
       "displayHint": "Soft colours, dark or light, larger text",
       "yourShop": "Your shop",
-      "yourShopHint": "See it as customers do. The bar at the top brings you back."
+      "yourShopHint": "See it as customers do. The bar at the top brings you back.",
+      "exitSupport": "Exit support"
     },
     "feed": {
       "buyTitle": "Feed bought",
@@ -1354,6 +1355,27 @@
       "space": "Space used: {used} of {total} MB",
       "spaceFull": "Your video space is full. Delete a video to add another, or call FarmForYou for more space.",
       "uploadsPlan": "Sending videos from your phone comes with the Starter plan. YouTube videos below are free. Videos you sent before stay saved but don't show on your shop."
+    },
+    "support": {
+      "bar": "FarmForYou support · {farm} · until {until}",
+      "exit": "Exit",
+      "blocked": "Farm logins and passwords are handled in FarmForYou admin, not inside the farm app.",
+      "logTitle": "FarmForYou support visits",
+      "logHint": "When FarmForYou opens your farm app to help you, it is recorded here: who, why, when, and what they changed.",
+      "logEmpty": "No support visits yet.",
+      "openNow": "Open now",
+      "noChanges": "Looked only, nothing changed.",
+      "change_added": "{count, plural, one {# added} other {# added}} in {area}",
+      "change_changed": "{count, plural, one {# change} other {# changes}} in {area}",
+      "change_removed": "{count, plural, one {# removed} other {# removed}} in {area}",
+      "area_orders": "orders",
+      "area_money": "money",
+      "area_products": "products",
+      "area_customers": "customers",
+      "area_delivery": "delivery",
+      "area_poultry": "poultry",
+      "area_settings": "settings",
+      "area_other": "other records"
     }
   },
   "login": {
@@ -1533,7 +1555,9 @@
     "video_banner_upload_only": "YouTube videos can only be in “Watch our farm”.",
     "media_off": "Video storage isn't set up yet. Ask FarmForYou to switch it on.",
     "video_space": "Not enough video space left for this one. Delete a video, choose a shorter one, or call FarmForYou for more space.",
-    "video_uploads_plan": "Sending videos from your phone comes with the Starter plan."
+    "video_uploads_plan": "Sending videos from your phone comes with the Starter plan.",
+    "support_reason": "Write a few words on why you're opening the farm app.",
+    "support_blocked": "Farm logins and passwords are handled in FarmForYou admin, not inside the farm app."
   },
   "my": {
     "connectTitle": "Connect with the farm",
@@ -1706,7 +1730,16 @@
     "save": "Save",
     "saved": "Saved.",
     "videoSpace": "Video space (MB)",
-    "videoSpaceHint": "Uses {used} MB now. Leave empty for the standard {standard} MB."
+    "videoSpaceHint": "Uses {used} MB now. Leave empty for the standard {standard} MB.",
+    "support": {
+      "title": "Open this farm's app as FarmForYou support",
+      "hint": "To fix something for the farm. You stay signed in as yourself, can change anything, and the visit ends after an hour. Every change is recorded, and the farm admin sees the visit and your reason. Farm logins and passwords stay here in admin.",
+      "reason": "Why are you opening it?",
+      "reasonPlaceholder": "e.g. Owner called: Tuesday's order is missing",
+      "open": "Open farm app as support",
+      "opening": "Opening…",
+      "ended": "Your support visit ended: it was open for an hour. Open it again from the farm's page if you need more time."
+    }
   },
   "display": {
     "title": "Easy on the eyes",

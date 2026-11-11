@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { OWNER_ONLY, ORDER_DESK, requireStaff } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { noteSupportWrite } from "@/server/support"
 import { rupeesToPaise } from "@/domain/money"
 import { isValidUpiId } from "@/domain/upi"
 import { normaliseIndianMobile } from "@/domain/phone"
@@ -138,6 +139,7 @@ export async function saveFarmSettings(raw: unknown): Promise<Result> {
       freeAbovePaise: rupeesToPaise(s.freeAboveRupees),
     },
   })
+  await noteSupportWrite(tenant.id, "Tenant", "update", { id: tenant.id })
   revalidatePath("/", "layout")
   return { ok: true }
 }
@@ -157,6 +159,7 @@ export async function saveFeatures(raw: unknown): Promise<Result> {
     choices[key] = want
   }
   await prisma.tenant.update({ where: { id: tenant.id }, data: { features: choices } })
+  await noteSupportWrite(tenant.id, "Tenant", "update", { id: tenant.id })
   revalidatePath("/", "layout")
   return { ok: true }
 }
@@ -181,6 +184,7 @@ export async function saveDeliveryArea(raw: unknown): Promise<Result> {
     where: { id: tenant.id },
     data: { farmLat: lat, farmLng: lng, deliveryRadiusKm: radiusKm && radiusKm > 0 ? radiusKm : null, servedPincodes: pins.valid },
   })
+  await noteSupportWrite(tenant.id, "Tenant", "update", { id: tenant.id })
   revalidatePath("/", "layout")
   return { ok: true }
 }

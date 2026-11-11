@@ -700,6 +700,36 @@ CREATE TABLE "production_entries" (
     CONSTRAINT "production_entries_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "support_visits" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "adminId" TEXT NOT NULL,
+    "adminAuthUserId" TEXT NOT NULL,
+    "adminName" TEXT NOT NULL,
+    "reason" TEXT NOT NULL,
+    "endsAt" TIMESTAMP(3) NOT NULL,
+    "endedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "support_visits_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "support_changes" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "visitId" TEXT NOT NULL,
+    "model" TEXT NOT NULL,
+    "operation" TEXT NOT NULL,
+    "recordId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "support_changes_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -855,6 +885,15 @@ CREATE INDEX "expenses_batchId_idx" ON "expenses"("batchId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "production_entries_tenantId_date_productId_key" ON "production_entries"("tenantId", "date", "productId");
+
+-- CreateIndex
+CREATE INDEX "support_visits_tenantId_createdAt_idx" ON "support_visits"("tenantId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "support_changes_visitId_idx" ON "support_changes"("visitId");
+
+-- CreateIndex
+CREATE INDEX "support_changes_tenantId_createdAt_idx" ON "support_changes"("tenantId", "createdAt");
 
 -- AddForeignKey
 ALTER TABLE "tenant_settings" ADD CONSTRAINT "tenant_settings_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;

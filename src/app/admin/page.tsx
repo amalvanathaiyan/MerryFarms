@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button"
 import { FarmMark, StatusBadge } from "./farm-bits"
 
 /** Every farm on the platform: how many are on trial or paused, and how each is doing this month. */
-export default async function AdminHome() {
+export default async function AdminHome({ searchParams }: { searchParams: Promise<{ support?: string }> }) {
+  const { support } = await searchParams
   const t = await getTranslations("admin")
   const locale = await getLocale()
   const now = new Date()
@@ -27,6 +28,8 @@ export default async function AdminHome() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Back from a support visit that ran out of time. */}
+      {support === "ended" && <p role="status" className="rounded-xl bg-yolk p-3 font-medium text-yolk-foreground">{t("support.ended")}</p>}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold sm:text-3xl">{t("farms")}</h1>
         <Button asChild size="lg" className="h-12 bg-sun text-base text-sun-foreground hover:bg-[hsl(45_100%_44%)]">

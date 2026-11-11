@@ -964,3 +964,38 @@ model ProductionEntry {
   @@unique([tenantId, date, productId])
   @@map("production_entries")
 }
+
+/// A super admin working inside one farm's app to fix something ("support mode"). Started from FarmForYou admin
+/// with a reason; ends on Exit or after an hour. The farm admin sees every visit and what changed.
+/// See src/server/support.ts.
+model SupportVisit {
+  id              String    @id @default(uuid())
+  tenantId        String
+  adminId         String // platform_admins.id
+  adminAuthUserId String
+  adminName       String
+  reason          String
+  endsAt          DateTime
+  endedAt         DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+
+  @@index([tenantId, createdAt])
+  @@map("support_visits")
+}
+
+/// One change made during a support visit: which kind of record, and whether it was added, changed or removed.
+model SupportChange {
+  id        String   @id @default(uuid())
+  tenantId  String
+  visitId   String
+  model     String // e.g. Order, Product, Tenant
+  operation String // create | update | delete (and their *Many forms)
+  recordId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([visitId])
+  @@index([tenantId, createdAt])
+  @@map("support_changes")
+}
