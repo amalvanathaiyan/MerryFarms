@@ -281,6 +281,188 @@ function henScene(id: string, L: Light) {
   ${chick(232, 304, 0.3, awake)}${chick(256, 308, 1, awake)}`
 }
 
+// ── The bullock cart, in the same flat, bold style ───────────────────────────
+
+/** Points along a cubic curve, for shapes that taper (horns, tail). */
+function cubicPts(p0: number[], p1: number[], p2: number[], p3: number[], n = 20): [number, number][] {
+  return Array.from({ length: n + 1 }, (_, i) => {
+    const t = i / n, u = 1 - t
+    return [
+      u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0],
+      u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1],
+    ]
+  })
+}
+
+/** A filled shape along points, `w0` wide at the start narrowing to `w1`, from t0 to t1 of the way along. */
+function taper(pts: [number, number][], w0: number, w1: number, t0 = 0, t1 = 1, fill = "#000") {
+  const n = pts.length - 1
+  const left: string[] = [], right: string[] = []
+  for (let i = Math.round(t0 * n); i <= Math.round(t1 * n); i++) {
+    const [x, y] = pts[i]
+    const [ax, ay] = pts[Math.max(0, i - 1)], [bx, by] = pts[Math.min(n, i + 1)]
+    const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1
+    const w = (w0 + (w1 - w0) * (i / n)) / 2
+    left.push(`${(x - (dy / len) * w).toFixed(1)} ${(y + (dx / len) * w).toFixed(1)}`)
+    right.unshift(`${(x + (dy / len) * w).toFixed(1)} ${(y - (dx / len) * w).toFixed(1)}`)
+  }
+  return `<path d="M${left.join("L")}L${right.join("L")}Z" fill="${fill}"/>`
+}
+
+/** A horn painted for Pongal: cream at the base, a gold band, then red to the tip. */
+function horn(p0: number[], p1: number[], p2: number[], p3: number[], w: number, dim: boolean) {
+  const pts = cubicPts(p0, p1, p2, p3)
+  // The far horn sits a little in shadow.
+  const [base, band, tip] = dim ? ["#CFC4A8", "#D9A31A", "#B52E25"] : ["#EADFC4", "#F5B700", "#D7362B"]
+  return taper(pts, w, 1.2, 0, 1, base) + taper(pts, w, 1.2, 0.42, 0.62, band) + taper(pts, w, 1.2, 0.62, 1, tip) +
+    (dim ? "" : taper(pts, w * 0.35, 0.4, 0.05, 0.4, "#FFFFFF80"))
+}
+
+/**
+ * A Kangayam bull, hooves at 0,0, facing left. Grey-white with the breed's darker grey hump and shoulders, a long
+ * face with a dark muzzle and dark-rimmed eyes, a deep dewlap, and tall horns painted for Pongal. Bells on a red
+ * neck cord, a nose rope. `far` is the bull on the other side of the yoke, in its shadow.
+ * The legs step, the head nods and the tail swings as it walks.
+ */
+function bull(x: number, y: number, s: number, far: boolean, delay: number) {
+  const P = far
+    ? { body: "#D9D3C8", shade: "#C3BBAE", deep: "#A99F90", grey: "#B9B1A3", lines: "#B0A797" }
+    : { body: "#F3F0E9", shade: "#DCD5C8", deep: "#C4BCAE", grey: "#CFC7B8", lines: "#C9C1B3" }
+  const hoof = (hx: number) => `<path d="M${hx - 6} -6 h12 l1 6 h-14 z" fill="#3A3029"/><path d="M${hx} -6 v6" stroke="#1F1A16" stroke-width="1"/>`
+  // Fore leg: forearm, knee, slim cannon, fetlock, hoof. Hind leg: thigh, the hock bending back, cannon, hoof.
+  const fore = (lx: number, d: number, col: string, lean = 0) => `<g class="fs-step" style="animation-delay:-${d}s"><g transform="rotate(${lean} ${lx} -72)">
+    <path d="M${lx - 9} -72 C${lx - 10} -50 ${lx - 7} -36 ${lx - 6} -30 C${lx - 6} -22 ${lx - 5} -14 ${lx - 6} -6 h12 C${lx + 5} -14 ${lx + 5} -22 ${lx + 6} -30 C${lx + 8} -38 ${lx + 9} -54 ${lx + 8} -72 Z" fill="${col}"/>
+    <ellipse cx="${lx}" cy="-30" rx="6.5" ry="4" fill="${col}"/>${hoof(lx)}</g></g>`
+  const hind = (lx: number, d: number, col: string, lean = 0) => `<g class="fs-step" style="animation-delay:-${d}s"><g transform="rotate(${lean} ${lx} -70)">
+    <path d="M${lx - 12} -70 C${lx - 8} -50 ${lx - 4} -38 ${lx - 4} -32 C${lx - 4} -24 ${lx - 6} -14 ${lx - 6} -6 h12 C${lx + 6} -14 ${lx + 6} -22 ${lx + 9} -30 C${lx + 14} -40 ${lx + 14} -56 ${lx + 10} -72 Z" fill="${col}"/>
+    <path d="M${lx + 9} -30 C${lx + 11} -27 ${lx + 9} -24 ${lx + 6} -24" stroke="${P.lines}" stroke-width="1.4" fill="none"/>${hoof(lx)}</g></g>`
+  return `<g transform="translate(${x} ${y}) scale(${s})">
+    <ellipse cx="10" cy="1" rx="90" ry="6.5" fill="#000" opacity=".13"/>
+    ${fore(-14, delay + 0.65, P.shade, 7)}${hind(84, delay + 0.15, P.shade, -6)}
+    <g transform="translate(0 -10)"><g class="fs-tail" style="animation-delay:-${delay}s">
+      <path d="M102 -88 C110 -70 108 -46 104 -22" stroke="${P.shade}" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+      <path d="M104 -26 C110 -18 108 -8 102 -4 C98 -10 98 -20 104 -26 Z" fill="#2E2621"/>
+    </g>
+    <path d="M-38 -72 C-44 -86 -38 -98 -24 -102 C-20 -114 -8 -124 6 -122 C16 -120 22 -112 24 -104 C44 -102 66 -100 84 -98 C96 -97 104 -90 104 -80 C104 -70 100 -62 94 -56 C90 -52 84 -50 78 -50 C60 -46 30 -46 10 -48 C-6 -50 -22 -52 -30 -58 C-36 -62 -38 -66 -38 -72 Z" fill="${P.body}"/>
+    <path d="M-24 -102 C-20 -114 -8 -124 6 -122 C16 -120 22 -112 24 -104 C20 -92 12 -82 0 -78 C-14 -76 -26 -82 -30 -92 Z" fill="${P.grey}"/>
+    <path d="M-38 -72 C-40 -84 -36 -94 -28 -98 C-24 -86 -18 -74 -10 -64 C-18 -58 -28 -58 -32 -60 C-36 -63 -38 -67 -38 -72 Z" fill="${P.grey}" opacity=".75"/>
+    <path d="M10 -48 C30 -46 60 -46 78 -50 C84 -50 90 -52 94 -56 C80 -58 56 -56 30 -56 C18 -56 12 -54 10 -48 Z" fill="${P.shade}"/>
+    <path d="M94 -56 C100 -62 104 -70 104 -80 C98 -74 92 -66 86 -60 Z" fill="${P.shade}"/>
+    <path d="M-8 -96 C2 -86 2 -70 -6 -58 M70 -96 C82 -86 84 -70 78 -56 M22 -62 C32 -67 46 -67 56 -62" stroke="${P.lines}" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <path d="M30 -48 C32 -44 36 -42 40 -42 C38 -46 36 -48 30 -48 Z" fill="${P.shade}"/></g>
+    ${fore(-26, delay, P.body, -8)}${hind(72, delay + 0.5, P.body, 7)}
+    <g transform="translate(0 -10)"><path d="M-40 -74 C-50 -68 -52 -56 -44 -48 C-40 -46 -34 -50 -30 -58 C-34 -62 -38 -68 -40 -74 Z" fill="${P.shade}"/>
+    <path d="M-44 -66 C-46 -60 -45 -54 -42 -50 M-40 -68 C-41 -62 -40 -56 -37 -52" stroke="${P.lines}" stroke-width="1.2" fill="none"/>
+    <g class="fs-nod" style="animation-delay:-${delay}s">
+      ${horn([-58, -102], [-66, -114], [-64, -128], [-54, -140], 6.5, true)}
+      <path d="M-28 -100 C-40 -108 -52 -108 -60 -102 C-70 -96 -78 -84 -84 -70 C-88 -62 -88 -56 -84 -52 C-80 -48 -72 -48 -68 -52 C-60 -60 -50 -70 -40 -74 C-36 -80 -32 -90 -28 -100 Z" fill="${P.body}"/>
+      <path d="M-40 -74 C-36 -80 -32 -90 -28 -100 C-34 -96 -40 -92 -46 -88 C-48 -82 -46 -78 -40 -74 Z" fill="${P.grey}" opacity=".8"/>
+      <path d="M-84 -70 C-88 -62 -88 -56 -84 -52 C-80 -48 -72 -48 -68 -52 C-70 -58 -74 -64 -78 -70 C-80 -71 -82 -71 -84 -70 Z" fill="#4A4038"/>
+      <path d="M-84 -60 q2 -2 4 0" stroke="#1F1A16" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      <path d="M-80 -60 C-74 -64 -66 -62 -60 -56" stroke="#B5452B" stroke-width="1.8" fill="none"/>
+      <ellipse cx="-63" cy="-88" rx="5.5" ry="3.8" fill="${P.deep}"/>
+      <ellipse cx="-63.5" cy="-88" rx="3" ry="2.3" fill="#211A15"/><circle cx="-64.4" cy="-88.8" r=".8" fill="#fff"/>
+      <path d="M-70 -80 C-68 -76 -66 -72 -66 -66" stroke="${P.lines}" stroke-width="1.3" fill="none"/>
+      ${horn([-50, -104], [-56, -118], [-50, -132], [-38, -142], 7.5, false)}
+      <path d="M-46 -98 C-40 -102 -32 -100 -26 -94 C-30 -90 -38 -90 -46 -98 Z" fill="${P.shade}"/>
+      <path d="M-43 -97 C-38 -99 -33 -97 -30 -94 C-34 -93 -39 -94 -43 -97 Z" fill="#D9A79A"/>
+      <path d="M-56 -104 C-54 -108 -50 -108 -48 -104" stroke="#D7362B" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    </g>
+    <path d="M-42 -80 C-44 -70 -40 -60 -32 -56" stroke="#C8321E" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+    <circle cx="-41" cy="-66" r="3.4" fill="#E0A21B"/><circle cx="-36" cy="-59" r="3.4" fill="#E0A21B"/><circle cx="-41" cy="-66" r="1.1" fill="#8A6510"/><circle cx="-36" cy="-59" r="1.1" fill="#8A6510"/></g>
+  </g>`
+}
+
+/** The cart wheel: an iron tyre on a wooden rim, ten spokes and a big hub. Turns as the cart rolls. */
+const cartWheel = (cx: number, cy: number, r: number) => {
+  const spokes = Array.from({ length: 10 }, (_, i) => {
+    const a = (i * Math.PI) / 5
+    return `<line x1="${(Math.cos(a) * 8).toFixed(1)}" y1="${(Math.sin(a) * 8).toFixed(1)}" x2="${(Math.cos(a) * (r - 7)).toFixed(1)}" y2="${(Math.sin(a) * (r - 7)).toFixed(1)}"/>`
+  }).join("")
+  return `<g transform="translate(${cx} ${cy})"><g class="fs-wheel">
+    <circle r="${r}" fill="none" stroke="#3A2A1C" stroke-width="4"/>
+    <circle r="${r - 4.5}" fill="none" stroke="#8A5A35" stroke-width="7"/>
+    <path d="M${r * 0.62} ${r * 0.62} A${r - 4.5} ${r - 4.5} 0 0 1 ${-r * 0.62} ${r * 0.62}" stroke="#6E4428" stroke-width="7" fill="none"/>
+    <g stroke="#7A4B2A" stroke-width="4.5" stroke-linecap="round">${spokes}</g>
+    <circle r="11" fill="#6B4A2E"/><circle r="5" fill="#3A2A1C"/>
+    <path d="M${-r * 0.7} ${-r * 0.7} A${r} ${r} 0 0 1 ${r * 0.2} ${-r * 0.98}" stroke="#6E6258" stroke-width="2" fill="none"/>
+    ${[0, 72, 144, 216, 288].map((d) => `<circle cx="${(Math.cos((d * Math.PI) / 180) * 8).toFixed(1)}" cy="${(Math.sin((d * Math.PI) / 180) * 8).toFixed(1)}" r="1.2" fill="#C9A66A"/>`).join("")}
+  </g></g>`
+}
+
+/** The farmer up front: mundasu, moustache, white shirt and veshti, a gold towel on his shoulder; reins in one hand, the stick raised in the other. */
+const driverFigure = () => `<g>
+  <g class="fs-whip">
+    <path d="M6 -34 C14 -40 18 -46 18 -54" stroke="#8E5328" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+    <circle cx="18" cy="-55" r="3.4" fill="#8E5328"/>
+    <path d="M19 -56 L-34 -112" stroke="#6B4A2E" stroke-width="2.6" stroke-linecap="round"/>
+  </g>
+  <path d="M10 -6 L-14 -8 C-22 -8 -26 -2 -25 6 L-24 24 L-14 24 L-14 6 L8 6 Z" fill="#FFFDF6"/>
+  <path d="M-4 -6 C-6 0 -10 4 -14 6 M-20 4 L-20 22" stroke="#E2DCCC" stroke-width="1.4" fill="none"/>
+  <path d="M-14 22 h-10 l-6 4 h16 z" fill="#8E5328"/>
+  <path d="M-12 -40 C-16 -26 -14 -12 -8 -4 L10 -4 C14 -14 14 -30 8 -40 C2 -44 -6 -44 -12 -40 Z" fill="#FFFDF6"/>
+  <path d="M-2 -18 C0 -12 2 -8 2 -4 M-9 -30 C-10 -22 -9 -14 -6 -8" stroke="#E2DCCC" stroke-width="1.3" fill="none"/>
+  <path d="M2 -42 C8 -42 12 -38 12 -30 L8 -10 L2 -12 L6 -30 C6 -34 4 -38 0 -40 Z" fill="#F5B700"/>
+  <path d="M8 -10 L2 -12 M4 -36 L10 -34" stroke="#C8321E" stroke-width="1.8"/>
+  <path d="M-8 -36 C-14 -28 -18 -22 -22 -18" stroke="#8E5328" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+  <circle cx="-23" cy="-17" r="3.4" fill="#8E5328"/>
+  <path d="M-4 -46 h8 v7 h-8z" fill="#7E4722"/>
+  <ellipse cx="0" cy="-54" rx="9.5" ry="10.5" fill="#9A5A2C"/>
+  <path d="M-9 -55 C-12.5 -53 -12.5 -49 -9 -48 Z" fill="#9A5A2C"/>
+  <ellipse cx="7.5" cy="-53" rx="2.4" ry="3.4" fill="#8E5328"/>
+  <circle cx="-5" cy="-56" r="1.4" fill="#1F140E"/>
+  <path d="M-8.5 -59.5 q3 -2 6 0" stroke="#1F140E" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+  <path d="M-12 -48.5 C-9 -52 -4 -51 -1 -48.5 C-4 -46.5 -9 -45.5 -12 -48.5 Z" fill="#1F140E"/>
+  <path d="M-8 -45 q2 1.2 4 0" stroke="#5A2E14" stroke-width="1" fill="none"/>
+  <path d="M-10.5 -58 C-12.5 -68 -2 -72 6 -70 C12 -68 12.5 -62 10.5 -58 C4 -61 -4 -61 -10.5 -58 Z" fill="#FFFDF6"/>
+  <path d="M-10 -61.5 C-2 -65.5 6 -65.5 11 -61.5 M-8 -65.5 C-1 -68.5 5 -68.5 9 -66" stroke="#E2DCCC" stroke-width="1.2" fill="none"/>
+  <path d="M9.5 -64 q6.5 -2 7.5 3 q-1 6 -5 9 q0 -6 -2.5 -8z" fill="#FFFDF6"/>
+</g>`
+
+/** The load: a bit of every kind of farm. Sacks, a basket of eggs, greens and tomatoes, bananas, a milk can, coconuts. */
+const load = () => `
+  <path d="M372 -6 C366 -30 372 -46 388 -48 C404 -46 408 -28 404 -6 Z" fill="#D9C08F"/><path d="M380 -44 q8 -6 16 0" stroke="#A88A55" stroke-width="2" fill="none"/><path d="M384 -47 l4 -6 l4 6" stroke="#8A6B3A" stroke-width="2" fill="none"/><path d="M378 -30 q10 4 20 0" stroke="#C4A672" stroke-width="1.4" fill="none"/>
+  <path d="M410 -6 C406 -24 410 -36 422 -38 C434 -36 438 -24 434 -6 Z" fill="#C9AE7A"/>
+  <g transform="translate(456 -6)"><path d="M-20 0 L-24 -26 H24 L20 0 Z" fill="#C98A3E"/><path d="M-22 -14 H22 M-21 -6 H21" stroke="#A86B2C" stroke-width="2"/><path d="M-16 0 L-18 -26 M-6 0 L-6 -26 M6 0 L6 -26 M16 0 L18 -26" stroke="#B57A33" stroke-width="1.4"/>
+    ${[-14, -4, 6, 16].map((ex, i) => `<ellipse cx="${ex}" cy="-29" rx="5.5" ry="7" fill="${i % 2 ? "#F3E6CF" : "#DDBF94"}"/>`).join("")}</g>
+  <g transform="translate(340 -6)"><rect x="-22" y="-22" width="44" height="22" rx="2" fill="#A86B3C"/><path d="M-22 -11 H22" stroke="#8A5530" stroke-width="2"/>
+    <path d="M-14 -22 C-18 -40 -8 -46 -6 -30 M-4 -22 C-4 -44 8 -46 4 -26 M8 -22 C12 -38 22 -36 14 -22" stroke="#3E8B4E" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="-12" cy="-24" r="5" fill="#D7362B"/><circle cx="12" cy="-25" r="5" fill="#E04A2E"/><ellipse cx="2" cy="-24" rx="4" ry="6" fill="#6B3A7A"/></g>
+  <g transform="translate(494 -6)"><path d="M-9 -34 h18 v6 l6 6 v22 h-30 v-22 l6 -6 z" fill="#C9CED3"/><rect x="-10" y="-38" width="20" height="5" rx="2" fill="#AEB6BD"/><path d="M-15 -20 h30" stroke="#9AA3AB" stroke-width="2"/><path d="M-11 -18 v14" stroke="#E6EAED" stroke-width="3" stroke-linecap="round"/></g>
+  <g transform="translate(526 -10) scale(1.25)"><g class="fs-sway" style="animation-delay:-.6s"><g transform="translate(-9 0) rotate(-24)"><path d="M-3 0 C-6 -8 -6 -18 -2 -26 C-1 -28 1 -28 1 -26 C-2 -18 -1 -9 3 -1 Z" fill="#E9B514"/><path d="M-2 -26 C-1 -28 1 -28 1 -26 L0 -24 Z" fill="#6E8B2E"/></g><g transform="translate(-3 -1) rotate(-10)"><path d="M-3 0 C-6 -8 -6 -18 -2 -26 C-1 -28 1 -28 1 -26 C-2 -18 -1 -9 3 -1 Z" fill="#F5C518"/><path d="M-2 -26 C-1 -28 1 -28 1 -26 L0 -24 Z" fill="#6E8B2E"/></g><g transform="translate(3 -1) rotate(4)"><path d="M-3 0 C-6 -8 -6 -18 -2 -26 C-1 -28 1 -28 1 -26 C-2 -18 -1 -9 3 -1 Z" fill="#F5C518"/><path d="M-2 -26 C-1 -28 1 -28 1 -26 L0 -24 Z" fill="#6E8B2E"/></g><g transform="translate(9 0) rotate(18)"><path d="M-3 0 C-6 -8 -6 -18 -2 -26 C-1 -28 1 -28 1 -26 C-2 -18 -1 -9 3 -1 Z" fill="#E9B514"/><path d="M-2 -26 C-1 -28 1 -28 1 -26 L0 -24 Z" fill="#6E8B2E"/></g><g transform="translate(-6 4) rotate(-16)"><path d="M-3 0 C-6 -8 -6 -18 -2 -26 C-1 -28 1 -28 1 -26 C-2 -18 -1 -9 3 -1 Z" fill="#F7CF3A"/><path d="M-2 -26 C-1 -28 1 -28 1 -26 L0 -24 Z" fill="#6E8B2E"/></g><g transform="translate(0 4) rotate(-2)"><path d="M-3 0 C-6 -8 -6 -18 -2 -26 C-1 -28 1 -28 1 -26 C-2 -18 -1 -9 3 -1 Z" fill="#F7CF3A"/><path d="M-2 -26 C-1 -28 1 -28 1 -26 L0 -24 Z" fill="#6E8B2E"/></g><g transform="translate(6 4) rotate(12)"><path d="M-3 0 C-6 -8 -6 -18 -2 -26 C-1 -28 1 -28 1 -26 C-2 -18 -1 -9 3 -1 Z" fill="#F7CF3A"/><path d="M-2 -26 C-1 -28 1 -28 1 -26 L0 -24 Z" fill="#6E8B2E"/></g><path d="M-10 6 C-4 9 4 9 10 6" stroke="#7A5A2E" stroke-width="3.2" fill="none" stroke-linecap="round"/></g></g>
+  <g fill="#5E9E45"><circle cx="398" cy="-56" r="8"/><circle cx="412" cy="-54" r="8"/><circle cx="405" cy="-64" r="8"/></g><g fill="#9CCB78"><circle cx="395" cy="-59" r="2.2"/><circle cx="409" cy="-57" r="2.2"/><circle cx="402" cy="-67" r="2.2"/></g><path d="M405 -72 l-2 -8 M405 -72 l6 -6" stroke="#3E7A2E" stroke-width="2.4" stroke-linecap="round"/>`
+
+function cartScene(id: string, L: Light, plain: boolean) {
+  const road = `<path d="M0 ${plain ? 304 : 288} C200 ${plain ? 300 : 282} 440 ${plain ? 300 : 284} 640 ${plain ? 304 : 290} V340 H0 Z" fill="#E3C79A"/>
+    <path d="M0 ${plain ? 318 : 312} C220 314 420 314 640 318" stroke="#CDAE7C" stroke-width="3" fill="none" stroke-dasharray="14 10"/>`
+  const cart = `
+    <ellipse cx="440" cy="306" rx="122" ry="7" fill="#000" opacity=".12"/>
+    ${bull(182, 298, 0.95, true, 0.5)}
+    <path d="M140 196 L334 234" stroke="#6B4A2E" stroke-width="7" stroke-linecap="round"/>
+    <g opacity=".55">${cartWheel(468, 250, 46)}</g>
+    <g transform="translate(0 244)">
+      <path d="M318 -4 h232 l-6 12 h-220 z" fill="#6B4024"/>
+      <path d="M318 -52 V-14 M362 -54 V-14 M406 -56 V-14 M450 -56 V-14 M494 -54 V-14 M538 -52 V-14" stroke="#7A4B2A" stroke-width="3.4" stroke-linecap="round"/>
+      <path d="M316 -50 C400 -56 470 -56 552 -50" stroke="#8A5A35" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <g transform="translate(-48 -12) scale(1.15)">${load()}</g>
+      <rect x="312" y="-20" width="246" height="18" rx="3" fill="#A86B3C"/>
+      <path d="M352 -20 v18 M394 -20 v18 M436 -20 v18 M478 -20 v18 M520 -20 v18" stroke="#8A5530" stroke-width="1.6"/>
+      <path d="M318 -13 q12 -3 24 0 t24 0 M400 -9 q12 -3 24 0 t24 0 M486 -13 q12 -3 24 0 t24 0" stroke="#C08250" stroke-width="1.2" fill="none"/>
+      <circle cx="320" cy="-11" r="1.6" fill="#4A2E18"/><circle cx="550" cy="-11" r="1.6" fill="#4A2E18"/>
+    </g>
+    <path d="M306 238 L300 264 M326 240 L322 264" stroke="#8A6B3A" stroke-width="1.8"/>
+    <rect x="292" y="262" width="38" height="5" rx="2" fill="#7A4B2A"/>
+    <g transform="translate(336 232) scale(1.22)">${driverFigure()}</g>
+    <rect x="434" y="242" width="24" height="12" rx="2" fill="#4A2E18"/>
+    ${cartWheel(446, 258, 48)}
+    ${bull(150, 306, 1, false, 0)}
+    <path d="M114 198 L160 191" stroke="#7A4B2A" stroke-width="8" stroke-linecap="round"/><path d="M114 198 L160 191" stroke="#9A6A40" stroke-width="2.4" stroke-linecap="round" transform="translate(0 -2)"/><path d="M122 191 v15 M152 186 v15" stroke="#5A3A20" stroke-width="3" stroke-linecap="round"/>
+    <path d="M72 236 C130 226 250 222 308 212" stroke="#B5452B" stroke-width="1.6" fill="none"/>
+    <g class="fs-dust" fill="#E9D6B0" opacity=".8"><circle cx="512" cy="300" r="7"/><circle cx="528" cy="296" r="5"/><circle cx="540" cy="301" r="4"/></g>`
+  if (plain) return `${road}${cart}`
+  return `${sky(id, L)}${hills()}${road}${cart}${tint(L)}${L.stars ? fireflies() : ""}`
+}
+
 const VIEWBOX: Record<DrawnScene, string> = { gate: "0 0 640 340", stall: "0 0 640 340", hen: "150 140 360 190" }
 
 /** The whole <svg> for a scene in a light. Decorative: the words on it are said elsewhere on the page. */
@@ -291,5 +473,15 @@ export function farmSceneSvg(kind: DrawnScene, phase: ScenePhase, words: SceneWo
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VIEWBOX[kind]}" class="farm-scene" aria-hidden="true" focusable="false">${body}</svg>`
 }
 
+/** The cart alone: the bulls' noses to the bananas, the stick's tip to the road. */
+const CART_PLAIN_VIEWBOX = "48 70 548 250"
+
+/** FarmForYou's bullock cart in the farm pictures' style: on the road with the farmland behind, or alone (`plain`). */
+export function cartSceneSvg(phase: ScenePhase, plain = false): string {
+  const id = `fs-cart-${phase}`
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${plain ? CART_PLAIN_VIEWBOX : "0 0 640 340"}" class="farm-scene" aria-hidden="true" focusable="false">${cartScene(id, LIGHT[phase], plain)}</svg>`
+}
+
 /** Width over height, so the box is sized before the drawing is in. */
 export const SCENE_RATIO: Record<DrawnScene, string> = { gate: "640 / 340", stall: "640 / 340", hen: "360 / 190" }
+export const CART_RATIO = { scene: "640 / 340", plain: "548 / 250" } as const

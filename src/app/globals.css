@@ -582,6 +582,20 @@
 @keyframes fs-flicker { 0%, 100% { opacity: 0.85; } 45% { opacity: 1; } 70% { opacity: 0.9; } }
 @keyframes fs-birds { from { transform: translate(-60px, 96px); } to { transform: translate(700px, 52px); } }
 @keyframes fs-flap { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.4); } }
+/* The bullock cart: the wheels roll (the cart heads left), the bulls step, nod and swing their tails, the farmer
+   flicks his stick, dust puffs from the wheel. */
+.fs-wheel { transform-origin: 0 0; animation: fs-roll 2.6s linear infinite; }
+.fs-step { transform-box: fill-box; transform-origin: 50% 0; animation: fs-step 1.3s ease-in-out infinite; }
+.fs-nod { transform-box: fill-box; transform-origin: 100% 70%; animation: fs-nod 1.3s ease-in-out infinite; }
+.fs-tail { transform-box: fill-box; transform-origin: 50% 0; animation: fs-tail 2.2s ease-in-out infinite; }
+.fs-whip { transform-origin: 8px -30px; animation: fs-whip 2.6s ease-in-out infinite; }
+.fs-dust { animation: fs-dust 1.6s ease-out infinite; }
+@keyframes fs-roll { to { transform: rotate(-360deg); } }
+@keyframes fs-step { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+@keyframes fs-nod { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-3deg); } }
+@keyframes fs-tail { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(5deg); } }
+@keyframes fs-whip { 0%, 70%, 100% { transform: rotate(0); } 80% { transform: rotate(-12deg); } 90% { transform: rotate(4deg); } }
+@keyframes fs-dust { from { transform: translate(0, 0); opacity: 0.9; } to { transform: translate(26px, -6px); opacity: 0; } }
 
 /* Dark theme: a touch dimmer. Soft colours: calmer. Both: both. */
 @media (prefers-color-scheme: dark) {
@@ -591,10 +605,6 @@
 :root[data-theme="dark"] .farm-scene { filter: brightness(0.9) saturate(0.92); }
 :root[data-soft="on"] .farm-scene { filter: saturate(0.8) brightness(0.97); }
 :root[data-soft="on"][data-theme="dark"] .farm-scene { filter: brightness(0.88) saturate(0.78); }
-
-/* The bullock cart's daytime drawing in evening and night light (FarmScene lays one of these over it). */
-.cart-dusk { background: linear-gradient(to bottom, rgb(111 106 166 / 0.45), rgb(238 142 108 / 0.28) 55%, rgb(122 62 107 / 0.18)); mix-blend-mode: multiply; }
-.cart-night { background: linear-gradient(to bottom, rgb(12 24 56 / 0.82), rgb(30 49 96 / 0.62) 55%, rgb(10 21 54 / 0.55)); mix-blend-mode: multiply; }
 
 /* ── Save notices (src/components/cheer.tsx) ─────────────────────────────────────────────────────────────────
    Just under the farm's name bar: it slides down from there, so it never covers the bottom menu or a Save bar

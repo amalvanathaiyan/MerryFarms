@@ -45,14 +45,15 @@ describe("which picture", () => {
     expect(heroes("06:00", 6)).toEqual(heroes("16:00", 6))
   })
 
-  it("never shows the daytime cart after dark", () => {
-    const nights = [...heroes("19:30", 12), ...heroes("17:30", 12)]
-    expect(nights).not.toContain("cart")
-    expect(new Set(nights)).toEqual(new Set(["gate", "stall"]))
+  it("keeps the same picture through the evening and night too, the cart included", () => {
+    expect(heroes("19:30", 6)).toEqual(heroes("10:00", 6))
+    expect(new Set(heroes("21:00", 6))).toEqual(new Set(["gate", "stall", "cart"]))
   })
 
-  it("shows the hen with her eggs in the small spots", () => {
-    expect(sceneFor({ farmScenes: true, spot: "small", at: ist("2026-11-10", "10:00") })).toBe("hen")
+  it("takes turns in the small spots: the hen with her eggs, then the cart", () => {
+    const small = Array.from({ length: 4 }, (_, i) => sceneFor({ farmScenes: true, spot: "small", at: ist(`2026-11-${10 + i}`, "10:00") }))
+    expect(new Set(small)).toEqual(new Set(["hen", "cart"]))
+    for (let i = 1; i < small.length; i++) expect(small[i]).not.toBe(small[i - 1])
   })
 })
 
