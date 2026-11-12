@@ -9,6 +9,7 @@ import { featuresOf } from "@/lib/features"
 import { addYoutube, deleteVideo, finishUpload, moveFarmVideo, startUpload, updateVideo } from "@/server/videos"
 import type { UploadTarget } from "@/server/media-store"
 import { OrderError } from "@/server/orders"
+import { planLimits } from "@/lib/features"
 
 type Fail = { ok: false; error: string }
 
@@ -27,7 +28,7 @@ async function run<T extends object>(fn: () => Promise<T>): Promise<({ ok: true 
 async function owner(feature: FeatureKey) {
   const ctx = await requireStaff(OWNER_ONLY)
   if (!featuresOf(ctx.tenant)[feature]) throw new OrderError(feature === "videoUploads" ? "video_uploads_plan" : "feature_off")
-  return { ...ctx, space: videoSpaceBytes(ctx.tenant.videoSpaceMb) }
+  return { ...ctx, space: videoSpaceBytes(ctx.tenant.videoSpaceMb ?? planLimits(ctx.tenant).videoSpaceMb) }
 }
 
 const type = z.enum(VIDEO_TYPES)

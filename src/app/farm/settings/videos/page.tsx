@@ -7,6 +7,7 @@ import { VideoManager } from "@/components/farm/video-manager"
 import { videoSpaceBytes } from "@/domain/videos"
 import { listVideos, usedVideoBytes } from "@/server/videos"
 import { mediaAvailable } from "@/server/media-store"
+import { planLimits } from "@/lib/features"
 
 /** Settings · Videos (owner): the farm's videos for the shop's banner and "Watch our farm". */
 export default async function SettingsVideosPage() {
@@ -21,7 +22,7 @@ export default async function SettingsVideosPage() {
       <SectionHeader section="settings" tabs={settingsTabs(features)} active="videos" back={{ href: "/farm/more" }} />
       <VideoManager
         uploads={uploads}
-        space={{ used, total: videoSpaceBytes(tenant.videoSpaceMb) }}
+        space={{ used, total: videoSpaceBytes(tenant.videoSpaceMb ?? planLimits(tenant).videoSpaceMb) }}
         videos={videos.map((v) => ({ id: v.id, kind: v.kind === "youtube" ? "youtube" : "upload", src: v.src, posterUrl: v.posterUrl, title: v.title, banner: v.banner, watch: v.watch, seconds: v.seconds }))}
       />
     </div>

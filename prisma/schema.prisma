@@ -170,19 +170,23 @@ model Tenant {
 
   // Look: the farm's logo (served by /img/logo, see TenantLogo) and the drawings it picked for its shop
   // (ids from src/components/art/drawing-library.ts; empty = chosen from its product types).
-  logoUrl String?
-  shopArt String[] @default([])
+  logoUrl      String?
+  shopArt      String[] @default([])
   // Brand (src/domain/brand.ts): the farm's tagline, the colours its name's words take in turn
   // (e.g. Merry red, Farms green; empty = the normal text colour), and the opening animation played when its
   // installed app opens (an id from OPENING_MARKS, set by the platform; null = the farm's logo pops in).
-  taglineTa   String?
-  taglineEn   String?
-  nameColours String[] @default([])
-  openingMark String?
+  taglineTa    String?
+  taglineEn    String?
+  nameColours  String[] @default([])
+  openingMark  String?
   // The farm's app colours (src/domain/brand-theme.ts): buttons and links, and highlights such as badges.
   // null = Farm For You's colours. Adjusted automatically for readability in light, dark and soft modes.
   themePrimary String?
   themeAccent  String?
+
+  // What the farm may use, worked out from its plan, add-ons and admin's overrides (src/domain/entitlements.ts) and
+  // saved here whenever they change; null = not on an admin-made plan yet (the old `plan` level applies).
+  entitlements Json?
 
   // Storage for the farm's uploaded videos, in MB; null = the default (DEFAULT_VIDEO_SPACE_MB). Set by the platform.
   videoSpaceMb Int?
@@ -190,13 +194,15 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  settings   TenantSettings?
-  staff      StaffMember[]
-  categories Category[]
-  products   Product[]
-  slots      DeliverySlot[]
-  customers  Customer[]
-  orders     Order[]
+  settings     TenantSettings?
+  subscription FarmSubscription?
+  requests     FarmRequest[]
+  staff        StaffMember[]
+  categories   Category[]
+  products     Product[]
+  slots        DeliverySlot[]
+  customers    Customer[]
+  orders       Order[]
 
   @@map("tenants")
 }
@@ -732,8 +738,8 @@ model ProductImage {
   /// Older photos kept in the database; new ones live in file storage (storagePath). See src/server/photos.ts.
   data        Bytes?
   storagePath String?
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
 
   @@index([tenantId])
   @@map("product_images")
@@ -746,8 +752,8 @@ model TenantLogo {
   /// Older logos kept in the database; new ones live in file storage (storagePath). See src/server/photos.ts.
   data        Bytes?
   storagePath String?
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
 
   @@map("tenant_logos")
 }
@@ -1013,4 +1019,180 @@ model SupportChange {
   @@index([visitId])
   @@index([tenantId, createdAt])
   @@map("support_changes")
+}
+
+// ─────────────────────────────────────────────────
+// PLATFORM: PLANS, SUBSCRIPTIONS, MODULES, REQUESTS (docs/platform-plan.md §3.5)
+// ─────────────────────────────────────────────────
+
+/// A plan the platform admin makes from modules: what goes in it is not fixed in code. Editing a plan farms already
+/// use makes a new version (same family); farms stay on theirs until admin moves them. See src/server/subscriptions.ts.
+model PlatformPlan {
+  id            String   @id @default(uuid())
+  /// Versions of one plan share a family; the newest one is offered to farms.
+  family        String
+  version       Int      @default(1)
+  nameTa        String
+  nameEn        String
+  descriptionTa String?
+  descriptionEn String?
+  monthlyPaise  Int      @default(0)
+  yearlyPaise   Int?
+  trialDays     Int      @default(30)
+  /// Module keys (src/domain/modules.ts); Farm Core is always included.
+  modules       String[]
+  /// { featureKey: "on" | "off" }: features the plan fixes; missing = the farm's choice.
+  features      Json     @default("{}")
+  /// { products, staff, ordersPerMonth, videoSpaceMb }: missing = no limit.
+  limits        Json     @default("{}")
+  /// Shown to farms on the price list and the home page; private plans are made for one farm.
+  isPublic      Boolean  @default(true)
+  /// Retired versions stay for the farms on them but aren't offered.
+  retired       Boolean  @default(false)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subscriptions FarmSubscription[]
+
+  @@unique([family, version])
+  @@map("platform_plans")
+}
+
+/// A farm's subscription: one plan plus add-on modules. Its effect is saved on the farm as tenants.entitlements.
+model FarmSubscription {
+  id                 String    @id @default(uuid())
+  tenantId           String    @unique
+  planId             String
+  /// trial | active | past_due | paused | ended (src/domain/entitlements.ts)
+  status             String    @default("trial")
+  /// monthly | yearly
+  billingCycle       String    @default("monthly")
+  startedAt          DateTime  @default(now())
+  trialEndsAt        DateTime?
+  currentPeriodEnd   DateTime?
+  /// Extra modules on top of the plan
+  addOns             String[]  @default([])
+  /// { moduleKey: true | false }: admin's per-farm additions or removals
+  moduleOverrides    Json      @default("{}")
+  /// A special price for this farm (paise a billing cycle); null = the plan's
+  priceOverridePaise Int?
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan   PlatformPlan @relation(fields: [planId], references: [id])
+
+  @@index([planId])
+  @@map("farm_subscriptions")
+}
+
+/// A module as the platform offers it: switched on or off for every farm, and its price as an add-on.
+model ModuleSetting {
+  moduleKey         String   @id
+  enabled           Boolean  @default(true)
+  addOnMonthlyPaise Int?
+  addOnYearlyPaise  Int?
+  addOnTrialDays    Int      @default(14)
+  /// Farms can ask for it as an add-on (else only admin adds it)
+  requestable       Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("module_settings")
+}
+
+/// Something a farm asks the platform for: an add-on module or a change of plan. Admin approves or declines.
+model FarmRequest {
+  id        String    @id @default(uuid())
+  tenantId  String
+  /// add_on | plan_change
+  kind      String
+  moduleKey String?
+  planId    String?
+  /// pending | approved | declined | withdrawn
+  status    String    @default("pending")
+  note      String?
+  /// Admin's reply, shown to the farm
+  reply     String?
+  byStaffId String?
+  decidedBy String?
+  decidedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@index([status, createdAt])
+  @@map("farm_requests")
+}
+
+// ─────────────────────────────────────────────────
+// AUTOMATION: EVENTS, JOBS, RECIPE SETTINGS (docs/platform-plan.md §5; src/server/automation.ts)
+// ─────────────────────────────────────────────────
+
+/// Something that happened (order.placed, request.created, subscription.changed…): the activity log and what rules react to.
+model PlatformEvent {
+  id        String   @id @default(uuid())
+  /// null = about the platform itself
+  tenantId  String?
+  type      String
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, createdAt])
+  @@index([type, createdAt])
+  @@map("platform_events")
+}
+
+/// Work to do later or on a schedule, with retries. Every tick is recorded here too (type "tick"), so admin can see
+/// the engine running.
+model Job {
+  id         String    @id @default(uuid())
+  type       String
+  tenantId   String?
+  payload    Json      @default("{}")
+  runAt      DateTime  @default(now())
+  /// pending | running | done | failed
+  status     String    @default("pending")
+  attempts   Int       @default(0)
+  lastError  String?
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([status, runAt])
+  @@index([type, createdAt])
+  @@map("jobs")
+}
+
+/// A recipe's switch and numbers: tenantId null = the platform's default (off = off for every farm); else one farm's.
+model AutomationSetting {
+  id        String   @id @default(uuid())
+  tenantId  String?
+  recipe    String
+  enabled   Boolean
+  params    Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([recipe, tenantId])
+  @@map("automation_settings")
+}
+
+/// An alert a recipe has sent, so it is sent once (e.g. order X turned red; product Y low on this day).
+model AutomationNotice {
+  id         String   @id @default(uuid())
+  tenantId   String
+  recipe     String
+  subjectKey String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([tenantId, recipe, subjectKey])
+  @@map("automation_notices")
 }

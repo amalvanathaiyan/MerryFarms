@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button"
 import { templateOverrides } from "@/server/messages"
 import { directionsLink } from "@/domain/delivery-area"
 import { featuresOf } from "@/lib/features"
+import { recipeSettings } from "@/server/automation"
+import { waitedFor, waitLevel } from "@/domain/automations"
+import { WaitBadge } from "@/components/farm/wait-badge"
 
 const TABS: Record<string, OrderStatus[]> = {
   to_confirm: ["to_confirm"],
@@ -39,6 +42,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const tc = await getTranslations("common")
   const ts = await getTranslations("shop")
   const labels = { today: tc("today"), tomorrow: tc("tomorrow") }
+  // Orders waiting to be confirmed turn yellow, then red, at the farm's own hours (automation orderWaiting)
+  const waiting = (await recipeSettings(tenant.id)).orderWaiting
+  const now = new Date()
 
   const counts = await db.order.groupBy({ by: ["status"], _count: { _all: true } })
   const countFor = (k: string) => counts.filter((c) => TABS[k].includes(c.status)).reduce((a, c) => a + c._count._all, 0)
@@ -114,12 +120,15 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
             )
           : null
         const lastNoAnswer = o.calls.filter((c) => c.outcome === "no_answer").length
+        const waited = waitedFor(o.createdAt, now)
+        const wait = o.status === "to_confirm" && waiting.enabled ? { level: waitLevel(o.createdAt, now, { yellowHours: waiting.params.yellowHours, redHours: waiting.params.redHours }), text: t("waited", waited) } : null
 
         return (
-          <article key={o.id} className="flex flex-col gap-2 rounded-2xl border bg-card p-4">
+          <article key={o.id} className={`flex flex-col gap-2 rounded-2xl border bg-card p-4 ${wait ? `wait-edge-${wait.level}` : ""}`}>
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <b className="tabular-nums">{code}</b>
+                {wait && <WaitBadge level={wait.level} text={wait.text} />}
                 <span className="rounded-md border px-1.5 text-xs text-muted-foreground">{t(`channel_${o.channel}`)}</span>
                 {o.subscriptionId && <span className="rounded-md bg-accent px-1.5 text-xs font-semibold">{t("planBadge")}</span>}
               </div>

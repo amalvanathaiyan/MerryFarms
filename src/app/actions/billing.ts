@@ -13,6 +13,7 @@ import { cannotEnable, FEATURE_KEYS, parseChoices } from "@/domain/features"
 import { parsePincodes } from "@/domain/delivery-area"
 import { OrderError } from "@/server/orders"
 import { notifyOrderStatus } from "@/server/notify"
+import { featureSource } from "@/lib/features"
 
 type Result = { ok: true; invoiceId?: string } | { ok: false; error: string }
 
@@ -152,10 +153,13 @@ export async function saveFeatures(raw: unknown): Promise<Result> {
   if (!parsed.success) return { ok: false, error: "invalid" }
   const { tenant } = await requireStaff(OWNER_ONLY)
   const choices = parseChoices(tenant.features)
+  const source = featureSource(tenant)
   for (const key of FEATURE_KEYS) {
     const want = parsed.data[key]
     if (typeof want !== "boolean") continue
-    if (want && cannotEnable(tenant.plan, key)) continue
+    const locked = cannotEnable(source, key)
+    // Not in the plan or not built: can't be switched on. Fixed on by the plan: can't be switched off.
+    if ((want && locked && locked !== "forced") || (!want && locked === "forced")) continue
     choices[key] = want
   }
   await prisma.tenant.update({ where: { id: tenant.id }, data: { features: choices } })
