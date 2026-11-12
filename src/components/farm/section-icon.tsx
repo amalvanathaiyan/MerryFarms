@@ -1,4 +1,5 @@
 import {
+  Bot,
   Layers,
   BarChart3,
   CheckCircle2,
@@ -61,6 +62,7 @@ const ICONS: Record<string, LucideIcon> = {
   look: Palette,
   switches: ToggleRight,
   plan: Layers,
+  automations: Bot,
   videos: Clapperboard,
   calendar: CalendarClock,
   to_confirm: Phone,

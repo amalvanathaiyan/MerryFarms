@@ -87,3 +87,34 @@ export function staffWarningsNote(lines: { ta: string; en: string }[]): Note {
     tag: "warnings",
   }
 }
+
+/** Automation (orderWaiting): orders still not confirmed after the farm's red mark. */
+export function staffOrdersWaitingNote(codes: string[], redHours: number): Note {
+  const n = codes.length
+  return {
+    title: `கவனிக்கவும் · ${n === 1 ? "1 order waiting" : `${n} orders waiting`} ${redHours}+ h`,
+    body: `${redHours} மணி நேரத்துக்கு மேல் உறுதி செய்யப்படவில்லை / Not confirmed for over ${redHours} h: ${names(codes)}`,
+    url: "/farm/orders",
+    tag: "orders-waiting",
+  }
+}
+
+/** Automation (lowStock): products down to the farm's mark. */
+export function staffLowStockNote(products: string[]): Note {
+  return {
+    title: `இருப்பு குறைவு · ${products.length === 1 ? "1 product low" : `${products.length} products low`}`,
+    body: names(products),
+    url: "/farm/catalogue",
+    tag: "low-stock",
+  }
+}
+
+/** Automation (trialEnding): the farm's free trial ends soon. */
+export function ownerTrialEndingNote(days: number, date: string): Note {
+  return {
+    title: `Farm For You · ${days === 1 ? "இலவச சோதனை நாளை முடிகிறது / Trial ends tomorrow" : `இலவச சோதனை ${days} நாளில் முடிகிறது / Trial ends in ${days} days`}`,
+    body: `${date} · திட்டம் பற்றி அமைப்புகள் → திட்டம் / See Settings → Plan`,
+    url: "/farm/settings/plan",
+    tag: "trial-ending",
+  }
+}

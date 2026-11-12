@@ -5,6 +5,7 @@ import { computeEntitlement, cleanFeatureRules, cleanLimits, parseEntitlement, S
 import { FEATURE_KEYS, FEATURES, type Plan } from "@/domain/features"
 import { isModuleKey, MODULE_KEYS, MODULES, type ModuleKey } from "@/domain/modules"
 import { OrderError } from "./orders"
+import { emitEvent } from "./automation"
 
 /**
  * Plans, farm subscriptions, the platform's module settings and farms' requests (docs/platform-plan.md §3.5).
@@ -180,6 +181,7 @@ export async function setSubscription(tenantId: string, input: SubscriptionInput
   }
   await prisma.farmSubscription.upsert({ where: { tenantId }, update: data, create: { tenantId, ...data } })
   await refreshEntitlements(tenantId)
+  await emitEvent("subscription.changed", tenantId, { planId: data.planId, status: data.status, addOns: data.addOns })
 }
 
 /** Back to the farm's old plan level (no admin-made plan). */
@@ -214,14 +216,18 @@ export async function requestAddOn(tenantId: string, byStaffId: string | null, m
   const t = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { entitlements: true } })
   if (parseEntitlement(t?.entitlements)?.modules.includes(moduleKey)) throw new OrderError("already_have")
   if (await prisma.farmRequest.findFirst({ where: { tenantId, kind: "add_on", moduleKey, status: "pending" } })) throw new OrderError("request_pending")
-  return prisma.farmRequest.create({ data: { tenantId, kind: "add_on", moduleKey, note, byStaffId } })
+  const r = await prisma.farmRequest.create({ data: { tenantId, kind: "add_on", moduleKey, note, byStaffId } })
+  await emitEvent("request.created", tenantId, { requestId: r.id, kind: "add_on", moduleKey })
+  return r
 }
 
 export async function requestPlanChange(tenantId: string, byStaffId: string | null, planId: string, note: string | null) {
   const plan = await prisma.platformPlan.findFirst({ where: { id: planId, isPublic: true, retired: false } })
   if (!plan) throw new OrderError("not_found")
   if (await prisma.farmRequest.findFirst({ where: { tenantId, kind: "plan_change", status: "pending" } })) throw new OrderError("request_pending")
-  return prisma.farmRequest.create({ data: { tenantId, kind: "plan_change", planId, note, byStaffId } })
+  const r = await prisma.farmRequest.create({ data: { tenantId, kind: "plan_change", planId, note, byStaffId } })
+  await emitEvent("request.created", tenantId, { requestId: r.id, kind: "plan_change", planId })
+  return r
 }
 
 export async function withdrawRequest(tenantId: string, id: string) {
@@ -250,4 +256,5 @@ export async function decideRequest(id: string, approve: boolean, reply: string 
     await refreshEntitlements(req.tenantId)
   }
   await prisma.farmRequest.update({ where: { id }, data: { status: approve ? "approved" : "declined", reply: reply?.trim() || null, decidedBy, decidedAt: new Date() } })
+  await emitEvent("request.decided", req.tenantId, { requestId: id, approved: approve, by: decidedBy })
 }

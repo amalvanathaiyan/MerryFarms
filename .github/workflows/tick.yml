@@ -1,0 +1,22 @@
+# Farm For You's automation heartbeat: calls /api/cron/tick every 10 minutes (free on GitHub Actions; Vercel's free
+# plan only runs daily jobs). Needs two repository secrets (Settings → Secrets and variables → Actions):
+#   TICK_URL     e.g. https://merry-farms.vercel.app/api/cron/tick
+#   CRON_SECRET  the same value as the CRON_SECRET environment variable on Vercel
+# GitHub may run a scheduled job a few minutes late; every alert still goes out once.
+name: Automation tick
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Call the tick
+        env:
+          TICK_URL: ${{ secrets.TICK_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$TICK_URL" ] || [ -z "$CRON_SECRET" ]; then echo "TICK_URL / CRON_SECRET not set yet: skipping"; exit 0; fi
+          curl -fsS --max-time 120 -X POST -H "Authorization: Bearer $CRON_SECRET" "$TICK_URL"
