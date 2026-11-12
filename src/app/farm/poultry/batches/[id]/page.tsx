@@ -19,7 +19,7 @@ import { loadWeights } from "@/server/weights"
 import { weighDue, weightPoints } from "@/domain/weights"
 import { onFarm } from "@/domain/batches"
 import { cn } from "@/lib/utils"
-import { ChevronLeft, PencilLine, Syringe } from "lucide-react"
+import { ChevronLeft, PencilLine, Scale, Syringe } from "lucide-react"
 
 const ymd = /^\d{4}-\d{2}-\d{2}$/
 
@@ -35,6 +35,7 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
   const locale = await getLocale()
   const t = await getTranslations("farm.batches")
   const tv = await getTranslations("farm.vaccines")
+  const tw = await getTranslations("farm.weights")
   const tc = await getTranslations("common")
   const labels = { today: tc("today"), tomorrow: tc("tomorrow") }
   const isOwner = staff.roles.includes("owner")
@@ -203,7 +204,13 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
 
       <BatchDailyLog rows={history} showEggs={showEggs} entryHref={entryHref} />
 
-      <BatchWeights weights={weights} due={weighing} enterHref={entryHref ? entryHref() : null} />
+      <BatchWeights weights={weights} due={weighing}>
+        {live && (
+          <Link href={`/farm/poultry/growth#b-${id}`} className={cn("flex min-h-11 items-center gap-2 self-start rounded-xl px-4 font-semibold", weighing.due ? "bg-sec-poultry text-sec-on" : "border-2 bg-card hover:bg-accent")}>
+            <Scale className="size-5" aria-hidden /> {tw("formTitle")}
+          </Link>
+        )}
+      </BatchWeights>
 
       <BatchVaccinations
         batchId={id}

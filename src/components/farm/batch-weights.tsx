@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { Scale, Trash2 } from "lucide-react"
 import { deleteWeightAction } from "@/app/actions/weights"
@@ -15,17 +14,16 @@ export type WeightItem = WeightPoint & { id: string; dayText: string }
 
 /**
  * A batch's weekly weights, as a record: the latest average bird, the growth line by age and every weighing in a
- * table (a wrong one can be deleted). Weighings are entered on the Entry page, which `enterHref` opens.
+ * table (a wrong one can be deleted). `children` is how to add one: the weigh form on Growth, a link elsewhere.
  */
 export function BatchWeights({
   weights,
   due,
-  enterHref,
+  children,
 }: {
   weights: WeightItem[]
   due: { due: boolean; daysSince: number | null }
-  /** Entry for this batch; null when it has left the farm. */
-  enterHref: string | null
+  children?: React.ReactNode
 }) {
   const t = useTranslations("farm.weights")
   const te = useTranslations("errors")
@@ -97,11 +95,7 @@ export function BatchWeights({
         </p>
       )}
 
-      {enterHref && (
-        <Link href={enterHref} className={cn("flex min-h-11 items-center gap-2 self-start rounded-xl px-4 font-semibold", due.due ? "bg-sec-poultry text-sec-on" : "border-2 bg-card text-foreground hover:bg-accent")}>
-          <Scale className="size-5" aria-hidden /> {t("formTitle")}
-        </Link>
-      )}
+      {children}
 
       {weights.length > 0 && (
         <div>

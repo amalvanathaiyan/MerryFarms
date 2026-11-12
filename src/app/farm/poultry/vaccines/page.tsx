@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { getLocale, getTranslations } from "next-intl/server"
-import { CalendarClock, CheckCircle2, ChevronRight } from "lucide-react"
+import { CalendarClock, CheckCircle2, ChevronDown, ChevronRight } from "lucide-react"
 import { requireStaff } from "@/lib/auth"
 import { requireFeature } from "@/lib/require-feature"
 import { dayLabel } from "@/lib/i18n-helpers"
@@ -11,15 +11,13 @@ import { addDays, daysBetween, istDate } from "@/domain/ist"
 import { doseState } from "@/domain/vaccinations"
 import { asDay, asInfo, asLoss, loadBatches } from "@/server/batches"
 import { SectionHeader } from "@/components/farm/section-header"
-import { cn } from "@/lib/utils"
 import { QuickGiveButton } from "@/components/farm/quick-give-button"
 
 /**
- * Poultry care · Vaccines: what to give now (one tap, or on Entry), what's coming, and every dose given, for all
- * batches or one. The farm's vaccine plan is set from here (owner).
+ * Poultry care · Vaccines: what to give now (one tap, or on Entry), what's coming, and every dose given, grouped by
+ * batch. The farm's vaccine plan is set from here (owner).
  */
-export default async function PoultryVaccinesPage({ searchParams }: { searchParams: Promise<{ batch?: string }> }) {
-  const sp = await searchParams
+export default async function PoultryVaccinesPage() {
   const { db, tenant, staff } = await requireStaff(["owner", "packing"])
   requireFeature(tenant, "poultryCare")
   const locale = await getLocale()
@@ -39,12 +37,15 @@ export default async function PoultryVaccinesPage({ searchParams }: { searchPara
 
   const giveNow = mine.filter((d) => d.state === "overdue" || d.state === "today")
   const comingUp = mine.filter((d) => (d.state === "soon" || d.state === "later") && d.dueDate! <= addDays(today, 30))
-  // Every dose given, on any batch (closed ones too), newest first; for one batch with the filter.
-  const allById = new Map(batches.map((b) => [b.id, b]))
-  const givenAll = doses.filter((d) => d.givenDate && allById.has(d.batchId)).map((d) => ({ ...d, batch: allById.get(d.batchId)! }))
-  const withDoses = batches.filter((b) => givenAll.some((d) => d.batchId === b.id)).sort((a, b) => a.number - b.number)
-  const only = withDoses.find((b) => b.id === sp.batch) ?? null
-  const given = givenAll.filter((d) => !only || d.batchId === only.id).sort((a, b) => b.givenDate!.localeCompare(a.givenDate!))
+  // Every dose given, grouped by batch (closed ones too, folded), newest first inside each.
+  const groups = batches
+    .map((batch) => ({
+      batch,
+      live: onFarm(batch, today),
+      doses: doses.filter((d) => d.batchId === batch.id && d.givenDate).sort((a, b) => b.givenDate!.localeCompare(a.givenDate!)),
+    }))
+    .filter((g) => g.doses.length > 0)
+    .sort((a, b) => Number(b.live) - Number(a.live) || a.batch.number - b.batch.number)
   const batchName = (b: { name: string; number: number }) => `${b.name} · #${b.number}`
 
   return (
@@ -98,41 +99,43 @@ export default async function PoultryVaccinesPage({ searchParams }: { searchPara
         </section>
       )}
 
-      {givenAll.length > 0 && (
+      {groups.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="text-lg font-bold text-muted-foreground">{t("givenAll")}</h2>
-          {withDoses.length > 1 && (
-            <nav aria-label={t("filterBatch")} className="flex flex-wrap gap-2">
-              {[{ id: null as string | null, label: t("allBatches") }, ...withDoses.map((b) => ({ id: b.id, label: batchName(b) }))].map((c) => (
-                <Link
-                  key={c.id ?? "all"}
-                  href={c.id ? `/farm/poultry/vaccines?batch=${c.id}` : "/farm/poultry/vaccines"}
-                  aria-current={(only?.id ?? null) === c.id ? "page" : undefined}
-                  className={cn("flex min-h-11 items-center rounded-xl border-2 px-3 text-sm", (only?.id ?? null) === c.id ? "border-sec-poultry bg-sec-poultry-tint font-bold" : "bg-card font-semibold hover:bg-accent")}
-                >
-                  {c.label}
-                </Link>
-              ))}
-            </nav>
-          )}
-          <ul className="divide-y rounded-2xl border bg-card">
-            {given.map((d) => (
-              <li key={d.id}>
-                <Link href={`/farm/poultry/batches/${d.batchId}#vaccinations`} className="flex items-center justify-between gap-3 p-4">
-                  <span className="min-w-0">
-                    <span className="block font-semibold">
-                      {d.vaccine}
-                      {d.birds != null && <span className="font-normal text-muted-foreground"> · {t("birdsGiven", { count: d.birds })}</span>}
-                    </span>
-                    <span className="block text-sm text-muted-foreground">{batchName(d.batch)}</span>
+          {groups.map(({ batch, live, doses }) => (
+            <details key={batch.id} open={live} className="group rounded-2xl border bg-card">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl p-4 hover:bg-accent/40">
+                <span className="min-w-0">
+                  <span className="block text-lg leading-tight font-bold">
+                    {batch.name} <span className="font-normal text-muted-foreground">· #{batch.number}</span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-1 text-sm font-bold text-primary">
-                    <CheckCircle2 className="size-4" aria-hidden /> {dayLabel(d.givenDate!, locale, labels)}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+                  <span className="block text-sm text-muted-foreground">{live ? t("onFarm") : t("leftFarm")}</span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                  <b className="tabular-nums">{t("dosesCount", { count: doses.length })}</b>
+                  <ChevronDown className="size-5 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
+                </span>
+              </summary>
+              <ul className="divide-y border-t">
+                {doses.map((d) => (
+                  <li key={d.id}>
+                    <Link href={`/farm/poultry/batches/${d.batchId}#vaccinations`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-accent/40">
+                      <span className="min-w-0">
+                        <span className="block font-semibold">
+                          {d.vaccine}
+                          {d.method && <span className="font-normal text-muted-foreground"> · {t(`method_${d.method}`)}</span>}
+                        </span>
+                        {d.birds != null && <span className="block text-sm text-muted-foreground">{t("birdsGiven", { count: d.birds })}</span>}
+                      </span>
+                      <span className="flex shrink-0 items-center gap-1 text-sm font-bold text-primary">
+                        <CheckCircle2 className="size-4" aria-hidden /> {dayLabel(d.givenDate!, locale, labels)}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ))}
         </section>
       )}
 

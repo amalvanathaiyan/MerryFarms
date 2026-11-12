@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { CheckCircle2, ChevronDown, ClipboardList, Plus, Save, Scale, Syringe } from "lucide-react"
 import { saveBatchEntryAction } from "@/app/actions/poultry-entry"
@@ -34,8 +35,9 @@ export interface EntryBatch {
 type Part = "day" | "weight" | "dose"
 
 /**
- * Entry · one batch: three numbered sections and one Save. Daily (feed, eggs, losses, sales) is always open; the
- * weighing and the vaccines open by themselves when they're due, and are one "+ Add" line otherwise. Only what was
+ * Entry · one batch: numbered sections and one Save. Daily (feed, eggs, losses, sales) is always open; Vaccines
+ * opens by itself when a dose is due, and is one "+ Add" line otherwise. Weighing is weekly, so it's here only in
+ * the week it's due; any other day it's entered on the Growth tab. Only what was
  * filled in is sent; the result says what was saved.
  */
 export function BatchEntryForm({
@@ -79,6 +81,8 @@ export function BatchEntryForm({
     kg: weighing.onDay ? String(weighing.onDay.totalGrams / 1000) : "",
   })
   const [weigh, setWeigh] = useState(weighBlank)
+  // Weighing is weekly: on Entry only when due or already done this day; otherwise on the Growth tab.
+  const showWeighing = weighing.due || !!weighing.onDay
   const [weighTouched, setWeighTouched] = useState(false)
 
   const [give, setGive] = useState<Record<string, { on: boolean; birds: string; cost: string }>>({})
@@ -147,29 +151,9 @@ export function BatchEntryForm({
         </label>
       </Section>
 
-      {/* 2 · Weighing: about once a week */}
+      {/* 2 · Vaccines: doses due now, and one given that wasn't planned */}
       <Section
         n={2}
-        icon={Scale}
-        title={t("s2")}
-        hint={tw("hint")}
-        chip={weighing.onDay && !weighTouched ? { text: t("entered"), tone: "done" } : weighing.due ? { text: weighing.daysSince == null ? tw("dueFirst") : tw("due"), tone: "due" } : weighing.daysSince != null ? { text: tw("weighedAgo", { days: weighing.daysSince }), tone: "quiet" } : null}
-        open={weigh.open}
-        onOpen={() => setWeigh((w) => ({ ...w, open: !w.open }))}
-        closedText={t("addWeighing")}
-      >
-        <NumberStepper label={tw("birds")} value={weigh.birds} onChange={(s) => (touch(), setWeighTouched(true), setWeigh((w) => ({ ...w, birds: s })))} />
-        <label className="flex flex-col gap-1 text-sm font-semibold">
-          {tw("total")}
-          <Input type="number" inputMode="decimal" min={0.01} max={10000} step="0.01" value={weigh.kg} onChange={(e) => (touch(), setWeighTouched(true), setWeigh((w) => ({ ...w, kg: e.target.value })))} className="h-12 text-lg font-normal" />
-          <span className="font-normal text-muted-foreground">{tw("totalHint")}</span>
-        </label>
-        {preview && <p className="text-base font-bold tabular-nums">= {tw("preview", { value: preview.value, unit: tw(preview.unit) })}</p>}
-      </Section>
-
-      {/* 3 · Vaccines: doses due now, and one given that wasn't planned */}
-      <Section
-        n={3}
         icon={Syringe}
         title={t("s3")}
         hint={t("s3Hint")}
@@ -263,6 +247,34 @@ export function BatchEntryForm({
           </button>
         )}
       </Section>
+
+      {showWeighing ? (
+        <>
+      {/* 3 · Weighing: only in the week it's due (or already weighed this day); any other day it's on Growth */}
+      <Section
+        n={3}
+        icon={Scale}
+        title={t("s2")}
+        hint={tw("hint")}
+        chip={weighing.onDay && !weighTouched ? { text: t("entered"), tone: "done" } : weighing.due ? { text: weighing.daysSince == null ? tw("dueFirst") : tw("due"), tone: "due" } : weighing.daysSince != null ? { text: tw("weighedAgo", { days: weighing.daysSince }), tone: "quiet" } : null}
+        open={weigh.open}
+        onOpen={() => setWeigh((w) => ({ ...w, open: !w.open }))}
+        closedText={t("addWeighing")}
+      >
+        <NumberStepper label={tw("birds")} value={weigh.birds} onChange={(s) => (touch(), setWeighTouched(true), setWeigh((w) => ({ ...w, birds: s })))} />
+        <label className="flex flex-col gap-1 text-sm font-semibold">
+          {tw("total")}
+          <Input type="number" inputMode="decimal" min={0.01} max={10000} step="0.01" value={weigh.kg} onChange={(e) => (touch(), setWeighTouched(true), setWeigh((w) => ({ ...w, kg: e.target.value })))} className="h-12 text-lg font-normal" />
+          <span className="font-normal text-muted-foreground">{tw("totalHint")}</span>
+        </label>
+        {preview && <p className="text-base font-bold tabular-nums">= {tw("preview", { value: preview.value, unit: tw(preview.unit) })}</p>}
+      </Section>
+        </>
+      ) : (
+        <Link href="/farm/poultry/growth" className="flex items-center gap-2 self-start px-1 text-sm font-semibold text-primary underline-offset-4 hover:underline">
+          <Scale className="size-4" aria-hidden /> {t("weighOnGrowth")}
+        </Link>
+      )}
 
       {error && (
         <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
