@@ -7,6 +7,8 @@ import { MODULE_KEYS } from "@/domain/modules"
 import { SUBSCRIPTION_STATES } from "@/domain/entitlements"
 import { OrderError } from "@/server/orders"
 import { noteSupportWrite } from "@/server/support"
+import { adminActor, audit } from "@/server/audit"
+import { prisma } from "@/lib/prisma"
 import {
   createPlan,
   createStarterPlans,
@@ -58,27 +60,34 @@ const planSchema = z.object({
 export async function savePlanAction(id: string | null, raw: unknown): Promise<Result> {
   const parsed = planSchema.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_form" }
-  await requirePlatformAdmin()
+  const admin = await requirePlatformAdmin()
   const input = { ...parsed.data, features: Object.fromEntries(Object.entries(parsed.data.features).filter(([, v]) => v !== "farm")) }
   return attempt(async () => {
-    if (!id) return { ok: true, id: (await createPlan(input)).id }
+    if (!id) {
+      const plan = await createPlan(input)
+      await audit(adminActor(admin), [{ tenantId: null, action: "plan.created", subject: plan.id, after: input }])
+      return { ok: true, id: plan.id }
+    }
     const r = await updatePlan(id, input)
+    await audit(adminActor(admin), [{ tenantId: null, action: r.newVersion ? "plan.new_version" : "plan.changed", subject: r.id, after: input }])
     return { ok: true, id: r.id, newVersion: r.newVersion }
   }, ["/admin"])
 }
 
 export async function retirePlanAction(id: string, retired: boolean): Promise<Result> {
-  await requirePlatformAdmin()
+  const admin = await requirePlatformAdmin()
   return attempt(async () => {
     await setPlanRetired(id, retired)
+    await audit(adminActor(admin), [{ tenantId: null, action: retired ? "plan.retired" : "plan.restored", subject: id }])
     return { ok: true }
   }, ["/admin"])
 }
 
 export async function createStarterPlansAction(): Promise<Result> {
-  await requirePlatformAdmin()
+  const admin = await requirePlatformAdmin()
   return attempt(async () => {
     await createStarterPlans()
+    await audit(adminActor(admin), [{ tenantId: null, action: "plan.starters_created" }])
     return { ok: true }
   }, ["/admin"])
 }
@@ -97,17 +106,19 @@ export async function setSubscriptionAction(tenantId: string, raw: unknown): Pro
     })
     .safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_form" }
-  await requirePlatformAdmin()
+  const admin = await requirePlatformAdmin()
   return attempt(async () => {
     await setSubscription(tenantId, parsed.data)
+    await audit(adminActor(admin), [{ tenantId, action: "subscription.set", subject: tenantId, after: parsed.data }])
     return { ok: true }
   }, ["/admin", "/"])
 }
 
 export async function removeSubscriptionAction(tenantId: string): Promise<Result> {
-  await requirePlatformAdmin()
+  const admin = await requirePlatformAdmin()
   return attempt(async () => {
     await removeSubscription(tenantId)
+    await audit(adminActor(admin), [{ tenantId, action: "subscription.removed", subject: tenantId }])
     return { ok: true }
   }, ["/admin", "/"])
 }
@@ -117,10 +128,11 @@ export async function saveModuleSettingAction(raw: unknown): Promise<Result> {
     .object({ key: z.enum(MODULE_KEYS), enabled: z.boolean(), addOnMonthlyPaise: paise.nullable(), addOnYearlyPaise: paise.nullable(), addOnTrialDays: z.number().int().min(0).max(365), requestable: z.boolean() })
     .safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_form" }
-  await requirePlatformAdmin()
+  const admin = await requirePlatformAdmin()
   const { key, ...s } = parsed.data
   return attempt(async () => {
     await saveModuleSetting(key, s)
+    await audit(adminActor(admin), [{ tenantId: null, action: "module.changed", subject: key, after: s }])
     return { ok: true }
   }, ["/admin", "/"])
 }
@@ -129,6 +141,8 @@ export async function decideRequestAction(id: string, approve: boolean, reply: s
   const admin = await requirePlatformAdmin()
   return attempt(async () => {
     await decideRequest(id, approve, reply ? reply.slice(0, 500) : null, admin.name)
+    const req = await prisma.farmRequest.findUnique({ where: { id }, select: { tenantId: true, kind: true } })
+    await audit(adminActor(admin), [{ tenantId: req?.tenantId ?? null, action: approve ? "request.approved" : "request.declined", subject: id, after: { kind: req?.kind ?? null, reply } }])
     return { ok: true }
   }, ["/admin", "/"])
 }
