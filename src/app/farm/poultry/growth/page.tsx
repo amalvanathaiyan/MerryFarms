@@ -11,10 +11,11 @@ import { weighDue, weightPoints } from "@/domain/weights"
 import { asInfo, loadBatches } from "@/server/batches"
 import { SectionHeader } from "@/components/farm/section-header"
 import { BatchWeights, type WeightItem } from "@/components/farm/batch-weights"
+import { WeighForm } from "@/components/farm/weigh-form"
 
 /**
- * Poultry care · Growth: every batch's weighings, the growth line and what's due. Weighing is entered on the Entry
- * page; here the records are read (and a wrong one deleted).
+ * Poultry care · Growth: weigh birds (any day; the form opens by itself when a weighing is due), and every batch's
+ * weighings and growth line. Weighing is weekly, so it lives here rather than on the daily Entry page.
  */
 export default async function PoultryGrowthPage({ searchParams }: { searchParams: Promise<{ closed?: string }> }) {
   const sp = await searchParams
@@ -34,13 +35,16 @@ export default async function PoultryGrowthPage({ searchParams }: { searchParams
 
   const block = (b: (typeof batches)[number]) => {
     const rows = weighings.filter((w) => w.batchId === b.id)
+    const due = weighDue(b, rows, today)
     const items: WeightItem[] = weightPoints(asInfo(b), rows).map((p, i) => ({ ...p, id: rows[i].id, dayText: dayLabel(p.date, locale, labels) }))
     return (
-      <div key={b.id} className="flex flex-col gap-1">
+      <div key={b.id} id={`b-${b.id}`} className="flex scroll-mt-32 flex-col gap-1">
         <Link href={`/farm/poultry/batches/${b.id}`} className="self-start text-lg font-bold underline-offset-4 hover:underline">
           {b.name} <span className="font-normal text-muted-foreground">· #{b.number}</span>
         </Link>
-        <BatchWeights weights={items} due={weighDue(b, rows, today)} enterHref={onFarm(b, today) ? `/farm/poultry/entry?batch=${b.id}` : null} />
+        <BatchWeights weights={items} due={due}>
+          {onFarm(b, today) && <WeighForm batchId={b.id} batchName={b.name} minDate={b.startDate} maxDate={today} lastBirds={rows.at(-1)?.birds ?? null} due={due.due} />}
+        </BatchWeights>
       </div>
     )
   }
