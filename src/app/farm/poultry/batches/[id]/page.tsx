@@ -12,17 +12,21 @@ import { loadSchedule } from "@/server/vaccinations"
 import { doseState, planFor } from "@/domain/vaccinations"
 import { BatchVaccinations, type DoseRow } from "@/components/farm/batch-vaccinations"
 import { AgeText } from "@/components/farm/batches-section"
-import { BatchDayPanel, type HistoryRow } from "@/components/farm/batch-day-panel"
+import { BatchDailyLog, type LogRow } from "@/components/farm/batch-daily-log"
 import { BatchActions } from "@/components/farm/batch-actions"
 import { BatchWeights, type WeightItem } from "@/components/farm/batch-weights"
 import { loadWeights } from "@/server/weights"
 import { weighDue, weightPoints } from "@/domain/weights"
+import { onFarm } from "@/domain/batches"
 import { cn } from "@/lib/utils"
-import { ChevronLeft, Syringe } from "lucide-react"
+import { ChevronLeft, PencilLine, Syringe } from "lucide-react"
 
 const ymd = /^\d{4}-\d{2}-\d{2}$/
 
-/** One batch: how it stands (on any day), the day's entry, its history, its money and (owner) its settings. */
+/**
+ * One batch, as a report: how it stands (on any day), its daily log, growth, vaccines, money and (owner) its settings.
+ * Nothing is entered here: "Enter for this batch" opens the Entry page with it picked.
+ */
 export default async function BatchPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ date?: string }> }) {
   const { id } = await params
   const sp = await searchParams
@@ -55,7 +59,7 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
   const myDays = probe.days.filter((d) => d.batchId === id)
   const myLosses = probe.losses.filter((l) => l.batchId === id)
   const dates = [...new Set([...myDays.map((d) => d.date), ...myLosses.map((l) => l.date)])]
-  const history: HistoryRow[] = dates.map((date) => {
+  const history: LogRow[] = dates.map((date) => {
     const d = myDays.find((x) => x.date === date)
     const losses = myLosses.filter((l) => l.date === date).map((l) => ({ cause: l.cause, count: l.count }))
     return {
@@ -65,10 +69,8 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
       eggsCollected: d?.eggsCollected ?? null,
       eggsBroken: d?.eggsBroken ?? null,
       sold: d?.sold ?? 0,
-      soldPaise: d?.soldPaise ?? 0,
       given: d?.given ?? 0,
       note: probe.notes.find((n) => n.batchId === id && n.date === date)?.note ?? null,
-      losses,
       lost: losses.reduce((a, l) => a + l.count, 0),
       aliveAfter: batchStatus(info, probe.days, probe.losses, date).alive,
     }
@@ -102,6 +104,9 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
   const dueNow = doses.filter((d) => d.state === "overdue" || d.state === "today").length
   const suggestions = [...new Set([...schedule.map((x) => x.vaccine), ...pastNames.map((x) => x.vaccine)])].sort()
 
+  // Entry for this batch, on a given day; only while it's on the farm.
+  const live = onFarm(batch, today)
+  const entryHref = live ? (date?: string) => `/farm/poultry/entry?batch=${id}${date && date !== today ? `&date=${date}` : ""}` : null
   const parent = batch.parentBatchId ? probe.rows.find((r) => r.batch.id === batch.parentBatchId)?.batch : null
   const hatchRate = hatchRatePct(batch)
   const showEggs = batch.purpose !== "meat" || s.eggsCollected > 0
@@ -146,11 +151,11 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
           <AgeText days={s.ageDays} />
         </div>
         {dueNow > 0 && (
-          <a href="#vaccinations" className="flex items-center justify-between gap-2 rounded-lg bg-yolk px-3 py-2 text-sm font-semibold text-yolk-foreground">
+          <a href={entryHref ? entryHref() : "#vaccinations"} className="flex items-center justify-between gap-2 rounded-lg bg-yolk px-3 py-2 text-sm font-semibold text-yolk-foreground">
             <span className="flex items-center gap-2">
               <Syringe className="size-4 shrink-0" /> {tv("dueBanner", { count: dueNow })}
             </span>
-            <span aria-hidden>↓</span>
+            <span aria-hidden>→</span>
           </a>
         )}
         <ul className="flex flex-col gap-0.5 text-sm text-muted-foreground">
@@ -190,17 +195,15 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
         )}
       </section>
 
-      <BatchDayPanel batchId={id} batchName={batch.name} minDate={batch.startDate} maxDate={maxDate} initialDate={asOf} showEggs={showEggs} entries={history} />
+      {entryHref && (
+        <Link href={entryHref(asOf)} className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-sec-poultry text-lg font-bold text-sec-on">
+          <PencilLine className="size-5" aria-hidden /> {t("enterForBatch")}
+        </Link>
+      )}
 
-      <BatchWeights
-        batchId={id}
-        batchName={batch.name}
-        minDate={batch.startDate}
-        maxDate={maxDate}
-        weights={weights}
-        due={weighing}
-        open={weighing.due}
-      />
+      <BatchDailyLog rows={history} showEggs={showEggs} entryHref={entryHref} />
+
+      <BatchWeights weights={weights} due={weighing} enterHref={entryHref ? entryHref() : null} />
 
       <BatchVaccinations
         batchId={id}
@@ -212,6 +215,7 @@ export default async function BatchPage({ params, searchParams }: { params: Prom
         canApplySchedule={canApplySchedule}
         doses={doses}
         suggestions={suggestions}
+        enterHref={entryHref ? entryHref() : null}
       />
 
       {isOwner && (

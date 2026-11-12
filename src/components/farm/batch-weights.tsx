@@ -1,51 +1,38 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { Scale, Trash2 } from "lucide-react"
-import { deleteWeightAction, saveWeightAction } from "@/app/actions/weights"
+import { deleteWeightAction } from "@/app/actions/weights"
 import { useCheer } from "@/components/cheer"
 import { weeksAndDays } from "@/domain/batches"
-import { avgGrams, MAX_WEIGHED, weightText, type WeightPoint } from "@/domain/weights"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { weightText, type WeightPoint } from "@/domain/weights"
 import { cn } from "@/lib/utils"
-import { NumberStepper } from "./number-stepper"
 import { WeightChart } from "./weight-chart"
 
 export type WeightItem = WeightPoint & { id: string; dayText: string }
 
 /**
- * A batch's weekly weights: the latest average bird, the growth line by age, a quick weighing form (how many birds,
- * their weight together) and every weighing in a table.
+ * A batch's weekly weights, as a record: the latest average bird, the growth line by age and every weighing in a
+ * table (a wrong one can be deleted). Weighings are entered on the Entry page, which `enterHref` opens.
  */
 export function BatchWeights({
-  batchId,
-  batchName,
-  minDate,
-  maxDate,
   weights,
   due,
-  open: openAtStart,
+  enterHref,
 }: {
-  batchId: string
-  batchName: string
-  minDate: string
-  maxDate: string
   weights: WeightItem[]
   due: { due: boolean; daysSince: number | null }
-  /** Batches still on the farm open the form when a weighing is due. */
-  open: boolean
+  /** Entry for this batch; null when it has left the farm. */
+  enterHref: string | null
 }) {
   const t = useTranslations("farm.weights")
   const te = useTranslations("errors")
   const cheer = useCheer()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const [open, setOpen] = useState(openAtStart)
   const last = weights[weights.length - 1]
-  const blank = { date: maxDate, birds: String(last?.birds ?? 10), kg: "", note: "" }
-  const [v, setV] = useState(blank)
 
   const fmt = (g: number) => {
     const w = weightText(g)
@@ -56,10 +43,6 @@ export function BatchWeights({
     return [wd.weeks ? t("ageWeeks", { weeks: wd.weeks }) : "", wd.days || !wd.weeks ? t("ageDays", { days: wd.days }) : ""].filter(Boolean).join(" ")
   }
   const gain = (g: number | null) => (g == null ? null : g >= 0 ? t("gain", { grams: g }) : t("drop", { grams: g }))
-
-  const birds = Number(v.birds)
-  const kg = Number(v.kg)
-  const preview = birds > 0 && kg > 0 ? weightText(avgGrams({ birds, totalGrams: Math.round(kg * 1000) })) : null
 
   return (
     <section id="weights" className="flex scroll-mt-32 flex-col gap-4 rounded-2xl border bg-card p-4">
@@ -108,47 +91,16 @@ export function BatchWeights({
         weights.length === 1 && <p className="text-sm text-muted-foreground">{t("oneMore")}</p>
       )}
 
-      {open ? (
-        <form
-          className="flex flex-col gap-3 rounded-xl border border-dashed p-3"
-          onSubmit={(e) => {
-            e.preventDefault()
-            start(async () => {
-              setError(null)
-              const r = await saveWeightAction(batchId, { date: v.date, birds, totalKg: kg, note: v.note || undefined })
-              if (!r.ok) return setError(te.has(r.error) ? te(r.error) : te("generic"))
-              const w = weightText(avgGrams({ birds, totalGrams: Math.round(kg * 1000) }))
-              cheer("weight", { batch: batchName, avg: `${w.value} ${t(w.unit)}` })
-              setV({ ...blank, birds: v.birds })
-              setOpen(false)
-            })
-          }}
-        >
-          <h3 className="font-bold">{t("formTitle")}</h3>
-          <label className="flex items-center justify-between gap-3 text-sm font-semibold">
-            {t("day")}
-            <Input type="date" required min={minDate} max={maxDate} value={v.date} onChange={(e) => setV({ ...v, date: e.target.value })} className="h-11 w-auto" />
-          </label>
-          <NumberStepper label={t("birds")} value={v.birds} onChange={(s) => setV({ ...v, birds: s })} />
-          <label className="flex flex-col gap-1 text-sm font-semibold">
-            {t("total")}
-            <Input required type="number" inputMode="decimal" min={0.01} max={10000} step="0.01" value={v.kg} onChange={(e) => setV({ ...v, kg: e.target.value })} className="h-12 text-lg font-normal" />
-            <span className="font-normal text-muted-foreground">{t("totalHint")}</span>
-          </label>
-          {preview && <p className="text-base font-bold tabular-nums">= {t("preview", { value: preview.value, unit: t(preview.unit) })}</p>}
-          {error && (
-            <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
-              {error}
-            </p>
-          )}
-          <Button type="submit" size="lg" disabled={pending || !(birds >= 1 && birds <= MAX_WEIGHED) || !(kg > 0)}>
-            <Scale /> {pending ? t("saving") : t("save")}
-          </Button>
-        </form>
-      ) : (
-        <Button variant={due.due ? "default" : "outline"} size="lg" className="self-start" onClick={() => setOpen(true)}>
-          <Scale /> {t("formTitle")}
-        </Button>
+      {error && (
+        <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
+          {error}
+        </p>
+      )}
+
+      {enterHref && (
+        <Link href={enterHref} className={cn("flex min-h-11 items-center gap-2 self-start rounded-xl px-4 font-semibold", due.due ? "bg-sec-poultry text-sec-on" : "border-2 bg-card text-foreground hover:bg-accent")}>
+          <Scale className="size-5" aria-hidden /> {t("formTitle")}
+        </Link>
       )}
 
       {weights.length > 0 && (

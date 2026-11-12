@@ -35,7 +35,7 @@ export default async function MoneyMadePage() {
         entries={entries.map((e) => ({ date: e.date, productId: e.productId, made: e.made, wasted: e.wasted }))}
       />
       {eggsFromBatches && (
-        <Link href="/farm/poultry/today" className="flex items-center justify-between gap-3 rounded-2xl bg-sec-poultry-tint p-4 font-semibold">
+        <Link href="/farm/poultry/entry?batch=all" className="flex items-center justify-between gap-3 rounded-2xl bg-sec-poultry-tint p-4 font-semibold">
           <span>{t("eggsFromBatches")}</span>
           <span aria-hidden>→</span>
         </Link>

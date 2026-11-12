@@ -39,7 +39,10 @@ const STATE_STYLE: Record<DoseState, string> = {
   unplanned: "bg-muted text-muted-foreground",
 }
 
-/** A batch's vaccinations: what's planned and when, marking a dose given, and adding one. */
+/**
+ * A batch's vaccinations, as a record: what's planned and when, and what was given. A dose due now is given on the
+ * Entry page (`enterHref`); here a given one can be changed or taken back, and a future one planned.
+ */
 export function BatchVaccinations({
   batchId,
   today,
@@ -50,6 +53,7 @@ export function BatchVaccinations({
   canApplySchedule,
   doses,
   suggestions,
+  enterHref,
 }: {
   batchId: string
   today: string
@@ -60,6 +64,8 @@ export function BatchVaccinations({
   canApplySchedule: boolean
   doses: DoseRow[]
   suggestions: string[]
+  /** Entry for this batch; null when it has left the farm. */
+  enterHref: string | null
 }) {
   const t = useTranslations("farm.vaccines")
   const te = useTranslations("errors")
@@ -70,7 +76,7 @@ export function BatchVaccinations({
   const [giving, setGiving] = useState<string | null>(null)
   const [give, setGive] = useState({ date: today, birds: "", cost: "", note: "" })
   const [adding, setAdding] = useState(false)
-  const blank = { vaccine: "", method: "" as string, given: true, date: maxDate, birds: String(aliveNow), cost: "", note: "" }
+  const blank = { vaccine: "", method: "" as string, given: false, date: today, birds: String(aliveNow), cost: "", note: "" }
   const [add, setAdd] = useState(blank)
 
   const run = (fn: () => Promise<{ ok: boolean; error?: string; added?: number }>, after?: (r: { added?: number }) => void) =>
@@ -196,9 +202,12 @@ export function BatchVaccinations({
                     </Button>
                   </>
                 ) : (
-                  <Button size="sm" onClick={() => openGive(d)}>
-                    {t("markGiven")}
-                  </Button>
+                  enterHref &&
+                  (d.state === "overdue" || d.state === "today") && (
+                    <Link href={enterHref} className="flex h-9 items-center rounded-lg bg-sec-poultry px-3 text-sm font-semibold text-sec-on">
+                      {t("giveInEntry")}
+                    </Link>
+                  )
                 )}
                 {isOwner && (
                   <button
@@ -258,19 +267,6 @@ export function BatchVaccinations({
               ))}
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {([true, false] as const).map((g) => (
-              <button
-                key={String(g)}
-                type="button"
-                aria-pressed={add.given === g}
-                onClick={() => setAdd({ ...add, given: g, date: g ? maxDate : today })}
-                className={cn("rounded-full border px-4 py-2 text-sm font-medium", add.given === g ? "border-primary bg-accent" : "bg-card")}
-              >
-                {g ? t("alreadyGiven") : t("planIt")}
-              </button>
-            ))}
-          </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {label(
               add.given ? t("givenDay") : t("dueDay"),
@@ -291,7 +287,7 @@ export function BatchVaccinations({
         </form>
       ) : (
         <Button variant="outline" className="self-start" onClick={() => setAdding(true)}>
-          <Syringe className="size-4" /> {t("addOne")}
+          <Syringe className="size-4" /> {t("planOne")}
         </Button>
       )}
     </section>
