@@ -1,16 +1,14 @@
 import { getLocale, getTranslations } from "next-intl/server"
 import { prisma } from "@/lib/prisma"
 import { pick } from "@/lib/i18n-helpers"
-import { recipeSettings } from "@/server/automation"
-import { RECIPE_KEYS } from "@/domain/automations"
-import { AutomationForm } from "@/components/farm/automation-form"
+import Link from "next/link"
+import { SlidersHorizontal } from "lucide-react"
 
-/** The automation engine: each recipe's default for every farm, whether the tick is running, failed jobs, recent events. */
+/** The automation engine: whether the tick is running, failed jobs, recent events. Recipes' defaults are in Settings. */
 export default async function AdminAutomationPage() {
   const t = await getTranslations("automations")
   const locale = await getLocale()
-  const [settings, ticks, failed, events, farms] = await Promise.all([
-    recipeSettings(null),
+  const [ticks, failed, events, farms] = await Promise.all([
     prisma.job.findMany({ where: { type: "tick" }, orderBy: { createdAt: "desc" }, take: 12 }),
     prisma.job.findMany({ where: { status: "failed", type: { not: "tick" } }, orderBy: { updatedAt: "desc" }, take: 10 }),
     prisma.platformEvent.findMany({ orderBy: { createdAt: "desc" }, take: 25 }),
@@ -50,9 +48,9 @@ export default async function AdminAutomationPage() {
         )}
       </section>
 
-      {RECIPE_KEYS.map((k) => (
-        <AutomationForm key={k} recipe={k} enabled={settings[k].platformEnabled} params={settings[k].params} lockedOff={false} who="platform" />
-      ))}
+      <Link href="/admin/settings" className="flex min-h-11 items-center gap-2 self-start rounded-xl border bg-card px-4 font-semibold text-primary hover:border-primary">
+        <SlidersHorizontal className="size-5" aria-hidden /> {t("settingsLink")}
+      </Link>
 
       {failed.length > 0 && (
         <section className="flex flex-col gap-2 rounded-2xl border bg-card p-4">

@@ -32,3 +32,4 @@ npm-debug.log*
 
 # Demo mode: uploaded farm videos (npm run demo; never in production)
 /.demo-media
+.tmp/

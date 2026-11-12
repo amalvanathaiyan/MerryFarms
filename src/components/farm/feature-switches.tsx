@@ -15,8 +15,8 @@ export interface FeatureRow {
   blockedBy: FeatureKey | null
 }
 
-/** Owner turns farm features on and off. Each change saves at once. */
-export function FeatureSwitches({ rows }: { rows: FeatureRow[] }) {
+/** Owner turns farm features on and off. Each change saves at once. A heading and help can replace the usual ones. */
+export function FeatureSwitches({ rows, title, hint }: { rows: FeatureRow[]; title?: string; hint?: string }) {
   const t = useTranslations("farm.features")
   const te = useTranslations("errors")
   const cheer = useCheer()
@@ -39,8 +39,8 @@ export function FeatureSwitches({ rows }: { rows: FeatureRow[] }) {
 
   return (
     <section className="flex flex-col gap-1 rounded-2xl border bg-card p-4">
-      <h2 className="text-lg font-semibold">{t("title")}</h2>
-      <p className="mb-2 text-sm text-muted-foreground">{t("hint")}</p>
+      <h3 className="text-lg font-semibold">{title ?? t("title")}</h3>
+      <p className="mb-2 text-sm text-muted-foreground">{hint ?? t("hint")}</p>
       {error && (
         <p role="alert" className="mb-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
           {error}

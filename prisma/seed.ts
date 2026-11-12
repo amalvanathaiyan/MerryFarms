@@ -52,7 +52,6 @@ async function main() {
       whatsappNumber: phone,
       whatsappMode: "lite",
       invoicePrefix: "MF",
-      settings: { create: {} },
     },
   })
   console.log(`Farm: ${tenant.nameEn} (${tenant.slug})`)

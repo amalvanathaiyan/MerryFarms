@@ -194,7 +194,6 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  settings     TenantSettings?
   subscription FarmSubscription?
   requests     FarmRequest[]
   staff        StaffMember[]
@@ -207,26 +206,7 @@ model Tenant {
   @@map("tenants")
 }
 
-/// Which orders need a confirmation call. Each farm sets its own rules.
-model TenantSettings {
-  id                     String  @id @default(uuid())
-  tenantId               String  @unique
-  callWhatsAppOrders     Boolean @default(true)
-  callWebOrdersFromNew   Boolean @default(true)
-  newCustomerOrderCount  Int     @default(3) // fewer delivered orders than this = "new"
-  callAboveTotalPaise    Int     @default(150000)
-  callAboveUsualMultiple Int     @default(3)
-  skipCallForTrusted     Boolean @default(true)
-  skipCallForPrepaid     Boolean @default(true)
-  callRetryMinutes       Int     @default(30)
-  maxCallAttempts        Int     @default(3)
-
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  @@map("tenant_settings")
-}
+// A farm's confirmation-call rules are settings in the registry now (src/domain/settings.ts: callWhatsAppOrders…).
 
 model StaffMember {
   id         String      @id @default(uuid())
@@ -1170,19 +1150,7 @@ model Job {
   @@map("jobs")
 }
 
-/// A recipe's switch and numbers: tenantId null = the platform's default (off = off for every farm); else one farm's.
-model AutomationSetting {
-  id        String   @id @default(uuid())
-  tenantId  String?
-  recipe    String
-  enabled   Boolean
-  params    Json     @default("{}")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([recipe, tenantId])
-  @@map("automation_settings")
-}
+// A recipe's switch and numbers are settings in the registry (setting_values below).
 
 /// An alert a recipe has sent, so it is sent once (e.g. order X turned red; product Y low on this day).
 model AutomationNotice {
@@ -1195,4 +1163,63 @@ model AutomationNotice {
 
   @@unique([tenantId, recipe, subjectKey])
   @@map("automation_notices")
+}
+
+// ─────────────────────────────────────────────────
+// SETTINGS REGISTRY AND AUDIT LOG (docs/platform-plan.md §4; src/domain/settings.ts, src/server/settings.ts)
+// ─────────────────────────────────────────────────
+
+/// One saved setting value. scopeKey says whose: "platform" (Farm For You's value for every farm), "farm:<tenantId>"
+/// or "staff:<id>" / "customer:<id>" (one person's own). A setting nobody saved takes its default from the registry.
+model SettingValue {
+  id        String   @id @default(uuid())
+  scopeKey  String
+  /// The farm it belongs to (null for Farm For You's values)
+  tenantId  String?
+  key       String
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([scopeKey, key])
+  @@index([tenantId])
+  @@map("setting_values")
+}
+
+/// Farm For You's controls on one setting: lock it (every farm gets the platform value), hide it from farms, or
+/// offer it only to chosen farms first. No row = none of these.
+model SettingControl {
+  key       String   @id
+  locked    Boolean  @default(false)
+  hidden    Boolean  @default(false)
+  onlyFarms String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("setting_controls")
+}
+
+/// Who changed what, when, from what to what: settings, switches and (later) plans, payments and admin work.
+model AuditEntry {
+  id         String   @id @default(uuid())
+  /// The farm it is about (null = about the platform itself)
+  tenantId   String?
+  /// platform_admin | staff | customer | system
+  actorKind  String
+  actorId    String?
+  actorName  String?
+  /// Made by Farm For You support inside the farm's app
+  viaSupport Boolean  @default(false)
+  /// e.g. setting.changed, setting.control, feature.switched
+  action     String
+  /// What it was done to (a setting's key, a feature's key…)
+  subject    String?
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([tenantId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_log")
 }

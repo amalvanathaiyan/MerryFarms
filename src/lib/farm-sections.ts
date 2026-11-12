@@ -101,8 +101,7 @@ export function settingsTabs(features: { farmVideos: boolean }): Tab[] {
     { key: "delivery", href: "/farm/settings/delivery" },
     { key: "look", href: "/farm/settings/look" },
     ...(features.farmVideos ? [{ key: "videos", href: "/farm/settings/videos" }] : []),
-    { key: "switches", href: "/farm/settings/switches" },
-    { key: "automations", href: "/farm/settings/automations" },
+    { key: "choices", href: "/farm/settings/choices" },
     { key: "plan", href: "/farm/settings/plan" },
   ]
 }

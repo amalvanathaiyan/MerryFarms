@@ -9,7 +9,8 @@ import { rupeesToPaise } from "@/domain/money"
 import { isValidUpiId } from "@/domain/upi"
 import { normaliseIndianMobile } from "@/domain/phone"
 import { deliverOrder, recordPayment } from "@/server/billing"
-import { cannotEnable, FEATURE_KEYS, parseChoices } from "@/domain/features"
+import { cannotEnable, FEATURE_KEYS, parseChoices, resolveFeatures } from "@/domain/features"
+import { audit, staffActor } from "@/server/audit"
 import { parsePincodes } from "@/domain/delivery-area"
 import { OrderError } from "@/server/orders"
 import { notifyOrderStatus } from "@/server/notify"
@@ -151,8 +152,9 @@ const featuresSchema = z.record(z.string(), z.boolean())
 export async function saveFeatures(raw: unknown): Promise<Result> {
   const parsed = featuresSchema.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid" }
-  const { tenant } = await requireStaff(OWNER_ONLY)
+  const { tenant, staff, support } = await requireStaff(OWNER_ONLY)
   const choices = parseChoices(tenant.features)
+  const before = resolveFeatures(featureSource(tenant), choices)
   const source = featureSource(tenant)
   for (const key of FEATURE_KEYS) {
     const want = parsed.data[key]
@@ -164,6 +166,11 @@ export async function saveFeatures(raw: unknown): Promise<Result> {
   }
   await prisma.tenant.update({ where: { id: tenant.id }, data: { features: choices } })
   await noteSupportWrite(tenant.id, "Tenant", "update", { id: tenant.id })
+  const after = resolveFeatures(source, choices)
+  await audit(
+    staffActor(staff, support),
+    FEATURE_KEYS.filter((k) => before[k] !== after[k]).map((k) => ({ tenantId: tenant.id, action: "feature.switched", subject: k, before: before[k], after: after[k] })),
+  )
   revalidatePath("/", "layout")
   return { ok: true }
 }

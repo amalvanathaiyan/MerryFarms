@@ -94,25 +94,6 @@ CREATE TABLE "tenants" (
 );
 
 -- CreateTable
-CREATE TABLE "tenant_settings" (
-    "id" TEXT NOT NULL,
-    "tenantId" TEXT NOT NULL,
-    "callWhatsAppOrders" BOOLEAN NOT NULL DEFAULT true,
-    "callWebOrdersFromNew" BOOLEAN NOT NULL DEFAULT true,
-    "newCustomerOrderCount" INTEGER NOT NULL DEFAULT 3,
-    "callAboveTotalPaise" INTEGER NOT NULL DEFAULT 150000,
-    "callAboveUsualMultiple" INTEGER NOT NULL DEFAULT 3,
-    "skipCallForTrusted" BOOLEAN NOT NULL DEFAULT true,
-    "skipCallForPrepaid" BOOLEAN NOT NULL DEFAULT true,
-    "callRetryMinutes" INTEGER NOT NULL DEFAULT 30,
-    "maxCallAttempts" INTEGER NOT NULL DEFAULT 3,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "tenant_settings_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "staff_members" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
@@ -847,19 +828,6 @@ CREATE TABLE "jobs" (
 );
 
 -- CreateTable
-CREATE TABLE "automation_settings" (
-    "id" TEXT NOT NULL,
-    "tenantId" TEXT,
-    "recipe" TEXT NOT NULL,
-    "enabled" BOOLEAN NOT NULL,
-    "params" JSONB NOT NULL DEFAULT '{}',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "automation_settings_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "automation_notices" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
@@ -871,11 +839,51 @@ CREATE TABLE "automation_notices" (
     CONSTRAINT "automation_notices_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
+-- CreateTable
+CREATE TABLE "setting_values" (
+    "id" TEXT NOT NULL,
+    "scopeKey" TEXT NOT NULL,
+    "tenantId" TEXT,
+    "key" TEXT NOT NULL,
+    "value" JSONB NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "setting_values_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "setting_controls" (
+    "key" TEXT NOT NULL,
+    "locked" BOOLEAN NOT NULL DEFAULT false,
+    "hidden" BOOLEAN NOT NULL DEFAULT false,
+    "onlyFarms" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "setting_controls_pkey" PRIMARY KEY ("key")
+);
+
+-- CreateTable
+CREATE TABLE "audit_log" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT,
+    "actorKind" TEXT NOT NULL,
+    "actorId" TEXT,
+    "actorName" TEXT,
+    "viaSupport" BOOLEAN NOT NULL DEFAULT false,
+    "action" TEXT NOT NULL,
+    "subject" TEXT,
+    "before" JSONB,
+    "after" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "audit_log_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateIndex
-CREATE UNIQUE INDEX "tenant_settings_tenantId_key" ON "tenant_settings"("tenantId");
+CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
 -- CreateIndex
 CREATE INDEX "staff_members_authUserId_idx" ON "staff_members"("authUserId");
@@ -1064,13 +1072,19 @@ CREATE INDEX "jobs_status_runAt_idx" ON "jobs"("status", "runAt");
 CREATE INDEX "jobs_type_createdAt_idx" ON "jobs"("type", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "automation_settings_recipe_tenantId_idx" ON "automation_settings"("recipe", "tenantId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "automation_notices_tenantId_recipe_subjectKey_key" ON "automation_notices"("tenantId", "recipe", "subjectKey");
 
--- AddForeignKey
-ALTER TABLE "tenant_settings" ADD CONSTRAINT "tenant_settings_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- CreateIndex
+CREATE INDEX "setting_values_tenantId_idx" ON "setting_values"("tenantId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "setting_values_scopeKey_key_key" ON "setting_values"("scopeKey", "key");
+
+-- CreateIndex
+CREATE INDEX "audit_log_tenantId_createdAt_idx" ON "audit_log"("tenantId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "audit_log_action_createdAt_idx" ON "audit_log"("action", "createdAt");
 
 -- AddForeignKey
 ALTER TABLE "staff_members" ADD CONSTRAINT "staff_members_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;

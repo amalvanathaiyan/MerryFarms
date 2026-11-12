@@ -86,6 +86,7 @@ export const FEATURES: Record<FeatureKey, FeatureDef> = {
 }
 
 export const FEATURE_KEYS = Object.keys(FEATURES) as FeatureKey[]
+export const isFeatureKey = (k: unknown): k is FeatureKey => typeof k === "string" && Object.hasOwn(FEATURES, k)
 
 const PLAN_RANK: Record<Plan, number> = { free: 0, starter: 1, growth: 2, pro: 3 }
 
