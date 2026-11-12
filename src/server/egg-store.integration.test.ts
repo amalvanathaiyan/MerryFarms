@@ -56,6 +56,7 @@ const farm = {
   openingMark: null as string | null,
   themePrimary: null as string | null,
   themeAccent: null as string | null,
+  entitlements: null,
   shopArt: [] as string[],
   videoSpaceMb: null,
   trialEndsAt: null,
@@ -91,7 +92,7 @@ beforeAll(async () => {
   stock = await import("./stock")
   batches = await import("./batches")
 
-  await prisma.tenant.create({ data: farm })
+  await prisma.tenant.create({ data: { ...farm, entitlements: undefined } })
   const db = tenantDb(T)
   await db.category.create({ data: { id: "cat", tenantId: T, nameTa: "முட்டை", nameEn: "Eggs" } })
   await db.deliverySlot.create({ data: { id: "slot-e", tenantId: T, nameTa: "காலை", nameEn: "Morning", startTime: "07:00", endTime: "09:00", daysOfWeek: [0, 1, 2, 3, 4, 5, 6], cutoffHours: 12, maxOrders: 50 } })

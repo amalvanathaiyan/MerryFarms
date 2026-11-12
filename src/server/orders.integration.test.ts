@@ -53,6 +53,7 @@ const tenantRow = (id: string, slug: string, features: Record<string, boolean> =
   openingMark: null as string | null,
   themePrimary: null as string | null,
   themeAccent: null as string | null,
+  entitlements: null,
   shopArt: [] as string[],
   videoSpaceMb: null,
   trialEndsAt: null,
@@ -87,7 +88,7 @@ beforeAll(async () => {
   svc = await import("./orders")
   billing = await import("./billing")
 
-  await prisma.tenant.createMany({ data: [merry, other, small] })
+  await prisma.tenant.createMany({ data: [merry, other, small].map((t) => ({ ...t, entitlements: undefined })) })
   for (const t of [merry, other, small]) {
     const db = tenantDb(t.id)
     await db.category.create({ data: { id: `${t.id}-cat`, tenantId: t.id, nameTa: "முட்டை", nameEn: "Eggs" } })
@@ -436,7 +437,7 @@ describe("weekly and daily plans", () => {
 
   beforeAll(async () => {
     plans = await import("./plans")
-    await prisma.tenant.create({ data: pf })
+    await prisma.tenant.create({ data: { ...pf, entitlements: undefined } })
     await pdb().category.create({ data: { id: "t4-cat", tenantId: pf.id, nameTa: "முட்டை", nameEn: "Eggs" } })
     await pdb().deliverySlot.create({ data: { id: "slot-t4", tenantId: pf.id, nameTa: "காலை", nameEn: "Morning", startTime: "07:00", endTime: "09:00", daysOfWeek: [0, 1, 2, 3, 4, 5, 6], cutoffHours: 12, maxOrders: 1 } })
     await pdb().product.create({ data: { id: "p-t4", tenantId: pf.id, categoryId: "t4-cat", nameTa: "முட்டை", nameEn: "Eggs", packTa: "30", packEn: "Tray of 30", pricePaise: 39_000, stockQty: 3 } })
@@ -526,7 +527,7 @@ describe("delivery area", () => {
     order({ customer: { phone, name: "Area test", language: "ta" }, address, items: [{ productId: "p-t5", qty: 1 }], slotKey: "2026-10-22|slot-t5" })
 
   beforeAll(async () => {
-    await prisma.tenant.create({ data: af })
+    await prisma.tenant.create({ data: { ...af, entitlements: undefined } })
     await adb().category.create({ data: { id: "t5-cat", tenantId: af.id, nameTa: "முட்டை", nameEn: "Eggs" } })
     await adb().deliverySlot.create({ data: { id: "slot-t5", tenantId: af.id, nameTa: "காலை", nameEn: "Morning", startTime: "07:00", endTime: "09:00", daysOfWeek: [0, 1, 2, 3, 4, 5, 6], cutoffHours: 12, maxOrders: 50 } })
     await adb().product.create({ data: { id: "p-t5", tenantId: af.id, categoryId: "t5-cat", nameTa: "முட்டை", nameEn: "Eggs", packTa: "30", packEn: "Tray of 30", pricePaise: 39_000, stockQty: 50 } })
@@ -1036,8 +1037,8 @@ describe("delivery spot and receiver", () => {
 describe("sign-in and staff logins", () => {
   beforeAll(async () => {
     const farm = { nameTa: "வள்ளி பண்ணை", nameEn: "Valli Farm", phone: "+919000060001", invoicePrefix: "VF" }
-    const valli = await prisma.tenant.create({ data: { ...farm, slug: "vallifarm" } })
-    await prisma.tenant.create({ data: { ...farm, slug: "vallifarm-2" } })
+    const valli = await prisma.tenant.create({ data: { ...farm, entitlements: undefined, slug: "vallifarm" } })
+    await prisma.tenant.create({ data: { ...farm, entitlements: undefined, slug: "vallifarm-2" } })
     await tenantDb(valli.id).staffMember.create({ data: { tenantId: valli.id, authUserId: "auth-valli", staffCode: "VAL-001", name: "Valli", email: "valli@example.com", roles: ["owner"] } })
   })
 

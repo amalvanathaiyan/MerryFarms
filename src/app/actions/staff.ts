@@ -7,6 +7,8 @@ import { ROLES } from "@/domain/staff"
 import { normaliseIndianMobile } from "@/domain/phone"
 import { OrderError } from "@/server/orders"
 import { addStaff, resetStaffPassword, setStaffActive, updateStaff } from "@/server/staff"
+import { planLimits } from "@/lib/features"
+import { atLimit } from "@/domain/entitlements"
 
 type Result = { ok: true; password?: string | null; staffCode?: string | null } | { ok: false; error: string }
 
@@ -36,7 +38,8 @@ export async function addStaffAction(raw: unknown): Promise<Result> {
   if (!parsed.success) return { ok: false, error: "invalid_form" }
   const phone = phoneOf(parsed.data.phone)
   if (phone === "bad") return { ok: false, error: "phone_invalid" }
-  const { tenant } = await requireStaffAdmin()
+  const { tenant, db } = await requireStaffAdmin()
+  if (atLimit(planLimits(tenant), "staff", await db.staffMember.count({ where: { isActive: true } }))) return { ok: false, error: "staff_limit" }
   return attempt(async () => {
     const { member, password } = await addStaff(tenant.id, { ...parsed.data, phone, roles: parsed.data.roles as never })
     return { ok: true, password, staffCode: member.staffCode }
