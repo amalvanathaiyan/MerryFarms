@@ -10,7 +10,7 @@ import { useCheer } from "@/components/cheer"
 export interface FeatureRow {
   key: FeatureKey
   on: boolean
-  locked: "coming_soon" | "plan" | null
+  locked: "coming_soon" | "plan" | "forced" | null
   /** Turned on by the farm but held off because a feature it needs is off. */
   blockedBy: FeatureKey | null
 }
@@ -55,6 +55,7 @@ export function FeatureSwitches({ rows }: { rows: FeatureRow[] }) {
                   {t(`${r.key}.title`)}
                   {r.locked === "coming_soon" && <span className="rounded-full bg-yolk px-2 text-xs font-semibold text-yolk-foreground">{t("comingSoon")}</span>}
                   {r.locked === "plan" && <span className="rounded-full border px-2 text-xs">{t("needsPlan")}</span>}
+                  {r.locked === "forced" && <span className="rounded-full border px-2 text-xs">{t("inPlan")}</span>}
                 </span>
                 <span className="block text-sm text-muted-foreground">{t(`${r.key}.hint`)}</span>
                 {r.blockedBy && <span className="block text-sm text-destructive">{t("needs", { feature: t(`${r.blockedBy}.title`) })}</span>}

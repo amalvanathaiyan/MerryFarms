@@ -7,6 +7,8 @@ import { requirePlatformAdmin } from "@/lib/auth"
 import { LanguageToggle } from "@/components/language-toggle"
 import { FfyMark } from "@/components/art/brand-mark"
 import { PlatformOpening } from "@/components/openings"
+import { prisma } from "@/lib/prisma"
+import { AdminNav } from "./admin-nav"
 import { signOutAdmin } from "@/app/actions/auth"
 
 export const dynamic = "force-dynamic"
@@ -24,6 +26,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const admin = await requirePlatformAdmin()
   const t = await getTranslations("admin")
   const tc = await getTranslations("common")
+  const pending = await prisma.farmRequest.count({ where: { status: "pending" } })
   return (
     <div className="ffy-chrome flex min-h-dvh flex-col bg-background">
       <PlatformOpening />
@@ -54,6 +57,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </form>
           </div>
         </div>
+        <AdminNav pending={pending} />
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">{children}</main>
     </div>

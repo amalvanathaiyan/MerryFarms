@@ -9,6 +9,8 @@ import { adjustPrice } from "@/domain/offers"
 import { ART_KINDS } from "@/domain/product-art"
 import { addEggs, putStock, removeStockUpTo, setEggStore, syncEggStock, type Tx } from "@/server/stock"
 import { dropPhoto, storePhoto } from "@/server/photos"
+import { planLimits } from "@/lib/features"
+import { atLimit } from "@/domain/entitlements"
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
 
@@ -66,6 +68,7 @@ export async function saveProduct(raw: unknown): Promise<ActionResult> {
 
   const category = await db.category.findFirst({ where: { id: rest.categoryId, deletedAt: null } })
   if (!category) return { ok: false, error: "category_not_found" }
+  if (!id && atLimit(planLimits(tenant), "products", await db.product.count({ where: { deletedAt: null } }))) return { ok: false, error: "product_limit" }
 
   const data = {
     ...rest,

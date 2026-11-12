@@ -339,6 +339,11 @@ develop → you apply the schema on Supabase → main.
    before going live (§3.8).
 10. **Anything added in any farm that's against the law notifies the platform admin** (§3.9).
 
+11. **Order age colours (user, 2026-11-12, in the pipeline):** a new order shows green; not acted on after 2 hours, yellow;
+    after 4 hours, red. Both hour marks are farm settings (each farm's working times), so unnoticed orders get attended.
+    Built with the settings registry (§4) and the automation engine (§5), which can also alert staff when an order
+    turns red. Phase 1, steps 2–3.
+
 **Still open:**
 
 - Whether to use paid add-ons (WhatsApp Cloud API, AI assistant) and when.

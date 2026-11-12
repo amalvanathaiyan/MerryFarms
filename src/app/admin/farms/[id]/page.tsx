@@ -11,6 +11,9 @@ import { FarmMark, StatusBadge } from "../../farm-bits"
 import { EditFarmForm, OwnerForm, StaffRow } from "./farm-forms"
 import { SupportForm } from "./support-form"
 import { SupportLog } from "@/components/farm/support-log"
+import { prisma } from "@/lib/prisma"
+import { parseEntitlement } from "@/domain/entitlements"
+import { SubscriptionForm } from "./subscription-form"
 
 /** One farm: change its plan, trial, status and details; help its staff back in. */
 export default async function FarmAdminPage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,6 +27,13 @@ export default async function FarmAdminPage({ params }: { params: Promise<{ id: 
   const label = statusLabel(farm.status, farm.trialEndsAt, new Date())
   const shop = farmUrl(farm.slug)
   const hasOwner = staff.some((s) => s.isActive && s.roles.includes("owner"))
+  const ts = await getTranslations("admin.subscription")
+  const [sub, plans, row] = await Promise.all([
+    prisma.farmSubscription.findUnique({ where: { tenantId: farm.id } }),
+    prisma.platformPlan.findMany({ orderBy: [{ sortOrder: "asc" }, { version: "desc" }] }),
+    prisma.tenant.findUnique({ where: { id: farm.id }, select: { entitlements: true } }),
+  ])
+  const ent = parseEntitlement(row?.entitlements)
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
@@ -67,6 +77,30 @@ export default async function FarmAdminPage({ params }: { params: Promise<{ id: 
           </div>
         ))}
       </dl>
+
+      <section className="flex flex-col gap-3 rounded-3xl border bg-card p-4 sm:p-5">
+        <h2 className="text-lg font-bold">{ts("title")}</h2>
+        <SubscriptionForm
+          tenantId={farm.id}
+          // A farm already on a retired version still sees it; otherwise only plans on offer
+          plans={plans.filter((p) => !p.retired || p.id === sub?.planId).map((p) => ({ id: p.id, label: `${pick(locale, p.nameTa, p.nameEn)} · v${p.version}${p.retired ? " ✕" : ""}`, modules: p.modules, retired: p.retired }))}
+          modulesNow={ent?.modules ?? []}
+          initial={
+            sub
+              ? {
+                  planId: sub.planId,
+                  status: sub.status as "trial",
+                  billingCycle: sub.billingCycle === "yearly" ? "yearly" : "monthly",
+                  trialEndsOn: sub.trialEndsAt ? new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(sub.trialEndsAt) : null,
+                  addOns: sub.addOns,
+                  moduleOverrides: (sub.moduleOverrides ?? {}) as Record<string, boolean>,
+                  priceOverrideRupees: sub.priceOverridePaise === null ? null : sub.priceOverridePaise / 100,
+                  notes: sub.notes ?? "",
+                }
+              : null
+          }
+        />
+      </section>
 
       <EditFarmForm
         farm={{
