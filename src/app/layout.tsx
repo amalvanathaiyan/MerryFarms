@@ -71,7 +71,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           dangerouslySetInnerHTML={{
             __html:
               brandThemeCss(FFY_THEME.primary, FFY_THEME.accent) +
-              (tenant?.themePrimary ? brandThemeCss(tenant.themePrimary, tenant.themeAccent ?? FFY_THEME.accent) : "") +
+              brandThemeCss(tenant?.themePrimary ?? FFY_THEME.primary, tenant?.themeAccent ?? FFY_THEME.accent, "", tenant?.nameColours ?? []) +
               brandThemeCss(FFY_THEME.primary, FFY_THEME.accent, ".ffy-chrome"),
           }}
         />

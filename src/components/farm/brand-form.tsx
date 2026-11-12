@@ -50,7 +50,7 @@ export function BrandForm(props: {
 
   const preview = (name: string, tagline: string, lang: "ta" | "en") => (
     <div lang={lang} className="flex flex-col gap-0.5 rounded-xl bg-background px-3 py-2">
-      <FarmName name={name} colours={used} className="font-display text-lg leading-tight font-bold" />
+      <FarmName exact name={name} colours={used} className="font-display text-lg leading-tight font-bold" />
       <span className="flex flex-wrap items-center gap-x-2 text-xs">
         {tagline && (showPlatformLine(tagline) ? <span className="font-medium opacity-90">{tagline}</span> : <span className="font-semibold text-primary uppercase" style={{ letterSpacing: "0.12em" }}>{tagline}</span>)}
         {showPlatformLine(tagline) && <OnFarmForYou />}

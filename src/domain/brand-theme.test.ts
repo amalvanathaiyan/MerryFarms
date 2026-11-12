@@ -34,6 +34,13 @@ describe("brandTheme", () => {
     expect(t.light.brandAccentForeground).not.toBe("0 0% 100%")
   })
 
+  it("makes the farm's name colours readable in dark mode", () => {
+    const css = brandThemeCss("#1F6B3A", "#A8262B", "", ["#A8262B", "#1F6B3A"])
+    expect(css).toContain("--name-1:#A8262B;") // light: Merry red as it is
+    const dark = /data-theme="dark"]{[^}]*--name-1:(#[0-9A-F]{6})/.exec(css)![1]
+    expect(contrast(hexToRgb(dark)!, [25, 31, 28])).toBeGreaterThanOrEqual(4)
+  })
+
   it("refuses colours that aren't #rrggbb", () => {
     expect(brandTheme("green", "#A8262B")).toBeNull()
     expect(brandThemeCss("#123", "#A8262B")).toBe("")

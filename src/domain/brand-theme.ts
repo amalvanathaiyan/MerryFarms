@@ -128,6 +128,16 @@ export function brandTheme(primaryHex: string, accentHex: string): Record<keyof 
   }
 }
 
+/** Name colours readable on each variant's page: big bold words need 3:1 at least; 4:1 leaves a margin. */
+function nameVars(names: readonly string[], surfaces: Rgb[], toward: Rgb) {
+  return names
+    .map((hex, i) => {
+      const c = hexToRgb(hex)
+      return c ? `--name-${i + 1}:${rgbToHex(readable(c, surfaces, toward, 4))};` : ""
+    })
+    .join("")
+}
+
 const block = (v: ThemeVariant) =>
   `--primary:${v.primary};--primary-foreground:${v.primaryForeground};--ring:${v.ring};--accent:${v.accentTint};--brand-accent:${v.brandAccent};--brand-accent-foreground:${v.brandAccentForeground};--chart-1:${v.chart};`
 
@@ -135,18 +145,25 @@ const block = (v: ThemeVariant) =>
  * CSS for one brand, in the same variants and selectors as globals.css. `scope` limits it to part of the page
  * (".ffy-chrome" for the platform's own screens inside a farm's address); empty = the whole page.
  */
-export function brandThemeCss(primaryHex: string, accentHex: string, scope = ""): string {
+export function brandThemeCss(primaryHex: string, accentHex: string, scope = "", names: readonly string[] = []): string {
   const t = brandTheme(primaryHex, accentHex)
   if (!t) return ""
+  // The farm's name colours, each made readable on that variant's page (--name-1, --name-2…; see FarmName)
+  const n = {
+    light: nameVars(names, SURFACE.light, BLACK),
+    dark: nameVars(names, SURFACE.dark, WHITE),
+    softLight: nameVars(names, SURFACE.softLight, BLACK),
+    softDark: nameVars(names, SURFACE.softDark, WHITE),
+  }
   const s = scope ? ` ${scope}` : ""
   // "html:root" is a touch more specific than globals.css's ":root", so these win whichever stylesheet loads first.
   const r = "html:root"
   return [
-    `${r}${s}{${block(t.light)}}`,
-    `@media (prefers-color-scheme: dark){${r}:not([data-theme="light"])${s}{${block(t.dark)}}}`,
-    `${r}[data-theme="dark"]${s}{${block(t.dark)}}`,
-    `${r}[data-soft="on"]${s}{${block(t.softLight)}}`,
-    `@media (prefers-color-scheme: dark){${r}[data-soft="on"]:not([data-theme="light"])${s}{${block(t.softDark)}}}`,
-    `${r}[data-soft="on"][data-theme="dark"]${s}{${block(t.softDark)}}`,
+    `${r}${s}{${block(t.light)}${n.light}}`,
+    `@media (prefers-color-scheme: dark){${r}:not([data-theme="light"])${s}{${block(t.dark)}${n.dark}}}`,
+    `${r}[data-theme="dark"]${s}{${block(t.dark)}${n.dark}}`,
+    `${r}[data-soft="on"]${s}{${block(t.softLight)}${n.softLight}}`,
+    `@media (prefers-color-scheme: dark){${r}[data-soft="on"]:not([data-theme="light"])${s}{${block(t.softDark)}${n.softDark}}}`,
+    `${r}[data-soft="on"][data-theme="dark"]${s}{${block(t.softDark)}${n.softDark}}`,
   ].join("")
 }

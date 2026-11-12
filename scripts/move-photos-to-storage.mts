@@ -3,8 +3,8 @@
  * database stays small. Safe to run more than once: only rows with bytes and no stored file are moved, and a row's
  * bytes are cleared only after its file is stored.
  *
- *   npx tsx scripts/move-photos-to-storage.mts            shows what it would move (nothing changes)
- *   npx tsx scripts/move-photos-to-storage.mts --apply    moves them
+ *   npx tsx --conditions=react-server scripts/move-photos-to-storage.mts            shows what it would move (nothing changes)
+ *   npx tsx --conditions=react-server scripts/move-photos-to-storage.mts --apply    moves them
  *
  * Uses .env.local (DATABASE_URL and the Supabase keys).
  */
@@ -12,8 +12,8 @@ import { config } from "dotenv"
 config({ path: ".env.local", quiet: true })
 
 const apply = process.argv.includes("--apply")
-const { prisma } = await import("../src/lib/prisma.ts")
-const { putFile, mediaAvailable } = await import("../src/server/media-store.ts")
+const { prisma } = await import("../src/lib/prisma")
+const { putFile, mediaAvailable } = await import("../src/server/media-store")
 if (!mediaAvailable()) throw new Error("File storage isn't set up (NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).")
 
 const EXT: Record<string, string> = { "image/webp": "webp", "image/png": "png", "image/jpeg": "jpg" }
