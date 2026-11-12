@@ -1077,7 +1077,19 @@
       "youSellThis": "you sell this",
       "saveArt": "Save drawings",
       "useSuggested": "Use suggested",
-      "saved": "Saved."
+      "saved": "Saved.",
+      "brandTitle": "Name and tagline",
+      "brandHint": "How your farm's name and tagline look in your shop, on the farm app and when the app opens.",
+      "taglineTa": "Tagline in Tamil",
+      "taglineEn": "Tagline in English",
+      "taglinePlaceholderTa": "எ.கா. தினமும் புதிய நாட்டுக்கோழி முட்டை",
+      "taglinePlaceholderEn": "e.g. Fresh country eggs every day",
+      "nameColours": "Colour my farm's name",
+      "nameColoursHint": "Each word of the name takes the next colour: the first word in the first colour, the second word in the second.",
+      "colourFirst": "First word",
+      "colourSecond": "Second word",
+      "brandPreview": "How it looks",
+      "saveBrand": "Save name and tagline"
     },
     "account": {
       "title": "My account",
@@ -1739,7 +1751,11 @@
       "open": "Open farm app as support",
       "opening": "Opening…",
       "ended": "Your support visit ended: it was open for an hour. Open it again from the farm's page if you need more time."
-    }
+    },
+    "openingMark": "Opening animation",
+    "openingMarkHint": "Plays when the farm's installed shop or farm app opens. The farm's logo pops in, unless the farm has its own animated mark.",
+    "opening_logo": "The farm's logo",
+    "opening_merry-egg": "Merry Egg"
   },
   "display": {
     "title": "Easy on the eyes",

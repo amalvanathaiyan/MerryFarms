@@ -25,7 +25,7 @@ export function LogoForm({ logoUrl, initials }: { logoUrl: string | null; initia
     start(async () => {
       let dataUrl: string
       try {
-        dataUrl = await shrinkPhoto(file, 512)
+        dataUrl = await shrinkPhoto(file, 512, { keepClear: true })
       } catch {
         return setError(te("photo_too_big"))
       }

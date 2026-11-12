@@ -125,6 +125,8 @@ export interface FarmChanges {
   trialEndsOn: string | null
   /** Storage for the farm's uploaded videos in MB; null = the default, left out = unchanged. */
   videoSpaceMb?: number | null
+  /** The opening animation from the platform's marks (OPENING_MARKS); null = the farm's logo pops in; left out = unchanged. */
+  openingMark?: string | null
 }
 
 export async function updateFarm(id: string, c: FarmChanges) {
@@ -143,6 +145,7 @@ export async function updateFarm(id: string, c: FarmChanges) {
       status: c.status,
       trialEndsAt: c.status === "trial" && c.trialEndsOn ? new Date(`${c.trialEndsOn}T23:59:59+05:30`) : null,
       videoSpaceMb: c.videoSpaceMb,
+      openingMark: c.openingMark,
     },
   })
 }
