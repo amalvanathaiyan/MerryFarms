@@ -4,7 +4,6 @@ import { noteSupportWrite } from "@/server/support"
 
 /** Models that belong to a farm. Every query on them is pinned to one tenantId. */
 const TENANT_MODELS = new Set([
-  "TenantSettings",
   "StaffMember",
   "Category",
   "Product",

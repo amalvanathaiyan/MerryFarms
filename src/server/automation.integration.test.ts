@@ -1,6 +1,6 @@
 /**
  * The automation engine against a real Postgres (PGlite over a local socket): each recipe alerts once, the farm's own
- * hours and switches are followed, the platform's off switch reaches every farm, failing jobs are retried then marked
+ * hours and switches are followed, the platform's lock reaches every farm, failing jobs are retried then marked
  * failed, and every tick is recorded. Notifications are caught instead of sent.
  */
 import { readFileSync } from "node:fs"
@@ -20,6 +20,8 @@ let pg: PGlite
 let server: PGLiteSocketServer
 let prisma: typeof import("@/lib/prisma").prisma
 let engine: typeof import("./automation")
+let settings: typeof import("./settings")
+const ACTOR = { kind: "system" as const, id: null, name: "test" }
 
 const farm = (id: string) => ({
   id, slug: id, nameTa: id, nameEn: id, status: "active" as const, plan: "pro" as const, defaultLanguage: "en" as const,
@@ -36,6 +38,7 @@ beforeAll(async () => {
   process.env.DATABASE_URL = `postgresql://postgres:postgres@127.0.0.1:${PORT}/postgres?sslmode=disable`
   ;({ prisma } = await import("@/lib/prisma"))
   engine = await import("./automation")
+  settings = await import("./settings")
   await prisma.tenant.createMany({ data: [farm("a1"), farm("b2")] })
   for (const t of ["a1", "b2"]) {
     await prisma.category.create({ data: { id: `${t}-cat`, tenantId: t, nameTa: "முட்டை", nameEn: "Eggs" } })
@@ -73,21 +76,26 @@ describe("the automation engine", () => {
   })
 
   it("follows the farm's own hours, and the farm switching a recipe off", async () => {
-    await engine.saveRecipeSetting("a1", "orderWaiting", true, { yellowHours: 1, redHours: 2.5 })
+    await settings.saveFarmSettings("a1", { orderYellowHours: 1, orderRedHours: 2.5 }, ACTOR)
     expect((await engine.tick(NOW)).ordersWaiting).toBe(1) // the 3-hour order is now red too
-    await engine.saveRecipeSetting("b2", "lowStock", false, {})
+    await settings.saveFarmSettings("b2", { lowStockOn: false }, ACTOR)
     await prisma.product.create({ data: { id: "p-b", tenantId: "b2", categoryId: "b2-cat", nameTa: "பால்", nameEn: "Milk", packTa: "1", packEn: "1 litre", pricePaise: 6000, stockQty: 0 } })
     sent.length = 0
     await engine.tick(NOW)
     expect(sent.some((x) => x.tenantId === "b2" && x.title.includes("low"))).toBe(false)
   })
 
-  it("the platform's off switch reaches every farm", async () => {
+  it("Farm For You's value reaches farms that haven't set their own; locked, it reaches every farm", async () => {
     await prisma.order.create({ data: { id: "o-late2", tenantId: "a1", number: 3, customerId: "a1-c", slotId: "a1-slot", slotDate: "2026-11-13", slotLabel: "7–9", channel: "web", paymentMethod: "cash_on_delivery", subtotalPaise: 100, deliveryFeePaise: 0, totalPaise: 100, createdAt: hoursAgo(9) } })
-    await engine.saveRecipeSetting(null, "orderWaiting", false, {})
+    await settings.saveFarmSettings("a1", { orderWaitingOn: true }, ACTOR)
+    await settings.savePlatformSettings({ orderWaitingOn: false }, ACTOR)
+    await settings.saveSettingControl("orderWaitingOn", { locked: true, hidden: false, onlyFarms: [] }, ACTOR)
     expect((await engine.tick(NOW)).ordersWaiting).toBe(0)
-    await engine.saveRecipeSetting(null, "orderWaiting", true, {})
-    expect((await engine.tick(NOW)).ordersWaiting).toBe(1)
+    await expect(settings.saveFarmSettings("a1", { orderWaitingOn: true }, ACTOR)).rejects.toThrow("not_allowed")
+    await settings.saveSettingControl("orderWaitingOn", { locked: false, hidden: false, onlyFarms: [] }, ACTOR)
+    expect((await engine.tick(NOW)).ordersWaiting).toBe(1) // a1 had switched it on for itself
+    await settings.savePlatformSettings({ orderWaitingOn: null }, ACTOR)
+    expect(await prisma.auditEntry.count({ where: { action: "setting.control", subject: "orderWaitingOn" } })).toBe(2)
   })
 
   it("reminds an owner once before the trial ends", async () => {
@@ -105,6 +113,6 @@ describe("the automation engine", () => {
     expect(j.status).toBe("failed")
     expect(j.attempts).toBe(5)
     expect(j.lastError).toContain("no handler")
-    expect(await prisma.platformEvent.count({ where: { type: "automation.changed" } })).toBeGreaterThan(0)
+    expect(await prisma.platformEvent.count({ where: { type: "settings.changed" } })).toBeGreaterThan(0)
   })
 })

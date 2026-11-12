@@ -1,29 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { cleanParams, resolveRecipe, waitedFor, waitLevel } from "./automations"
+import { waitedFor, waitLevel, waitMarks } from "./automations"
 
-describe("resolveRecipe", () => {
-  it("uses the recipe's defaults when nobody has set anything", () => {
-    expect(resolveRecipe("orderWaiting", null, null)).toEqual({ enabled: true, params: { yellowHours: 2, redHours: 4 }, lockedOff: false })
-  })
-
-  it("the farm's numbers and switch win over the platform's", () => {
-    const r = resolveRecipe("orderWaiting", { enabled: true, params: { yellowHours: 3 } }, { enabled: false, params: { redHours: 6 } })
-    expect(r).toEqual({ enabled: false, params: { yellowHours: 3, redHours: 6 }, lockedOff: false })
-  })
-
-  it("the platform switching a recipe off switches it off for every farm", () => {
-    const r = resolveRecipe("lowStock", { enabled: false, params: {} }, { enabled: true, params: {} })
-    expect(r.enabled).toBe(false)
-    expect(r.lockedOff).toBe(true)
-  })
-
-  it("keeps numbers within limits, and red never before yellow", () => {
-    expect(cleanParams("orderWaiting", { yellowHours: 0, redHours: 1000, other: 5 })).toEqual({ yellowHours: 0.25, redHours: 96 })
-    expect(resolveRecipe("orderWaiting", null, { enabled: true, params: { yellowHours: 5, redHours: 3 } }).params).toEqual({ yellowHours: 5, redHours: 5 })
-  })
-
-  it("platform recipes ignore farm settings", () => {
-    expect(resolveRecipe("trialEnding", { enabled: true, params: { daysBefore: 5 } }, { enabled: false, params: { daysBefore: 9 } })).toEqual({ enabled: true, params: { daysBefore: 5 }, lockedOff: false })
+describe("waitMarks", () => {
+  it("red never comes before yellow", () => {
+    expect(waitMarks(2, 4)).toEqual({ yellowHours: 2, redHours: 4 })
+    expect(waitMarks(5, 3)).toEqual({ yellowHours: 5, redHours: 5 })
   })
 })
 

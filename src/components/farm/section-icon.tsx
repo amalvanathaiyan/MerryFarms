@@ -61,6 +61,7 @@ const ICONS: Record<string, LucideIcon> = {
   delivery: Truck,
   look: Palette,
   switches: ToggleRight,
+  choices: SlidersHorizontal,
   plan: Layers,
   automations: Bot,
   videos: Clapperboard,
