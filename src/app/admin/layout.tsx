@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic"
 
 /** Installing from here gives FarmForYou admin its own icon (the Farm For You mark), opening /admin (never the shop). */
 export const metadata: Metadata = {
-  title: "FarmForYou Admin",
+  title: "Farm For You Admin",
   manifest: "/app-manifest?app=admin",
   appleWebApp: { capable: true, title: appIdentity("admin", null).shortName, statusBarStyle: "default" },
   icons: { apple: "/icons/admin-apple.png" },
@@ -25,7 +25,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const t = await getTranslations("admin")
   const tc = await getTranslations("common")
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="ffy-chrome flex min-h-dvh flex-col bg-background">
       <PlatformOpening />
       <header className="sticky top-0 z-20 border-b bg-header/95 text-header-foreground backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5 sm:px-6">

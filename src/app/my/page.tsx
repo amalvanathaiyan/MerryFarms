@@ -102,7 +102,7 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
           <Link href="/my/messages" className="flex items-center justify-between rounded-2xl border bg-card p-4 font-semibold">
             <span>💬 {t("messageFarm")}</span>
             {unread > 0 ? (
-              <span className="rounded-full bg-destructive px-2 text-sm font-bold leading-6 text-destructive-foreground">{t("newReplies", { count: unread })}</span>
+              <span className="rounded-full bg-brand-accent px-2 text-sm font-bold leading-6 text-brand-accent-foreground">{t("newReplies", { count: unread })}</span>
             ) : (
               <span aria-hidden>→</span>
             )}

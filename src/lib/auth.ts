@@ -65,7 +65,7 @@ function supportStaff(tenant: { id: string; defaultLanguage: Language }, visit: 
     tenantId: tenant.id,
     authUserId,
     staffCode: null,
-    name: "FarmForYou support",
+    name: "Farm For You support",
     phone: null,
     email: null,
     roles,

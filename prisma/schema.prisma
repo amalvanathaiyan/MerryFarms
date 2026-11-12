@@ -179,6 +179,10 @@ model Tenant {
   taglineEn   String?
   nameColours String[] @default([])
   openingMark String?
+  // The farm's app colours (src/domain/brand-theme.ts): buttons and links, and highlights such as badges.
+  // null = Farm For You's colours. Adjusted automatically for readability in light, dark and soft modes.
+  themePrimary String?
+  themeAccent  String?
 
   // Storage for the farm's uploaded videos, in MB; null = the default (DEFAULT_VIDEO_SPACE_MB). Set by the platform.
   videoSpaceMb Int?

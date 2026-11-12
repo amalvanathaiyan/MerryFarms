@@ -83,6 +83,8 @@ CREATE TABLE "tenants" (
     "taglineEn" TEXT,
     "nameColours" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "openingMark" TEXT,
+    "themePrimary" TEXT,
+    "themeAccent" TEXT,
     "videoSpaceMb" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

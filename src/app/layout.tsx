@@ -10,6 +10,7 @@ import { DISPLAY_SCRIPT } from "@/lib/display"
 import { OPENING_SCRIPT } from "@/lib/opening"
 import { farmOpening } from "@/lib/farm-brand"
 import { FarmOpening } from "@/components/openings"
+import { brandThemeCss, FFY_THEME } from "@/domain/brand-theme"
 
 // Body: Hind Madurai, one family for Tamil and English. Headings: Baloo Thambi 2, rounded and warm.
 const body = Hind_Madurai({
@@ -28,7 +29,7 @@ const heading = Baloo_Thambi_2({
 export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getTenant()
   const locale = await getLocale()
-  const name = tenant ? (locale === "ta" ? tenant.nameTa : tenant.nameEn) : "FarmForYou"
+  const name = tenant ? (locale === "ta" ? tenant.nameTa : tenant.nameEn) : "Farm For You"
   const description = tenant ? `${tenant.nameEn} — farm-fresh orders` : "Farm-fresh orders from local farms"
   // Link previews need a full address, and each farm has its own (its subdomain), so it comes from the request.
   const h = await headers()
@@ -40,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: base,
     title: name,
     description,
-    openGraph: { type: "website", title: name, description, siteName: "FarmForYou", images: [image] },
+    openGraph: { type: "website", title: name, description, siteName: "Farm For You", images: [image] },
     twitter: { card: "summary_large_image", title: name, description, images: [image.url] },
     manifest: "/app-manifest",
     appleWebApp: { capable: true, title: name, statusBarStyle: "default" },
@@ -64,6 +65,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <script dangerouslySetInnerHTML={{ __html: DISPLAY_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: OPENING_SCRIPT }} />
+        {/* Brand colours: Farm For You's by default and always on its own screens (.ffy-chrome: admin, sign-in);
+            the farm's own on its shop and farm app. Built from validated #rrggbb values only. */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html:
+              brandThemeCss(FFY_THEME.primary, FFY_THEME.accent) +
+              (tenant?.themePrimary ? brandThemeCss(tenant.themePrimary, tenant.themeAccent ?? FFY_THEME.accent) : "") +
+              brandThemeCss(FFY_THEME.primary, FFY_THEME.accent, ".ffy-chrome"),
+          }}
+        />
       </head>
       <body className="min-h-dvh antialiased">
         <NextIntlClientProvider>

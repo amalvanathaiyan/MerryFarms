@@ -37,7 +37,7 @@ export default async function FarmMessagesPage() {
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <span className="text-xs text-muted-foreground tabular-nums">{chatTime(r.last.at, locale)}</span>
-                  {r.unread > 0 && <span className="min-w-6 rounded-full bg-destructive px-1.5 text-center text-xs font-bold leading-6 text-destructive-foreground tabular-nums">{r.unread}</span>}
+                  {r.unread > 0 && <span className="min-w-6 rounded-full bg-brand-accent px-1.5 text-center text-xs font-bold leading-6 text-brand-accent-foreground tabular-nums">{r.unread}</span>}
                 </div>
               </Link>
             </li>

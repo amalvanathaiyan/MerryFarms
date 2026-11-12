@@ -47,9 +47,11 @@ const brandSchema = z.object({
   taglineTa: z.string().trim().max(60),
   taglineEn: z.string().trim().max(60),
   nameColours: z.array(z.string().max(9)).max(MAX_NAME_COLOURS),
+  /** The app's colours; null = Farm For You's */
+  theme: z.object({ primary: z.string().regex(/^#[0-9a-fA-F]{6}$/), accent: z.string().regex(/^#[0-9a-fA-F]{6}$/) }).nullable().optional(),
 })
 
-/** The farm's tagline (Tamil and English) and the colours its name's words take in turn. Empty = none. */
+/** The farm's tagline (Tamil and English), the colours its name's words take in turn, and its app colours. Empty = none. */
 export async function setFarmBrand(raw: unknown): Promise<Result> {
   const parsed = brandSchema.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_form" }
@@ -58,7 +60,15 @@ export async function setFarmBrand(raw: unknown): Promise<Result> {
   const { tenant } = await requireStaff(OWNER_ONLY)
   await prisma.tenant.update({
     where: { id: tenant.id },
-    data: { taglineTa: parsed.data.taglineTa || null, taglineEn: parsed.data.taglineEn || null, nameColours },
+    data: {
+      taglineTa: parsed.data.taglineTa || null,
+      taglineEn: parsed.data.taglineEn || null,
+      nameColours,
+      ...(parsed.data.theme !== undefined && {
+        themePrimary: parsed.data.theme?.primary.toUpperCase() ?? null,
+        themeAccent: parsed.data.theme?.accent.toUpperCase() ?? null,
+      }),
+    },
   })
   await noteSupportWrite(tenant.id, "Tenant", "update", { id: tenant.id })
   return refresh()

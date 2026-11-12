@@ -28,6 +28,9 @@
   --color-popover-foreground: hsl(var(--popover-foreground));
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
+  /* The brand's highlight colour (badges, counts): Farm For You's turmeric, or the farm's own (src/domain/brand-theme.ts) */
+  --color-brand-accent: hsl(var(--brand-accent));
+  --color-brand-accent-foreground: hsl(var(--brand-accent-foreground));
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
   --color-muted: hsl(var(--muted));
@@ -117,6 +120,9 @@
     --border: 96 20% 87%;
     --input: 104 18% 78%;
     --ring: 150 56% 27%;
+    /* Defaults only: the root layout injects the brand's real colours (src/domain/brand-theme.ts) */
+    --brand-accent: 44 99% 48%;
+    --brand-accent-foreground: 145 30% 8%;
     --lime: 84 38% 62%;
     --lime-foreground: 90 40% 14%;
     --yolk: 45 100% 89%;
