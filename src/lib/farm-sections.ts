@@ -75,11 +75,16 @@ export interface Tab {
 /** Poultry care's tabs. Costs shows money, so it is the owner's. */
 export function poultryTabs(who: Who): Tab[] {
   if (!who.features.poultryCare || !has(who, "owner", "packing")) return []
+  // Staff come here to enter the day, so Entry comes first for them; the owner starts from the batches.
+  const owner = has(who, "owner")
+  const entry = { key: "entry", href: "/farm/poultry/entry" }
+  const batches = { key: "batches", href: "/farm/poultry" }
   return [
-    { key: "batches", href: "/farm/poultry" },
-    { key: "vaccines", href: "/farm/poultry/vaccines" },
+    ...(owner ? [batches, entry] : [entry, batches]),
     { key: "feed", href: "/farm/poultry/feed" },
-    ...(has(who, "owner") ? [{ key: "costs", href: "/farm/poultry/costs" }] : []),
+    { key: "vaccines", href: "/farm/poultry/vaccines" },
+    { key: "growth", href: "/farm/poultry/growth" },
+    ...(owner ? [{ key: "costs", href: "/farm/poultry/costs" }] : []),
   ]
 }
 

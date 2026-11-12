@@ -24,7 +24,11 @@ describe("the bottom menu", () => {
     expect(keys(menu)).toEqual(["today", "orders", "poultry", "money", "more"])
     expect(menu.find((m) => m.key === "money")?.href).toBe("/farm/money/made")
     expect(keys(moneyTabs({ roles: ["packing"], features: withPoultry }))).toEqual(["made"])
-    expect(keys(poultryTabs({ roles: ["packing"], features: withPoultry }))).toEqual(["batches", "vaccines", "feed"])
+    expect(keys(poultryTabs({ roles: ["packing"], features: withPoultry }))).toEqual(["entry", "batches", "feed", "vaccines", "growth"])
+    // Staff land on Entry; the owner lands on the batches
+    expect(menu.find((m) => m.key === "poultry")?.href).toBe("/farm/poultry/entry")
+    expect(mainMenu({ roles: ["owner"], features: withPoultry }).find((m) => m.key === "poultry")?.href).toBe("/farm/poultry")
+    expect(keys(poultryTabs({ roles: ["owner"], features: withPoultry }))).toEqual(["batches", "entry", "feed", "vaccines", "growth", "costs"])
   })
 
   it("gives a manager everything the owner has, except the Staff list", () => {

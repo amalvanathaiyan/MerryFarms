@@ -123,7 +123,7 @@ describe("poultry reminders", () => {
   it("in the evening reminds them of a batch not entered today, and stays quiet once it is", async () => {
     expect(await reminders.eveningReminders(EVENING)).toEqual([{ slug: "t1", notEntered: 1 }])
     expect(phones()).toEqual(["owner", "packing"])
-    expect(sent[0].note).toMatchObject({ title: "இன்றைய பதிவு இல்லை · 1 batch not entered", url: "/farm/poultry/today" })
+    expect(sent[0].note).toMatchObject({ title: "இன்றைய பதிவு இல்லை · 1 batch not entered", url: "/farm/poultry/entry?batch=all" })
 
     sent.length = 0
     await batches.saveBatchDay("t1", "owner", batchId, day(TODAY), TODAY)

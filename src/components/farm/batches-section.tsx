@@ -76,7 +76,7 @@ export async function BatchesSection({
       )}
 
       {isToday && cards.length > 0 && (
-        <Link href="/farm/poultry/today" className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-sec-poultry text-lg font-bold text-sec-on">
+        <Link href="/farm/poultry/entry?batch=all" className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-sec-poultry text-lg font-bold text-sec-on">
           <PencilLine className="size-5" aria-hidden /> {cards.every((c) => c.enteredToday) ? t("changeAllToday") : t("enterAllToday")}
         </Link>
       )}
@@ -102,12 +102,12 @@ export async function BatchesSection({
               )}
             </Link>
             {isToday && c.vaccinesDue.length > 0 && (
-              <Link href="/farm/poultry/vaccines" className="flex items-center gap-2 rounded-xl bg-yolk px-3 py-1.5 text-sm font-bold text-yolk-foreground">
+              <Link href={`/farm/poultry/entry?batch=${c.id}`} className="flex items-center gap-2 rounded-xl bg-yolk px-3 py-1.5 text-sm font-bold text-yolk-foreground">
                 <Syringe className="size-4 shrink-0" aria-hidden /> {tv("dueOnCard", { names: c.vaccinesDue.join(", ") })}
               </Link>
             )}
             {isToday && c.weighDue && (
-              <Link href={`/farm/poultry/batches/${c.id}#weights`} className="flex items-center gap-2 self-start rounded-full border px-3 py-1 text-sm font-semibold text-sec-poultry hover:bg-accent">
+              <Link href={`/farm/poultry/entry?batch=${c.id}`} className="flex items-center gap-2 self-start rounded-full border px-3 py-1 text-sm font-semibold text-sec-poultry hover:bg-accent">
                 <Scale className="size-4 shrink-0" aria-hidden /> {tw("cardDue")}
               </Link>
             )}

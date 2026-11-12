@@ -1,5 +1,7 @@
 import {
   Bot,
+  PencilLine,
+  Scale,
   Layers,
   BarChart3,
   CheckCircle2,
@@ -50,6 +52,8 @@ const ICONS: Record<string, LucideIcon> = {
   account: CircleUserRound,
   // Tabs
   batches: Bird,
+  entry: PencilLine,
+  growth: Scale,
   vaccines: Syringe,
   feed: Wheat,
   profit: TrendingUp,
