@@ -24,6 +24,8 @@ export const VIDEO_PATH = /^[\w-]+\/videos\/[\w-]+\.(mp4|mov|webm|jpg)$/
 export const IMAGE_PATH = /^[\w-]+\/(images|logo)\/[\w-]+\.(webp|jpg|png)$/
 /** Only these names are ever written, served or removed. */
 export const SAFE_PATH = { test: (p: string) => VIDEO_PATH.test(p) || IMAGE_PATH.test(p) }
+// The bucket's per-file limit: 50 MB is the most the Supabase free plan allows (asking for more fails to create the
+// bucket); the app's own videos stop at 40 MB (MAX_UPLOAD_BYTES).
 const ALLOWED_TYPES = ["video/mp4", "video/quicktime", "video/webm", "image/jpeg", "image/webp", "image/png"]
 
 let bucketReady = false
@@ -32,11 +34,11 @@ async function ensureBucket() {
   const storage = createServiceClient().storage
   const { data } = await storage.getBucket(MEDIA_BUCKET)
   if (!data) {
-    const { error } = await storage.createBucket(MEDIA_BUCKET, { public: true, fileSizeLimit: "60MB", allowedMimeTypes: ALLOWED_TYPES })
+    const { error } = await storage.createBucket(MEDIA_BUCKET, { public: true, fileSizeLimit: "50MB", allowedMimeTypes: ALLOWED_TYPES })
     if (error && !/exist/i.test(error.message)) throw new Error(`[media] bucket: ${error.message}`)
   } else if (ALLOWED_TYPES.some((t) => !(data.allowed_mime_types ?? ALLOWED_TYPES).includes(t))) {
     // A bucket made before photos moved here took only videos and JPEG: let it take WebP and PNG photos too.
-    const { error } = await storage.updateBucket(MEDIA_BUCKET, { public: true, fileSizeLimit: "60MB", allowedMimeTypes: ALLOWED_TYPES })
+    const { error } = await storage.updateBucket(MEDIA_BUCKET, { public: true, fileSizeLimit: "50MB", allowedMimeTypes: ALLOWED_TYPES })
     if (error) throw new Error(`[media] bucket update: ${error.message}`)
   }
   bucketReady = true
