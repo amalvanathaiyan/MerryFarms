@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { addOwnerAction, resetPasswordAction, updateFarmAction } from "@/app/actions/admin"
 import { cn } from "@/lib/utils"
 import { DEFAULT_VIDEO_SPACE_MB } from "@/domain/videos"
+import { OPENING_MARKS } from "@/domain/brand"
 
 const PLANS = ["free", "starter", "growth", "pro"] as const
 const STATUSES = ["trial", "active", "suspended"] as const
@@ -24,6 +25,7 @@ type Farm = {
   status: (typeof STATUSES)[number]
   trialEndsOn: string | null
   videoSpaceMb: number | null
+  openingMark: string | null
 }
 
 const chip = (on: boolean) => cn("rounded-full border px-4 py-2 text-sm font-medium", on ? "border-primary bg-accent" : "bg-card")
@@ -97,6 +99,18 @@ export function EditFarmForm({ farm, videoUsedMb }: { farm: Farm; videoUsedMb: n
           className="h-12 max-w-48"
         />
         <p className="text-sm text-muted-foreground">{t("videoSpaceHint", { used: videoUsedMb, standard: DEFAULT_VIDEO_SPACE_MB })}</p>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-semibold">{t("openingMark")}</span>
+        <div className="flex flex-wrap gap-2">
+          {[null, ...OPENING_MARKS].map((m) => (
+            <button key={m ?? "logo"} type="button" className={chip(f.openingMark === m)} aria-pressed={f.openingMark === m} onClick={() => setF({ ...f, openingMark: m })}>
+              {t(m ? `opening_${m}` : "opening_logo")}
+            </button>
+          ))}
+        </div>
+        <p className="text-sm text-muted-foreground">{t("openingMarkHint")}</p>
       </div>
 
       <h2 className="mt-2 text-lg font-bold">{t("farmDetails")}</h2>

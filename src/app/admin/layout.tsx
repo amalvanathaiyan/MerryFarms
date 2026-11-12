@@ -5,12 +5,13 @@ import { getTranslations } from "next-intl/server"
 import { LogOut, UserRound } from "lucide-react"
 import { requirePlatformAdmin } from "@/lib/auth"
 import { LanguageToggle } from "@/components/language-toggle"
-import { WheelMark } from "@/components/art/wheel-mark"
+import { FfyMark } from "@/components/art/brand-mark"
+import { PlatformOpening } from "@/components/openings"
 import { signOutAdmin } from "@/app/actions/auth"
 
 export const dynamic = "force-dynamic"
 
-/** Installing from here gives FarmForYou admin its own dark icon, opening /admin (never the shop). */
+/** Installing from here gives FarmForYou admin its own icon (the Farm For You mark), opening /admin (never the shop). */
 export const metadata: Metadata = {
   title: "FarmForYou Admin",
   manifest: "/app-manifest?app=admin",
@@ -25,13 +26,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const tc = await getTranslations("common")
   return (
     <div className="flex min-h-dvh flex-col">
+      <PlatformOpening />
       <header className="sticky top-0 z-20 border-b bg-header/95 text-header-foreground backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5 sm:px-6">
           <Link href="/admin" className="flex min-w-[10rem] flex-1 items-center gap-3">
-            <WheelMark tone="tile" className="size-10" />
+            <FfyMark tone="tile" small className="size-10" />
             <span className="flex min-w-0 flex-col">
               <span className="font-display text-lg font-bold leading-tight" lang="en">
-                FarmForYou
+                Farm For You
               </span>
               <span className="truncate text-xs opacity-80">
                 {t("platformAdmin")} · {admin.name}

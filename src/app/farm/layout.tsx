@@ -6,11 +6,13 @@ import { LanguageToggle } from "@/components/language-toggle"
 import { FarmNav } from "@/components/farm/farm-nav"
 import { featuresOf } from "@/lib/features"
 import { mainMenu } from "@/lib/farm-sections"
-import { WheelMark } from "@/components/art/wheel-mark"
+import { FarmName, FfyMark } from "@/components/art/brand-mark"
 import type { Metadata } from "next"
 import { getTenant } from "@/lib/tenant"
 import { appIcon, appIdentity } from "@/domain/install-apps"
 import { InstallCatcher } from "@/components/install-app"
+import { FarmOpening } from "@/components/openings"
+import { farmOpening } from "@/lib/farm-brand"
 import { HeaderHeight } from "@/components/header-height"
 import { SupportBar } from "@/components/farm/support-bar"
 
@@ -34,6 +36,7 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
   return (
     <div className="flex min-h-dvh flex-col">
       <InstallCatcher />
+      <FarmOpening app="farm" farm={farmOpening(tenant, locale)} />
       {support && <SupportBar farm={pick(locale, tenant.nameTa, tenant.nameEn)} endsAt={support.endsAt} />}
       {/* Only the farm and the language here: everything else is one tap away in the menu (More). */}
       <HeaderHeight id="app-header" />
@@ -44,10 +47,10 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
               // eslint-disable-next-line @next/next/no-img-element -- small logo served by our own route
               <img src={tenant.logoUrl} alt="" className="size-11 shrink-0 rounded-xl border bg-card object-contain" />
             ) : (
-              <WheelMark tone="tile" className="size-11" title="FarmForYou" />
+              <FfyMark tone="tile" small className="size-11" title="Farm For You" />
             )}
             <div className="min-w-0">
-              <div className="font-display line-clamp-2 text-lg leading-snug font-bold break-words">{pick(locale, tenant.nameTa, tenant.nameEn)}</div>
+              <FarmName name={pick(locale, tenant.nameTa, tenant.nameEn)} colours={tenant.nameColours} className="font-display line-clamp-2 block text-lg leading-snug font-bold break-words" />
               <div className="line-clamp-2 text-sm leading-snug break-words opacity-80">{staff.name}</div>
             </div>
           </div>

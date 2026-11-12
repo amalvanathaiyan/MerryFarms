@@ -6,6 +6,7 @@ import { requirePlatformAdmin } from "@/lib/auth"
 import { normaliseIndianMobile } from "@/domain/phone"
 import { OrderError } from "@/server/orders"
 import { addOwner, createFarm, resetPassword, updateFarm } from "@/server/platform"
+import { OPENING_MARKS } from "@/domain/brand"
 
 /** Platform admin actions (FarmForYou, all farms). Every one checks the caller is a platform admin first. */
 
@@ -65,6 +66,7 @@ export async function updateFarmAction(raw: unknown): Promise<Result> {
       status: z.enum(["trial", "active", "suspended"]),
       trialEndsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
       videoSpaceMb: z.number().int().min(0).max(10_000).nullable(),
+      openingMark: z.enum(OPENING_MARKS).nullable().optional(),
     })
     .safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_form" }

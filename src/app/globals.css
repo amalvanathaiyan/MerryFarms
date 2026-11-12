@@ -622,3 +622,47 @@
 @keyframes cheer-pop { 0% { transform: scale(0.3) rotate(-25deg); } 60% { transform: scale(1.18) rotate(8deg); } 100% { transform: scale(1) rotate(0); } }
 @keyframes cheer-bar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 @keyframes cheer-spark { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(1); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-34px) scale(0.4); } }
+
+/* ── Opening animations (src/components/opening.tsx, openings.tsx; shown by OPENING_SCRIPT in src/lib/opening.ts) ──
+   Hidden until the <head> script marks <html> with the app that has just been opened from its home-screen icon.
+   The drawings' own parts carry ffy-* (FarmForYou mark) and me-* (Merry Egg) classes from scripts/art/brand/build.cjs;
+   their transform-origins are in the drawing's 64×64 units. Animated parts never carry their own transform attribute. */
+.opening { display: none; position: fixed; inset: 0; z-index: 100; flex-direction: column; align-items: center; justify-content: center; gap: 0.9rem; padding: 2rem 1rem; cursor: pointer; transition: opacity 0.38s ease-out; }
+:root[data-opening="shop"] .opening[data-app="shop"],
+:root[data-opening="farm"] .opening[data-app="farm"],
+:root[data-opening="admin"] .opening[data-app="admin"] { display: flex; }
+:root[data-opening-out] .opening { opacity: 0; pointer-events: none; }
+.op-wide { max-width: 90vw; }
+.op-platform-tag { letter-spacing: 0.14em; }
+.op-rule { display: block; width: 1.75rem; height: 1px; background: #C9B98F; }
+.op-pop { animation: op-pop 0.6s cubic-bezier(0.3, 1.4, 0.6, 1) 0.15s both; }
+.op-rise { animation: op-rise 0.55s ease-out both; }
+.op-fade { animation: op-fade 0.6s ease-out both; }
+/* Steps: a logo pops at 0.15s, then its words at 0.6 / 0.8 / 1.0 and FarmForYou's line at 1.3; a mark's words wait for it: 1.35 / 1.55 / 1.75, line 2.0 */
+.op-l1 { animation-delay: 0.6s; } .op-l2 { animation-delay: 0.8s; } .op-l3 { animation-delay: 1s; } .op-l4 { animation-delay: 1.3s; }
+.op-d1 { animation-delay: 1.35s; } .op-d2 { animation-delay: 1.55s; } .op-d3 { animation-delay: 1.75s; } .op-d4 { animation-delay: 2s; }
+@keyframes op-pop { 0% { transform: scale(0.2); opacity: 0; } 55% { transform: scale(1.1); opacity: 1; } 75% { transform: scale(0.97); } 100% { transform: none; opacity: 1; } }
+@keyframes op-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes op-fade { from { opacity: 0; } to { opacity: 1; } }
+/* FarmForYou: the heart pops up, the leaves unfurl from the centre out, the face appears, one heartbeat, a sway */
+.opening .ffy-heart { transform-origin: 32px 47px; animation: op-heart 0.55s cubic-bezier(0.3, 1.4, 0.6, 1) 0.25s both, op-beat 0.55s ease-in-out 1.9s; }
+.opening .ffy-leaf { transform-origin: 32px 40.5px; animation: op-unfurl 0.55s cubic-bezier(0.3, 1.3, 0.6, 1) both; }
+.opening .ffy-l1 { animation-delay: 0.95s; } .opening .ffy-l2 { animation-delay: 1.05s; } .opening .ffy-l3 { animation-delay: 0.8s; } .opening .ffy-l4 { animation-delay: 0.88s; } .opening .ffy-l5 { animation-delay: 0.65s; }
+.opening .ffy-face { animation: op-fade 0.4s ease-out 1.5s both; }
+@keyframes op-heart { 0% { transform: translateY(10px) scale(0.2); opacity: 0; } 60% { transform: translateY(-2px) scale(1.08); opacity: 1; } 100% { transform: none; opacity: 1; } }
+@keyframes op-unfurl { 0% { transform: scale(0, 0.1); } 60% { transform: scale(1.05, 1.08); } 100% { transform: none; } }
+@keyframes op-beat { 0%, 100% { transform: scale(1); } 35% { transform: scale(1.12); } 55% { transform: scale(0.97); } }
+/* The Merry Egg: drops in and squashes, leaves unfurl, the comb pops, it blinks into its smile and wiggles */
+.opening .me-shadow { transform-origin: 32px 60.2px; animation: me-shadow 0.6s ease-out both; }
+.opening .me-drop { transform-origin: 32px 58px; animation: me-drop 0.75s cubic-bezier(0.35, 0, 0.4, 1) both; }
+.opening .me-wiggle { transform-origin: 32px 58px; animation: me-wiggle 0.7s ease-in-out 1.85s; }
+.opening .me-comb { transform-origin: 32px 14px; animation: me-pop 0.55s cubic-bezier(0.3, 1.4, 0.6, 1) 1s both; }
+.opening .me-leaf { transform-origin: 32px 59.4px; animation: op-unfurl 0.55s cubic-bezier(0.3, 1.3, 0.6, 1) both; }
+.opening .me-l3 { animation-delay: 0.6s; } .opening .me-l1 { animation-delay: 0.72s; } .opening .me-l2 { animation-delay: 0.8s; }
+.opening .me-open { transform-origin: 32px 36.6px; animation: me-blink-out 0.25s ease-in 1.5s both; }
+.opening .me-happy { animation: op-fade 0.2s ease-out 1.68s both; }
+@keyframes me-shadow { 0% { transform: scaleX(0.2); opacity: 0; } 55% { transform: scaleX(1.1); opacity: 1; } 100% { transform: scaleX(1); opacity: 1; } }
+@keyframes me-drop { 0% { transform: translateY(-52px); opacity: 0; } 12% { opacity: 1; } 52% { transform: translateY(0) scale(1.1, 0.88); } 68% { transform: translateY(-5px) scale(0.96, 1.05); } 84% { transform: translateY(0) scale(1.02, 0.98); } 100% { transform: none; opacity: 1; } }
+@keyframes me-pop { 0% { transform: scale(0); } 55% { transform: scale(1.18) rotate(-10deg); } 75% { transform: scale(0.96) rotate(6deg); } 100% { transform: none; } }
+@keyframes me-blink-out { 0% { opacity: 1; transform: none; } 60% { transform: scaleY(0.1); } 100% { opacity: 0; transform: scaleY(0.1); } }
+@keyframes me-wiggle { 0%, 100% { transform: none; } 20% { transform: rotate(-7deg); } 45% { transform: rotate(6deg); } 70% { transform: rotate(-3deg); } }

@@ -7,6 +7,9 @@ import { getTenant } from "@/lib/tenant"
 import { appIcon } from "@/domain/install-apps"
 import "./globals.css"
 import { DISPLAY_SCRIPT } from "@/lib/display"
+import { OPENING_SCRIPT } from "@/lib/opening"
+import { farmOpening } from "@/lib/farm-brand"
+import { FarmOpening } from "@/components/openings"
 
 // Body: Hind Madurai, one family for Tamil and English. Headings: Baloo Thambi 2, rounded and warm.
 const body = Hind_Madurai({
@@ -54,14 +57,20 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale()
+  const tenant = await getTenant()
   return (
     // The display choice (soft colours, light/dark, larger text) is set on <html> before React loads.
     <html lang={locale} className={`${body.variable} ${heading.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: DISPLAY_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: OPENING_SCRIPT }} />
       </head>
       <body className="min-h-dvh antialiased">
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          {/* The shop's opening, when it has just been opened from its home-screen icon (src/lib/opening.ts) */}
+          {tenant && <FarmOpening app="shop" farm={farmOpening(tenant, locale)} />}
+          {children}
+        </NextIntlClientProvider>
       </body>
     </html>
   )
