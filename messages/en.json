@@ -1060,10 +1060,11 @@
       "backToVaccines": "Vaccines",
       "giveInEntry": "Give on Entry",
       "planOne": "Plan a vaccine",
-      "givenAll": "Vaccines given",
-      "filterBatch": "Show vaccines for",
-      "allBatches": "All batches",
-      "addOnEntry": "To enter a vaccine not in the plan, use Entry."
+      "givenAll": "Vaccines given, by batch",
+      "addOnEntry": "To enter a vaccine not in the plan, use Entry.",
+      "onFarm": "On the farm",
+      "leftFarm": "Left the farm",
+      "dosesCount": "{count, plural, one {# dose} other {# doses}}"
     },
     "look": {
       "logoTitle": "Farm logo",
@@ -1224,12 +1225,14 @@
       "negative": "More feed given than bought: some feed bought wasn't added with its kg.",
       "history": "Feed bought",
       "noKg": "Kg not given",
-      "givenTitle": "Feed given, day by day",
-      "filterBatch": "Show feed for",
-      "allBatches": "All batches",
+      "givenTitle": "Feed given to each batch",
       "givenNone": "No feed has been entered yet. Enter it each day on Entry.",
       "givenNoneRecent": "No feed entered in the last {days} days.",
-      "showOlder": "Show older days"
+      "showOlder": "Show older days",
+      "givenCostHint": "Feed is bought for the whole farm. Each batch's feed cost is the kg it was given, at the average price you paid per kg.",
+      "onFarm": "On the farm",
+      "leftFarm": "Left the farm",
+      "costUnknown": "Price not known"
     },
     "moneyProfit": {
       "sales": "Sales",
@@ -1341,7 +1344,11 @@
       "kg": "kg",
       "cardDue": "Weigh this week",
       "birdsWeighed": "{birds, plural, one {# bird} other {# birds}} weighed",
-      "birdsShort": "{birds, plural, one {# bird} other {# birds}}"
+      "birdsShort": "{birds, plural, one {# bird} other {# birds}}",
+      "formDay": "Day",
+      "formSave": "Save weighing",
+      "formSaving": "Saving…",
+      "formCancel": "Cancel"
     },
     "videos": {
       "intro": "Videos on your shop. Real farm videos build trust: hens in the yard, eggs being collected, the gate in the morning.",
@@ -1461,7 +1468,8 @@
       "save": "Save",
       "saving": "Saving…",
       "allSaved": "All saved",
-      "nothingYet": "Type something to save"
+      "nothingYet": "Type something to save",
+      "weighOnGrowth": "Weighing is on the Growth tab, any day"
     },
     "growth": {
       "none": "No batches on the farm now.",

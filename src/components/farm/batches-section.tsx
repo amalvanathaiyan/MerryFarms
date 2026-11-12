@@ -107,7 +107,7 @@ export async function BatchesSection({
               </Link>
             )}
             {isToday && c.weighDue && (
-              <Link href={`/farm/poultry/entry?batch=${c.id}`} className="flex items-center gap-2 self-start rounded-full border px-3 py-1 text-sm font-semibold text-sec-poultry hover:bg-accent">
+              <Link href={`/farm/poultry/growth#b-${c.id}`} className="flex items-center gap-2 self-start rounded-full border px-3 py-1 text-sm font-semibold text-sec-poultry hover:bg-accent">
                 <Scale className="size-4 shrink-0" aria-hidden /> {tw("cardDue")}
               </Link>
             )}
