@@ -726,10 +726,12 @@ model PushSubscription {
 /// A product's photo, shrunk on the phone before upload (~50 KB). Kept in the database so
 /// the free tier needs no separate file storage; served by /img/p/<productId>.
 model ProductImage {
-  productId String   @id
-  tenantId  String
-  mime      String
-  data      Bytes
+  productId   String   @id
+  tenantId    String
+  mime        String
+  /// Older photos kept in the database; new ones live in file storage (storagePath). See src/server/photos.ts.
+  data        Bytes?
+  storagePath String?
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 
@@ -739,9 +741,11 @@ model ProductImage {
 
 /// A farm's logo, shrunk on the phone before upload. Kept in the database like product photos; served by /img/logo.
 model TenantLogo {
-  tenantId  String   @id
-  mime      String
-  data      Bytes
+  tenantId    String   @id
+  mime        String
+  /// Older logos kept in the database; new ones live in file storage (storagePath). See src/server/photos.ts.
+  data        Bytes?
+  storagePath String?
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 

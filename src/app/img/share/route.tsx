@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og"
 import sharp from "sharp"
 import { getTenant } from "@/lib/tenant"
 import { prisma } from "@/lib/prisma"
+import { photoBytes } from "@/server/photos"
 
 /**
  * The link preview (1200×630) WhatsApp and Facebook show when a shop link is shared: the farm's own logo
@@ -14,9 +15,10 @@ const FIELD = "#FBF3DC", INK = "#16301F", LEAF = "#1E6B45", CREAM = "#FFF1C7"
 export async function GET() {
   const tenant = await getTenant()
   const name = tenant?.nameEn ?? "Farm For You"
-  const logo = tenant ? await prisma.tenantLogo.findUnique({ where: { tenantId: tenant.id } }) : null
+  const row = tenant ? await prisma.tenantLogo.findUnique({ where: { tenantId: tenant.id } }) : null
+  const logo = row ? await photoBytes(row) : null
   // The logo is usually WebP (shrunk on the phone); the renderer wants PNG.
-  const logoSrc = logo ? `data:image/png;base64,${(await sharp(logo.data).png().toBuffer()).toString("base64")}` : null
+  const logoSrc = logo ? `data:image/png;base64,${(await sharp(logo).png().toBuffer()).toString("base64")}` : null
 
   return new ImageResponse(
     (

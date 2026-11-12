@@ -499,7 +499,8 @@ CREATE TABLE "product_images" (
     "productId" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
     "mime" TEXT NOT NULL,
-    "data" BYTEA NOT NULL,
+    "data" BYTEA,
+    "storagePath" TEXT,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -510,7 +511,8 @@ CREATE TABLE "product_images" (
 CREATE TABLE "tenant_logos" (
     "tenantId" TEXT NOT NULL,
     "mime" TEXT NOT NULL,
-    "data" BYTEA NOT NULL,
+    "data" BYTEA,
+    "storagePath" TEXT,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

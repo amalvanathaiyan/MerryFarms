@@ -7,7 +7,7 @@ import { isDemoLoginEnabled } from "@/lib/demo-auth"
 import { OrderError } from "./orders"
 
 /**
- * Where farm videos are kept. Live: Supabase storage (public bucket "farm-media"); the phone uploads straight to it
+ * Where farm videos and photos (product pictures, logos) are kept. Live: Supabase storage (public bucket "farm-media"); the phone uploads straight to it
  * with a signed link, because a video is too big to pass through the app's own server. Demo: a local folder served
  * by /api/demo-media (never in production). Anywhere else, uploads are off.
  */
@@ -18,8 +18,13 @@ const localOn = () => !supabaseOn() && (isDemoLoginEnabled() || !!process.env.ME
 export const localDir = () => process.env.MEDIA_DIR_FOR_TESTS || path.join(process.cwd(), ".demo-media")
 export const mediaAvailable = () => supabaseOn() || localOn()
 
-/** Only these names are ever written or served: tenant/videos/name.ext. */
-export const SAFE_PATH = /^[\w-]+\/videos\/[\w-]+\.(mp4|mov|webm|jpg)$/
+/** Videos the phone uploads itself: tenant/videos/name.ext. */
+export const VIDEO_PATH = /^[\w-]+\/videos\/[\w-]+\.(mp4|mov|webm|jpg)$/
+/** Photos the app's server writes, already checked and shrunk: tenant/images|logo/name.ext. */
+export const IMAGE_PATH = /^[\w-]+\/(images|logo)\/[\w-]+\.(webp|jpg|png)$/
+/** Only these names are ever written, served or removed. */
+export const SAFE_PATH = { test: (p: string) => VIDEO_PATH.test(p) || IMAGE_PATH.test(p) }
+const ALLOWED_TYPES = ["video/mp4", "video/quicktime", "video/webm", "image/jpeg", "image/webp", "image/png"]
 
 let bucketReady = false
 async function ensureBucket() {
@@ -27,12 +32,12 @@ async function ensureBucket() {
   const storage = createServiceClient().storage
   const { data } = await storage.getBucket(MEDIA_BUCKET)
   if (!data) {
-    const { error } = await storage.createBucket(MEDIA_BUCKET, {
-      public: true,
-      fileSizeLimit: "60MB",
-      allowedMimeTypes: ["video/mp4", "video/quicktime", "video/webm", "image/jpeg"],
-    })
+    const { error } = await storage.createBucket(MEDIA_BUCKET, { public: true, fileSizeLimit: "60MB", allowedMimeTypes: ALLOWED_TYPES })
     if (error && !/exist/i.test(error.message)) throw new Error(`[media] bucket: ${error.message}`)
+  } else if (ALLOWED_TYPES.some((t) => !(data.allowed_mime_types ?? ALLOWED_TYPES).includes(t))) {
+    // A bucket made before photos moved here took only videos and JPEG: let it take WebP and PNG photos too.
+    const { error } = await storage.updateBucket(MEDIA_BUCKET, { public: true, fileSizeLimit: "60MB", allowedMimeTypes: ALLOWED_TYPES })
+    if (error) throw new Error(`[media] bucket update: ${error.message}`)
   }
   bucketReady = true
 }
@@ -45,7 +50,7 @@ export type UploadTarget = { kind: "supabase"; path: string; token: string } | {
 
 /** A one-time place for the phone to put a file. */
 export async function uploadTarget(p: string): Promise<UploadTarget> {
-  if (!SAFE_PATH.test(p)) throw new OrderError("invalid_form")
+  if (!VIDEO_PATH.test(p)) throw new OrderError("invalid_form")
   if (supabaseOn()) {
     await ensureBucket()
     const { data, error } = await createServiceClient().storage.from(MEDIA_BUCKET).createSignedUploadUrl(p)
@@ -54,6 +59,35 @@ export async function uploadTarget(p: string): Promise<UploadTarget> {
   }
   if (localOn()) return { kind: "local", path: p, url: `/api/demo-media?path=${encodeURIComponent(p)}&sig=${sign(p)}` }
   throw new OrderError("media_off")
+}
+
+/** Writes a photo the server has already checked (type sniffed, size limited). */
+export async function putFile(p: string, bytes: Uint8Array, mime: string) {
+  if (!IMAGE_PATH.test(p)) throw new OrderError("invalid_form")
+  if (supabaseOn()) {
+    await ensureBucket()
+    const { error } = await createServiceClient().storage.from(MEDIA_BUCKET).upload(p, bytes, { contentType: mime, upsert: true })
+    if (error) throw new Error(`[media] upload: ${error.message}`)
+    return
+  }
+  if (!localOn()) throw new OrderError("media_off")
+  const file = path.join(localDir(), p)
+  await fs.mkdir(path.dirname(file), { recursive: true })
+  await fs.writeFile(file, bytes)
+}
+
+/** A stored file's bytes, for the server's own use (e.g. making app icons from a logo); null if it isn't there. */
+export async function readFile(p: string): Promise<Uint8Array | null> {
+  if (!SAFE_PATH.test(p)) return null
+  try {
+    if (supabaseOn()) {
+      const { data } = await createServiceClient().storage.from(MEDIA_BUCKET).download(p)
+      return data ? new Uint8Array(await data.arrayBuffer()) : null
+    }
+    return new Uint8Array(await fs.readFile(path.join(localDir(), p)))
+  } catch {
+    return null
+  }
 }
 
 /** The address anyone can play the file from. */
