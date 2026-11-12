@@ -17,6 +17,7 @@ import { alertFarmOnWhatsApp, notifyStaff } from "@/server/notify"
 import { otpOn } from "@/server/otp"
 import { staffNewOrderNote } from "@/domain/notifications"
 import { CUSTOMER_CANCEL_REASONS, orderCode } from "@/domain/orders"
+import { emitEvent } from "@/server/automation"
 
 const schema = z.object({
   name: z.string().trim().min(1).max(80),
@@ -126,6 +127,7 @@ export async function placeWebOrder(raw: unknown): Promise<PlaceWebOrderResult> 
       } else account = "known"
     }
     const code = orderCode(tenant.invoicePrefix, order.number)
+    await emitEvent("order.placed", tenant.id, { orderId: order.id, code, channel: "web", totalPaise: order.totalPaise })
     await notifyStaff(tenant.id, staffNewOrderNote({ code, customerName: customer.name, totalPaise: order.totalPaise, needsCall: decision.needsCall }))
     await alertFarmOnWhatsApp(tenant, { code, customerName: customer.name, totalPaise: order.totalPaise, needsCall: decision.needsCall, items: await itemsText(tenant.id, order.id) })
     return { ok: true, orderNumber: order.number, totalPaise: order.totalPaise, needsCall: decision.needsCall, account }

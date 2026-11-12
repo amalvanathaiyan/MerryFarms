@@ -1128,3 +1128,71 @@ model FarmRequest {
   @@index([status, createdAt])
   @@map("farm_requests")
 }
+
+// ─────────────────────────────────────────────────
+// AUTOMATION: EVENTS, JOBS, RECIPE SETTINGS (docs/platform-plan.md §5; src/server/automation.ts)
+// ─────────────────────────────────────────────────
+
+/// Something that happened (order.placed, request.created, subscription.changed…): the activity log and what rules react to.
+model PlatformEvent {
+  id        String   @id @default(uuid())
+  /// null = about the platform itself
+  tenantId  String?
+  type      String
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, createdAt])
+  @@index([type, createdAt])
+  @@map("platform_events")
+}
+
+/// Work to do later or on a schedule, with retries. Every tick is recorded here too (type "tick"), so admin can see
+/// the engine running.
+model Job {
+  id         String    @id @default(uuid())
+  type       String
+  tenantId   String?
+  payload    Json      @default("{}")
+  runAt      DateTime  @default(now())
+  /// pending | running | done | failed
+  status     String    @default("pending")
+  attempts   Int       @default(0)
+  lastError  String?
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([status, runAt])
+  @@index([type, createdAt])
+  @@map("jobs")
+}
+
+/// A recipe's switch and numbers: tenantId null = the platform's default (off = off for every farm); else one farm's.
+model AutomationSetting {
+  id        String   @id @default(uuid())
+  tenantId  String?
+  recipe    String
+  enabled   Boolean
+  params    Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([recipe, tenantId])
+  @@map("automation_settings")
+}
+
+/// An alert a recipe has sent, so it is sent once (e.g. order X turned red; product Y low on this day).
+model AutomationNotice {
+  id         String   @id @default(uuid())
+  tenantId   String
+  recipe     String
+  subjectKey String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([tenantId, recipe, subjectKey])
+  @@map("automation_notices")
+}

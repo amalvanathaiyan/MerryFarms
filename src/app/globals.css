@@ -672,3 +672,18 @@
 @keyframes me-pop { 0% { transform: scale(0); } 55% { transform: scale(1.18) rotate(-10deg); } 75% { transform: scale(0.96) rotate(6deg); } 100% { transform: none; } }
 @keyframes me-blink-out { 0% { opacity: 1; transform: none; } 60% { transform: scaleY(0.1); } 100% { opacity: 0; transform: scaleY(0.1); } }
 @keyframes me-wiggle { 0%, 100% { transform: none; } 20% { transform: rotate(-7deg); } 45% { transform: rotate(6deg); } 70% { transform: rotate(-3deg); } }
+
+/* ── Order waiting colours (src/components/farm/wait-badge.tsx; the farm's hours in Settings → Automations) ──
+   Green when new, yellow past the first mark, red past the second. Text on each passes 4.5:1, light and dark. */
+.wait-green { background: #DDF3E4; color: #14532D; }
+.wait-yellow { background: #FFF1B8; color: #5C4300; }
+.wait-red { background: #B42318; color: #FFFFFF; }
+.wait-edge-green { border-left: 6px solid #2E8B57; }
+.wait-edge-yellow { border-left: 6px solid #E0A800; }
+.wait-edge-red { border-left: 6px solid #B42318; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .wait-green { background: #1F3D2B; color: #BFEBD0; }
+  :root:not([data-theme="light"]) .wait-yellow { background: #4A3A05; color: #FFE58A; }
+}
+:root[data-theme="dark"] .wait-green { background: #1F3D2B; color: #BFEBD0; }
+:root[data-theme="dark"] .wait-yellow { background: #4A3A05; color: #FFE58A; }
