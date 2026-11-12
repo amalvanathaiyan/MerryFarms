@@ -20,6 +20,8 @@ export function areaOf(t: { farmLat: number | null; farmLng: number | null; deli
 import { featuresOf } from "@/lib/features"
 import { currentPrice, validAgreedPrice } from "@/domain/offers"
 import { putStock, takeStock } from "./stock"
+import { loadSettings } from "./settings"
+import { rupeesToPaise } from "@/domain/money"
 
 export class OrderError extends Error {
   constructor(public code: string) {
@@ -27,14 +29,19 @@ export class OrderError extends Error {
   }
 }
 
-const DEFAULT_RULES: CallRules = {
-  callWhatsAppOrders: true,
-  callWebOrdersFromNew: true,
-  newCustomerOrderCount: 3,
-  callAboveTotalPaise: 150_000,
-  callAboveUsualMultiple: 3,
-  skipCallForTrusted: true,
-  skipCallForPrepaid: true,
+/** The farm's confirmation-call rules, from its settings (src/domain/settings.ts, group "calls"). */
+export async function callRulesOf(tenantId: string): Promise<CallRules & { maxCallAttempts: number }> {
+  const s = await loadSettings(tenantId)
+  return {
+    callWhatsAppOrders: s.callWhatsAppOrders.value,
+    callWebOrdersFromNew: s.callWebOrdersFromNew.value,
+    newCustomerOrderCount: s.newCustomerOrderCount.value,
+    callAboveTotalPaise: rupeesToPaise(s.callAboveRupees.value),
+    callAboveUsualMultiple: s.callAboveUsualTimes.value,
+    skipCallForTrusted: s.skipCallForTrusted.value,
+    skipCallForPrepaid: s.skipCallForPrepaid.value,
+    maxCallAttempts: s.maxCallAttempts.value,
+  }
 }
 
 /** Booked order counts per `${date}|${slotId}` for the next `days` days. */
@@ -137,8 +144,7 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
         })()
   if (!isWalkIn && !input.address?.id && !input.address?.line) throw new OrderError("address_required")
 
-  const settings = await db.tenantSettings.findFirst()
-  const rules: CallRules = settings ?? DEFAULT_RULES
+  const rules = await callRulesOf(tenant.id)
   const features = featuresOf(tenant)
   if (input.paymentMethod === "credit" && !features.creditAccounts) throw new OrderError("credit_off")
 
@@ -313,7 +319,7 @@ export async function editOrder(tenant: Tenant, orderId: string, input: EditOrde
   const features = featuresOf(tenant)
   if (input.paymentMethod === "credit" && !features.creditAccounts) throw new OrderError("credit_off")
   const qtyById = mergeItems(input.items)
-  const settings = await db.tenantSettings.findFirst()
+  const settings = await callRulesOf(tenant.id)
 
   const current = await db.order.findFirst({ where: { id: orderId }, include: { items: true } })
   if (!current) throw new OrderError("not_found")
@@ -403,7 +409,7 @@ export async function editOrder(tenant: Tenant, orderId: string, input: EditOrde
     })
 
     if (input.fromCall && order.status === "to_confirm") {
-      await callInTx(tx, tenant.id, orderId, "changed", byStaffId, undefined, settings?.maxCallAttempts ?? 3)
+      await callInTx(tx, tenant.id, orderId, "changed", byStaffId, undefined, settings.maxCallAttempts)
     }
     return { ...totals }
   })
@@ -484,8 +490,8 @@ export async function recordCall(
   note?: string
 ) {
   const db = tenantDb(tenantId)
-  const settings = await db.tenantSettings.findFirst()
-  return db.$transaction((tx) => callInTx(tx, tenantId, orderId, outcome, byStaffId, note, settings?.maxCallAttempts ?? 3))
+  const { maxCallAttempts } = await callRulesOf(tenantId)
+  return db.$transaction((tx) => callInTx(tx, tenantId, orderId, outcome, byStaffId, note, maxCallAttempts))
 }
 
 /** The staff-agreed price for this product if one was given (checked), else the default. */

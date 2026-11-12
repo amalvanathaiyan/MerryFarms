@@ -1,10 +1,11 @@
+import Link from "next/link"
 import { getLocale, getTranslations } from "next-intl/server"
 import { requireStaff } from "@/lib/auth"
 import { requireFeature } from "@/lib/require-feature"
 import { dayLabel } from "@/lib/i18n-helpers"
 import { featuresOf } from "@/lib/features"
 import { poultryTabs } from "@/lib/farm-sections"
-import { istDate } from "@/domain/ist"
+import { addDays, istDate } from "@/domain/ist"
 import { formatRupees } from "@/domain/money"
 import { batchBook } from "@/server/batches"
 import { SectionHeader } from "@/components/farm/section-header"
@@ -12,8 +13,14 @@ import { FeedBuyForm } from "@/components/farm/feed-buy-form"
 import { FEED_DAYS_WARNING, feedDaysLeft } from "@/domain/alerts"
 import { cn } from "@/lib/utils"
 
-/** Poultry care · Feed: how much is left, how long it lasts, and feed bought (owner). Prices only for the owner. */
-export default async function PoultryFeedPage() {
+const SHOW_DAYS = 90
+
+/**
+ * Poultry care · Feed: on top, how much is left, how long it lasts and feed bought (owner; prices only for the owner).
+ * Below, the feed given each day, every batch, by month: for one batch with the batch filter.
+ */
+export default async function PoultryFeedPage({ searchParams }: { searchParams: Promise<{ batch?: string; all?: string }> }) {
+  const sp = await searchParams
   const { db, tenant, staff } = await requireStaff(["owner", "packing"])
   requireFeature(tenant, "poultryCare")
   const locale = await getLocale()
@@ -35,6 +42,40 @@ export default async function PoultryFeedPage() {
   const daysLeft = lasts?.daysLeft ?? null
   const leftPct = feed.boughtKg > 0 ? Math.max(0, Math.min(100, (feed.leftKg / feed.boughtKg) * 100)) : 0
   const low = daysLeft != null && daysLeft <= FEED_DAYS_WARNING
+
+  // Feed given, day by day (newest first), for the batches that were given any.
+  const fedIds = new Set(book.days.filter((d) => (d.feedKg ?? 0) > 0).map((d) => d.batchId))
+  const fed = book.rows.map((r) => r.batch).filter((b) => fedIds.has(b.id)).sort((a, b) => a.number - b.number)
+  const only = fed.find((b) => b.id === sp.batch) ?? null
+  const showAll = sp.all === "1"
+  const since = addDays(today, -SHOW_DAYS + 1)
+  const given = book.days.filter((d) => (d.feedKg ?? 0) > 0 && (!only || d.batchId === only.id))
+  const dates = [...new Set(given.map((d) => d.date))].sort().reverse()
+  const shown = showAll ? dates : dates.filter((d) => d >= since)
+  const kg = (n: number) => Math.round(n * 100) / 100
+  const byMonth: { month: string; total: number; days: { date: string; total: number; parts: { name: string; kg: number }[] }[] }[] = []
+  for (const date of shown) {
+    const rows = given.filter((d) => d.date === date)
+    const day = {
+      date,
+      total: kg(rows.reduce((a, d) => a + (d.feedKg ?? 0), 0)),
+      parts: fed.flatMap((b) => {
+        const r = rows.find((d) => d.batchId === b.id)
+        return r ? [{ name: `${b.name} · #${b.number}`, kg: r.feedKg ?? 0 }] : []
+      }),
+    }
+    const month = date.slice(0, 7)
+    const m = byMonth.at(-1)
+    if (m?.month === month) {
+      m.days.push(day)
+      m.total = kg(m.total + day.total)
+    } else byMonth.push({ month, total: day.total, days: [day] })
+  }
+  const monthName = (ym: string) => new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${ym}-01T00:00:00Z`))
+  const href = (batch: string | null, all = showAll) => {
+    const q = [batch && `batch=${batch}`, all && "all=1"].filter(Boolean).join("&")
+    return `/farm/poultry/feed${q ? `?${q}` : ""}`
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -90,6 +131,50 @@ export default async function PoultryFeedPage() {
           </ul>
         </section>
       )}
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-lg font-bold">{t("givenTitle")}</h2>
+        {fed.length > 1 && (
+          <nav aria-label={t("filterBatch")} className="flex flex-wrap gap-2">
+            {[{ id: null, label: t("allBatches") }, ...fed.map((b) => ({ id: b.id, label: `${b.name} · #${b.number}` }))].map((c) => (
+              <Link
+                key={c.id ?? "all"}
+                href={href(c.id)}
+                aria-current={(only?.id ?? null) === c.id ? "page" : undefined}
+                className={cn("flex min-h-11 items-center rounded-xl border-2 px-3 text-sm", (only?.id ?? null) === c.id ? "border-sec-poultry bg-sec-poultry-tint font-bold" : "bg-card font-semibold hover:bg-accent")}
+              >
+                {c.label}
+              </Link>
+            ))}
+          </nav>
+        )}
+        {byMonth.length === 0 && <p className="rounded-2xl border bg-card p-4 text-muted-foreground">{dates.length ? t("givenNoneRecent", { days: SHOW_DAYS }) : t("givenNone")}</p>}
+        {byMonth.map((m) => (
+          <div key={m.month} className="flex flex-col gap-1">
+            <h3 className="flex items-baseline justify-between gap-2 px-1 font-semibold text-muted-foreground">
+              <span>{monthName(m.month)}</span>
+              <span className="tabular-nums">{t("kgValue", { kg: m.total })}</span>
+            </h3>
+            <ul className="divide-y rounded-2xl border bg-card">
+              {m.days.map((d) => (
+                <li key={d.date} className="flex items-start justify-between gap-3 px-4 py-2.5">
+                  <span className="min-w-0">
+                    <span className="block font-semibold">{dayLabel(d.date, locale, labels)}</span>
+                    {!only && d.parts.length > 1 && <span className="block text-sm text-muted-foreground tabular-nums">{d.parts.map((p) => `${p.name}: ${p.kg}`).join(" · ")}</span>}
+                    {!only && d.parts.length === 1 && fed.length > 1 && <span className="block text-sm text-muted-foreground">{d.parts[0].name}</span>}
+                  </span>
+                  <b className="shrink-0 tabular-nums">{t("kgValue", { kg: d.total })}</b>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+        {!showAll && dates.length > shown.length && (
+          <Link href={href(only?.id ?? null, true)} className="self-center text-sm font-semibold text-primary underline underline-offset-4">
+            {t("showOlder")}
+          </Link>
+        )}
+      </section>
     </div>
   )
 }

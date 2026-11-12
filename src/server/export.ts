@@ -15,7 +15,7 @@ export async function exportFarm(tenantId: string) {
   })
   const [settings, categories, products, slots, closedDays, customers, addresses, orders, orderEvents, calls, invoices, payments, ledger, returns, plans, messages, templates, staff] =
     await Promise.all([
-      db.tenantSettings.findFirst(),
+      prisma.settingValue.findMany({ where: { scopeKey: `farm:${tenantId}` }, select: { key: true, value: true } }).then((rows) => Object.fromEntries(rows.map((r) => [r.key, r.value]))),
       db.category.findMany({ orderBy: { sortOrder: "asc" } }),
       db.product.findMany({ orderBy: { sortOrder: "asc" } }),
       db.deliverySlot.findMany(),

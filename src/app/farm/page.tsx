@@ -141,7 +141,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       ? [{ key: "confirm", section: "orders" as const, icon: "orders", title: t("jobConfirm", { count: toConfirm }), hint: t("jobConfirmHint"), href: "/farm/orders" }]
       : []),
     ...(needsRecord
-      ? [{ key: "record", section: "today" as const, icon: features.poultryCare && birdsNow != null ? "batches" : "made", title: t("recordToday"), hint: t("recordTodayHint"), href: features.poultryCare && birdsNow != null ? "/farm/poultry/today" : "/farm/money/made" }]
+      ? [{ key: "record", section: "today" as const, icon: features.poultryCare && birdsNow != null ? "batches" : "made", title: t("recordToday"), hint: t("recordTodayHint"), href: features.poultryCare && birdsNow != null ? "/farm/poultry/entry?batch=all" : "/farm/money/made" }]
       : []),
     ...(unreadMessages > 0 ? [{ key: "messages", section: "messages" as const, icon: "messages", title: t("unreadMessages", { count: unreadMessages }), hint: t("jobMessagesHint"), href: "/farm/messages" }] : []),
     ...(features.stockTracking && lowStock.length > 0

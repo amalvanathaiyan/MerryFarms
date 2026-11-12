@@ -86,7 +86,6 @@ export async function createFarm(input: NewFarm, now = new Date()) {
       plan: input.plan,
       status: input.trialDays > 0 ? "trial" : "active",
       trialEndsAt: input.trialDays > 0 ? trialEnd(now, input.trialDays) : null,
-      settings: { create: {} },
       slots: { create: { nameTa: "காலை", nameEn: "Morning", startTime: "07:00", endTime: "09:00", daysOfWeek: [0, 1, 2, 3, 4, 5, 6], cutoffHours: 12, maxOrders: 20 } },
     },
   })

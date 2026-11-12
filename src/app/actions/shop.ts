@@ -17,7 +17,7 @@ import { alertFarmOnWhatsApp, notifyStaff } from "@/server/notify"
 import { otpOn } from "@/server/otp"
 import { staffNewOrderNote } from "@/domain/notifications"
 import { CUSTOMER_CANCEL_REASONS, orderCode } from "@/domain/orders"
-import { emitEvent } from "@/server/automation"
+import { emitEvent } from "@/server/events"
 
 const schema = z.object({
   name: z.string().trim().min(1).max(80),

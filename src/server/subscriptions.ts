@@ -5,7 +5,7 @@ import { computeEntitlement, cleanFeatureRules, cleanLimits, parseEntitlement, S
 import { FEATURE_KEYS, FEATURES, type Plan } from "@/domain/features"
 import { isModuleKey, MODULE_KEYS, MODULES, type ModuleKey } from "@/domain/modules"
 import { OrderError } from "./orders"
-import { emitEvent } from "./automation"
+import { emitEvent } from "./events"
 
 /**
  * Plans, farm subscriptions, the platform's module settings and farms' requests (docs/platform-plan.md §3.5).

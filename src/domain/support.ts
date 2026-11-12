@@ -25,7 +25,7 @@ const AREAS: Record<string, string> = {
   Customer: "customers", Address: "customers", Message: "customers",
   DeliverySlot: "delivery", ClosedDay: "delivery",
   Batch: "poultry", BatchDay: "poultry", BatchLoss: "poultry", VaccineScheduleItem: "poultry", BatchVaccination: "poultry", BatchWeight: "poultry",
-  Tenant: "settings", TenantSettings: "settings", TenantLogo: "settings", MessageTemplate: "settings", FarmVideo: "settings",
+  Tenant: "settings", SettingValue: "settings", TenantLogo: "settings", MessageTemplate: "settings", FarmVideo: "settings",
 }
 export type SupportArea = "orders" | "money" | "products" | "customers" | "delivery" | "poultry" | "settings" | "other"
 export const areaOf = (model: string): SupportArea => (AREAS[model] as SupportArea | undefined) ?? "other"

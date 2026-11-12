@@ -14,7 +14,8 @@ import { Button } from "@/components/ui/button"
 import { templateOverrides } from "@/server/messages"
 import { directionsLink } from "@/domain/delivery-area"
 import { featuresOf } from "@/lib/features"
-import { recipeSettings } from "@/server/automation"
+import { loadSettings } from "@/server/settings"
+import { waitMarks } from "@/domain/automations"
 import { waitedFor, waitLevel } from "@/domain/automations"
 import { WaitBadge } from "@/components/farm/wait-badge"
 
@@ -42,8 +43,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const tc = await getTranslations("common")
   const ts = await getTranslations("shop")
   const labels = { today: tc("today"), tomorrow: tc("tomorrow") }
-  // Orders waiting to be confirmed turn yellow, then red, at the farm's own hours (automation orderWaiting)
-  const waiting = (await recipeSettings(tenant.id)).orderWaiting
+  // Orders waiting to be confirmed turn yellow, then red, at the farm's own hours (settings orderWaitingOn…)
+  const s = await loadSettings(tenant.id)
+  const waiting = { enabled: s.orderWaitingOn.value, params: waitMarks(s.orderYellowHours.value, s.orderRedHours.value) }
   const now = new Date()
 
   const counts = await db.order.groupBy({ by: ["status"], _count: { _all: true } })

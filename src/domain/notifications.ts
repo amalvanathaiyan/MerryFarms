@@ -61,7 +61,7 @@ export function staffNotEnteredNote(batchNames: string[]): Note {
   return {
     title: `இன்றைய பதிவு இல்லை · ${n === 1 ? "1 batch not entered" : `${n} batches not entered`}`,
     body: `${names(batchNames)} · இப்போதே பதியுங்கள் / enter it now`,
-    url: "/farm/poultry/today",
+    url: "/farm/poultry/entry?batch=all",
     tag: "not-entered",
   }
 }

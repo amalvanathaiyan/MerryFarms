@@ -3,10 +3,10 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { Blocks, Bot, Inbox, Layers, Tractor } from "lucide-react"
+import { Blocks, Bot, Inbox, Layers, SlidersHorizontal, Tractor } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-/** Farm For You admin's menu: farms, plans, modules, requests (with how many are waiting). Words beside every icon. */
+/** Farm For You admin's menu: farms, plans, modules, requests (with how many are waiting), settings, automation. Words beside every icon. */
 export function AdminNav({ pending }: { pending: number }) {
   const t = useTranslations("admin.nav")
   const path = usePathname()
@@ -15,6 +15,7 @@ export function AdminNav({ pending }: { pending: number }) {
     { href: "/admin/plans", key: "plans", icon: Layers, active: path.startsWith("/admin/plans") },
     { href: "/admin/modules", key: "modules", icon: Blocks, active: path.startsWith("/admin/modules") },
     { href: "/admin/requests", key: "requests", icon: Inbox, active: path.startsWith("/admin/requests"), badge: pending },
+    { href: "/admin/settings", key: "settings", icon: SlidersHorizontal, active: path.startsWith("/admin/settings") },
     { href: "/admin/automation", key: "automation", icon: Bot, active: path.startsWith("/admin/automation") },
   ]
   return (
