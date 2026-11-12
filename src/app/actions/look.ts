@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { noteSupportWrite } from "@/server/support"
 import { MAX_PHOTO_BYTES, sniffImage } from "@/domain/product-art"
 import { DRAWINGS, MAX_SHOP_ART } from "@/components/art/drawing-library"
+import { cleanNameColours, MAX_NAME_COLOURS } from "@/domain/brand"
 
 /** The farm's look, set by its owner: logo, and the drawings that decorate its shop. */
 
@@ -39,6 +40,27 @@ export async function removeFarmLogo(): Promise<Result> {
   await prisma.tenantLogo.deleteMany({ where: { tenantId: tenant.id } })
   await prisma.tenant.update({ where: { id: tenant.id }, data: { logoUrl: null } })
   await noteSupportWrite(tenant.id, "TenantLogo", "delete", { id: tenant.id })
+  return refresh()
+}
+
+const brandSchema = z.object({
+  taglineTa: z.string().trim().max(60),
+  taglineEn: z.string().trim().max(60),
+  nameColours: z.array(z.string().max(9)).max(MAX_NAME_COLOURS),
+})
+
+/** The farm's tagline (Tamil and English) and the colours its name's words take in turn. Empty = none. */
+export async function setFarmBrand(raw: unknown): Promise<Result> {
+  const parsed = brandSchema.safeParse(raw)
+  if (!parsed.success) return { ok: false, error: "invalid_form" }
+  const nameColours = cleanNameColours(parsed.data.nameColours)
+  if (!nameColours) return { ok: false, error: "invalid_form" }
+  const { tenant } = await requireStaff(OWNER_ONLY)
+  await prisma.tenant.update({
+    where: { id: tenant.id },
+    data: { taglineTa: parsed.data.taglineTa || null, taglineEn: parsed.data.taglineEn || null, nameColours },
+  })
+  await noteSupportWrite(tenant.id, "Tenant", "update", { id: tenant.id })
   return refresh()
 }
 

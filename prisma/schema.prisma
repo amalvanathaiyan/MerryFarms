@@ -172,6 +172,13 @@ model Tenant {
   // (ids from src/components/art/drawing-library.ts; empty = chosen from its product types).
   logoUrl String?
   shopArt String[] @default([])
+  // Brand (src/domain/brand.ts): the farm's tagline, the colours its name's words take in turn
+  // (e.g. Merry red, Farms green; empty = the normal text colour), and the opening animation played when its
+  // installed app opens (an id from OPENING_MARKS, set by the platform; null = the farm's logo pops in).
+  taglineTa   String?
+  taglineEn   String?
+  nameColours String[] @default([])
+  openingMark String?
 
   // Storage for the farm's uploaded videos, in MB; null = the default (DEFAULT_VIDEO_SPACE_MB). Set by the platform.
   videoSpaceMb Int?

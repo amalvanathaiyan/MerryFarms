@@ -19,6 +19,7 @@ import { ViewerBar } from "@/components/shop/viewer-bar"
 import { shopViewer } from "@/lib/auth"
 import { currentPrice, offerActive, percentOff } from "@/domain/offers"
 import { customerMayChange, orderCode } from "@/domain/orders"
+import { farmBrand } from "@/lib/farm-brand"
 
 export const dynamic = "force-dynamic"
 
@@ -86,6 +87,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       messages: features.messages,
       calls: features.callConfirmation,
       logoUrl: tenant.logoUrl,
+      brand: farmBrand(tenant, locale),
       scenes: { hero: await sceneProps(tenant, locale, "hero"), small: await sceneProps(tenant, locale, "small") },
       // YouTube links when the farm has videos on; its own uploads only while its plan includes them.
       videos: shopVideos(

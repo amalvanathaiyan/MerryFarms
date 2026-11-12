@@ -13,12 +13,12 @@ export interface AppIdentity {
   shortName: string
   description: string
   startUrl: string
-  /** The icon's background, also used for the splash screen. Matches scripts/art/icons.mjs. */
+  /** The icon's background, also used for the splash screen. Matches scripts/art/brand/build.cjs. */
   colour: string
   lang: "ta" | "en"
 }
 
-export const APP_COLOURS: Record<InstallApp, string> = { shop: "#FBF3DC", farm: "#1E6B45", admin: "#16301F" }
+export const APP_COLOURS: Record<InstallApp, string> = { shop: "#FFF6D6", farm: "#1E8A4C", admin: "#17703D" }
 
 type Farm = { nameTa: string; nameEn: string; defaultLanguage: string } | null
 

@@ -80,6 +80,7 @@ export default async function FarmAdminPage({ params }: { params: Promise<{ id: 
           status: farm.status,
           trialEndsOn: farm.trialEndsAt ? new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(farm.trialEndsAt) : null,
           videoSpaceMb: farm.videoSpaceMb,
+          openingMark: farm.openingMark,
         }}
         videoUsedMb={Math.round((videoBytes / 1024 / 1024) * 10) / 10}
       />

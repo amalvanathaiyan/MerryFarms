@@ -1,7 +1,7 @@
 // FarmForYou brand art, drawn in code so it can be regenerated: the Tamil bullock cart (vil vandi) carrying produce
 // from every kind of farm, the farmer driving it, the farmland behind, and the cart-wheel mark for small sizes.
 // svg(cls, { scene }) — cls "colour" or "line"; scene adds the farmland background. mark(size, bg, fg, hub).
-// Run: node scripts/art/cart-art.mjs  → public/art/*.svg and src/app/icon.svg. PNG app icons: scripts/art/icons.mjs.
+// Run: node scripts/art/cart-art.mjs  → public/art/*.svg. The app icons and the tab icon come from the brand marks: scripts/art/brand/build.cjs.
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
@@ -381,6 +381,5 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   // cart-scene.svg and cart.svg now come from the farm pictures' cart: scripts/art/cart-files.ts
   fs.writeFileSync(path.join(art, "cart-line.svg"), svg("line"))
   fs.writeFileSync(path.join(art, "wheel.svg"), mark(512, "#1E6B45", "#FFF1C7", "#F5B700").replace("<svg ", "<svg xmlns=\"http://www.w3.org/2000/svg\" "))
-  fs.writeFileSync(path.join(root, "src", "app", "icon.svg"), mark(64, "#1E6B45", "#FFF1C7", "#F5B700").replace("<svg ", "<svg xmlns=\"http://www.w3.org/2000/svg\" "))
-  console.log("Wrote public/art/{cart-line,wheel}.svg and src/app/icon.svg")
+  console.log("Wrote public/art/{cart-line,wheel}.svg")
 }

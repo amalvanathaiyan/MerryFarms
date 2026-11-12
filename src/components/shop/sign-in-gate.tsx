@@ -6,6 +6,7 @@ import { FarmBanner } from "@/components/farm-banner"
 import { SignInFlow } from "@/components/shop/sign-in-flow"
 import { FarmScene } from "@/components/art/farm-scene"
 import { sceneProps } from "@/lib/scene"
+import { farmBrand } from "@/lib/farm-brand"
 
 /** The first screen for someone this phone doesn't know yet: mobile number, then a code. */
 export async function SignInGate({ tenant }: { tenant: Tenant }) {
@@ -14,7 +15,7 @@ export async function SignInGate({ tenant }: { tenant: Tenant }) {
   const name = pick(locale, tenant.nameTa, tenant.nameEn)
   return (
     <div className="min-h-dvh">
-      <FarmBanner name={name} initials={tenant.invoicePrefix} logoUrl={tenant.logoUrl} help={{ phone: tenant.phone, whatsappNumber: tenant.whatsappNumber ?? tenant.phone }} />
+      <FarmBanner brand={farmBrand(tenant, locale)} name={name} initials={tenant.invoicePrefix} logoUrl={tenant.logoUrl} help={{ phone: tenant.phone, whatsappNumber: tenant.whatsappNumber ?? tenant.phone }} />
       <main className="mx-auto flex w-full max-w-md flex-col gap-5 px-4 py-6">
         <FarmScene scene={await sceneProps(tenant, locale, "hero")} priority className="rounded-3xl border" />
         <div>

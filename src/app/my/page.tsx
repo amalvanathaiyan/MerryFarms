@@ -24,6 +24,7 @@ import { ForgetMe } from "@/components/shop/forget-me"
 import { OrderSelfService } from "@/components/shop/order-self-service"
 import { EnablePush } from "@/components/push/enable-push"
 import { unreadForCustomer } from "@/server/chat"
+import { farmBrand } from "@/lib/farm-brand"
 
 export const dynamic = "force-dynamic"
 export const metadata: Metadata = { robots: { index: false, follow: false } }
@@ -46,7 +47,7 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
   const tsi = await getTranslations("signIn")
   const farmName = pick(locale, tenant.nameTa, tenant.nameEn)
 
-  const header = <FarmBanner name={farmName} initials={tenant.invoicePrefix} logoUrl={tenant.logoUrl} help={{ phone: tenant.phone, whatsappNumber: tenant.whatsappNumber ?? tenant.phone }} />
+  const header = <FarmBanner brand={farmBrand(tenant, locale)} name={farmName} initials={tenant.invoicePrefix} logoUrl={tenant.logoUrl} help={{ phone: tenant.phone, whatsappNumber: tenant.whatsappNumber ?? tenant.phone }} />
 
   if (!me) {
     return (

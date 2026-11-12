@@ -1,7 +1,9 @@
 import Link from "next/link"
 import { ArrowLeft, UserRound } from "lucide-react"
 import { LanguageToggle } from "@/components/language-toggle"
-import { WheelMark } from "@/components/art/wheel-mark"
+import { FarmName, OnFarmForYou } from "@/components/art/brand-mark"
+import { showPlatformLine } from "@/domain/brand"
+import type { FarmBrand } from "@/lib/farm-brand"
 import { HelpButton } from "@/components/shop/help-button"
 
 /**
@@ -17,6 +19,7 @@ export function FarmBanner({
   back,
   myOrders,
   help,
+  brand,
 }: {
   name: string
   initials: string
@@ -28,7 +31,11 @@ export function FarmBanner({
   back?: string
   myOrders?: { href: string; label: string; shortLabel: string }
   help?: { phone: string; whatsappNumber: string; basket?: string[]; raised?: boolean }
+  /** The farm's name colours and tagline (Settings → Look). */
+  brand?: FarmBrand
 }) {
+  const tagline = brand?.tagline ?? null
+  const platformLine = showPlatformLine(tagline)
   return (
     <>
       <header className="sticky top-0 z-20 border-b bg-header/95 text-header-foreground backdrop-blur">
@@ -48,11 +55,16 @@ export function FarmBanner({
               </span>
             )}
             <span className="flex min-w-0 flex-col">
-              <span className="font-display text-base font-bold leading-tight break-words xs:text-lg sm:text-xl">{name}</span>
-              {/* The platform's own mark (the cart wheel), quieter than the farm's name. */}
-              <span className="mt-0.5 flex items-center gap-1 text-xs font-medium tracking-wide opacity-75" lang="en">
-                <WheelMark className="size-4 text-primary" />
-                FarmForYou
+              <FarmName name={name} colours={brand?.colours ?? []} className="font-display text-base font-bold leading-tight break-words xs:text-lg sm:text-xl" />
+              {/* The farm's tagline, then FarmForYou's small line: always quieter than the farm's own words. */}
+              <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs leading-snug">
+                {tagline &&
+                  (platformLine ? (
+                    <span className="font-medium opacity-90">{tagline}</span>
+                  ) : (
+                    <span className="font-semibold text-primary uppercase" style={{ letterSpacing: "0.12em" }}>{tagline}</span>
+                  ))}
+                {platformLine && <OnFarmForYou />}
               </span>
             </span>
           </Link>

@@ -26,6 +26,7 @@ import { HelpButton } from "./help-button"
 import { HowTo } from "./how-to"
 import { KindDrawing } from "@/components/art/kind-drawing"
 import { ArtStrip } from "@/components/art/art-strip"
+import type { FarmBrand } from "@/lib/farm-brand"
 
 export interface ShopData {
   farm: {
@@ -53,6 +54,8 @@ export interface ShopData {
     /** New orders get a confirmation call (told to first-time customers in "How to order"). */
     calls: boolean
     logoUrl: string | null
+    /** Name colours and tagline (Settings → Look). */
+    brand: FarmBrand
   }
   me: {
     name: string
@@ -194,6 +197,7 @@ export function Shop({ data }: { data: ShopData }) {
       name={data.farm.name}
       initials={data.farm.orderPrefix}
       logoUrl={data.farm.logoUrl}
+      brand={data.farm.brand}
       myOrders={data.farm.accounts ? { href: "/my", label: t("myOrders"), shortLabel: t("ordersShort") } : undefined}
       help={{ ...help, raised: view === "shop" && count > 0 }}
     />
