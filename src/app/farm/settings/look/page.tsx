@@ -20,7 +20,7 @@ export default async function SettingsLookPage() {
     <div className="flex flex-col gap-4">
       <SectionHeader section="settings" tabs={settingsTabs(featuresOf(tenant))} active="look" back={{ href: "/farm/more" }} />
       <LogoForm logoUrl={tenant.logoUrl} initials={tenant.invoicePrefix} />
-      <BrandForm nameTa={tenant.nameTa} nameEn={tenant.nameEn} taglineTa={tenant.taglineTa} taglineEn={tenant.taglineEn} nameColours={tenant.nameColours} />
+      <BrandForm nameTa={tenant.nameTa} nameEn={tenant.nameEn} taglineTa={tenant.taglineTa} taglineEn={tenant.taglineEn} nameColours={tenant.nameColours} themePrimary={tenant.themePrimary} themeAccent={tenant.themeAccent} />
       <ShopArtPicker picked={picked.length ? picked : suggested} isDefault={picked.length === 0} kinds={kinds} suggested={suggested} />
     </div>
   )

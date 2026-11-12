@@ -30,7 +30,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   if (!tenant) {
     return (
       <main className="mx-auto max-w-md px-4 py-16 text-center">
-        <h1 className="text-2xl font-semibold">FarmForYou</h1>
+        <h1 className="text-2xl font-semibold">Farm For You</h1>
         <p className="mt-2 text-muted-foreground">No farm is set up at this address.</p>
       </main>
     )

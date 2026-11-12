@@ -485,7 +485,7 @@ export function Shop({ data }: { data: ShopData }) {
                     <div className="relative shrink-0">
                       <ProductPicture src={p.imageUrl} kind={p.art} alt={p.name} className="size-24" />
                       {p.offerPct > 0 && (
-                        <span className="absolute -top-1.5 -left-1.5 rounded-full bg-yolk px-2 py-0.5 text-xs font-bold text-yolk-foreground shadow-sm tabular-nums">
+                        <span className="absolute -top-1.5 -left-1.5 rounded-full bg-brand-accent px-2 py-0.5 text-xs font-bold text-brand-accent-foreground shadow-sm tabular-nums">
                           {t("percentOff", { pct: p.offerPct })}
                         </span>
                       )}

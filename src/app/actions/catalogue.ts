@@ -8,6 +8,7 @@ import { MAX_PHOTO_BYTES, sniffImage } from "@/domain/product-art"
 import { adjustPrice } from "@/domain/offers"
 import { ART_KINDS } from "@/domain/product-art"
 import { addEggs, putStock, removeStockUpTo, setEggStore, syncEggStock, type Tx } from "@/server/stock"
+import { dropPhoto, storePhoto } from "@/server/photos"
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
 
@@ -173,11 +174,14 @@ export async function setProductPhoto(raw: unknown): Promise<ActionResult> {
   const { db, tenant } = await requireStaff(OWNER_ONLY)
   const product = await db.product.findFirst({ where: { id: parsed.data.id, deletedAt: null } })
   if (!product) return { ok: false, error: "not_found" }
+  const old = await db.productImage.findFirst({ where: { productId: product.id }, select: { storagePath: true } })
+  const stored = await storePhoto(tenant.id, "images", product.id, bytes, mime)
   await db.productImage.upsert({
     where: { productId: product.id },
-    update: { mime, data: bytes },
-    create: { productId: product.id, tenantId: tenant.id, mime, data: bytes },
+    update: { mime, ...stored },
+    create: { productId: product.id, tenantId: tenant.id, mime, ...stored },
   })
+  await dropPhoto(old)
   await db.product.update({ where: { id: product.id }, data: { imageUrl: `/img/p/${product.id}?v=${Date.now()}` } })
   return done()
 }
@@ -186,6 +190,7 @@ export async function removeProductPhoto(id: string): Promise<ActionResult> {
   const { db } = await requireStaff(OWNER_ONLY)
   const product = await db.product.findFirst({ where: { id } })
   if (!product) return { ok: false, error: "not_found" }
+  await dropPhoto(await db.productImage.findFirst({ where: { productId: id }, select: { storagePath: true } }))
   await db.productImage.deleteMany({ where: { productId: id } })
   await db.product.update({ where: { id }, data: { imageUrl: null } })
   return done()

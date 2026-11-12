@@ -36,7 +36,7 @@ export default async function MorePage() {
                 </span>
                 <span className="text-lg leading-tight font-bold wrap-anywhere">{t(`${tile.key}.title`)}</span>
                 <span className="text-sm leading-snug text-muted-foreground">{badge > 0 ? tm("newMessages", { count: badge }) : t(`${tile.key}.hint`)}</span>
-                {badge > 0 && <span className="absolute top-3 right-3 min-w-6 rounded-full bg-destructive px-1.5 text-center text-xs leading-6 font-bold text-destructive-foreground tabular-nums">{badge}</span>}
+                {badge > 0 && <span className="absolute top-3 right-3 min-w-6 rounded-full bg-brand-accent px-1.5 text-center text-xs leading-6 font-bold text-brand-accent-foreground tabular-nums">{badge}</span>}
               </Link>
             </li>
           )

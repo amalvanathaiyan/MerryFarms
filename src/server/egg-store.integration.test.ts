@@ -54,6 +54,8 @@ const farm = {
   taglineEn: null as string | null,
   nameColours: [] as string[],
   openingMark: null as string | null,
+  themePrimary: null as string | null,
+  themeAccent: null as string | null,
   shopArt: [] as string[],
   videoSpaceMb: null,
   trialEndsAt: null,

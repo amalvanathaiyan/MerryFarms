@@ -9,13 +9,22 @@ import { Input } from "@/components/ui/input"
 import { setFarmBrand } from "@/app/actions/look"
 import { FarmName, OnFarmForYou } from "@/components/art/brand-mark"
 import { showPlatformLine } from "@/domain/brand"
+import { brandTheme, FFY_THEME } from "@/domain/brand-theme"
 import { useCheer } from "@/components/cheer"
 
 /**
  * The farm's tagline and name colours (Settings → Look), with a preview of the shop's banner. FarmForYou's small
  * line always shows under the tagline; the farm can't remove it, and it never gets bigger than the farm's words.
  */
-export function BrandForm(props: { nameTa: string; nameEn: string; taglineTa: string | null; taglineEn: string | null; nameColours: string[] }) {
+export function BrandForm(props: {
+  nameTa: string
+  nameEn: string
+  taglineTa: string | null
+  taglineEn: string | null
+  nameColours: string[]
+  themePrimary: string | null
+  themeAccent: string | null
+}) {
   const t = useTranslations("farm.look")
   const te = useTranslations("errors")
   const cheer = useCheer()
@@ -24,6 +33,8 @@ export function BrandForm(props: { nameTa: string; nameEn: string; taglineTa: st
   const [taglineEn, setTaglineEn] = useState(props.taglineEn ?? "")
   const [coloured, setColoured] = useState(props.nameColours.length > 0)
   const [colours, setColours] = useState<string[]>(props.nameColours.length ? [...props.nameColours, "#1F6B3A"].slice(0, 2) : ["#A8262B", "#1F6B3A"])
+  const [ownTheme, setOwnTheme] = useState(!!props.themePrimary)
+  const [theme, setTheme] = useState({ primary: props.themePrimary ?? props.nameColours[1] ?? props.nameColours[0] ?? FFY_THEME.primary, accent: props.themeAccent ?? props.nameColours[0] ?? FFY_THEME.accent })
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
@@ -31,7 +42,7 @@ export function BrandForm(props: { nameTa: string; nameEn: string; taglineTa: st
   const save = () =>
     start(async () => {
       setError(null)
-      const r = await setFarmBrand({ taglineTa, taglineEn, nameColours: used })
+      const r = await setFarmBrand({ taglineTa, taglineEn, nameColours: used, theme: ownTheme ? theme : null })
       if (!r.ok) return setError(te.has(r.error) ? te(r.error) : te("generic"))
       cheer("settings")
       router.refresh()
@@ -39,7 +50,7 @@ export function BrandForm(props: { nameTa: string; nameEn: string; taglineTa: st
 
   const preview = (name: string, tagline: string, lang: "ta" | "en") => (
     <div lang={lang} className="flex flex-col gap-0.5 rounded-xl bg-background px-3 py-2">
-      <FarmName name={name} colours={used} className="font-display text-lg leading-tight font-bold" />
+      <FarmName exact name={name} colours={used} className="font-display text-lg leading-tight font-bold" />
       <span className="flex flex-wrap items-center gap-x-2 text-xs">
         {tagline && (showPlatformLine(tagline) ? <span className="font-medium opacity-90">{tagline}</span> : <span className="font-semibold text-primary uppercase" style={{ letterSpacing: "0.12em" }}>{tagline}</span>)}
         {showPlatformLine(tagline) && <OnFarmForYou />}
@@ -83,6 +94,38 @@ export function BrandForm(props: { nameTa: string; nameEn: string; taglineTa: st
               <span className="text-sm">{t(i === 0 ? "colourFirst" : "colourSecond")}</span>
             </label>
           ))}
+        </div>
+      )}
+
+      <label className="flex items-start gap-3">
+        <input type="checkbox" className="mt-1 size-5 accent-primary" checked={ownTheme} onChange={(e) => setOwnTheme(e.target.checked)} />
+        <span className="flex flex-col">
+          <span className="font-medium">{t("appColours")}</span>
+          <span className="text-sm text-muted-foreground">{t("appColoursHint")}</span>
+        </span>
+      </label>
+      {ownTheme && (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-4">
+            {(["primary", "accent"] as const).map((k) => (
+              <label key={k} className="flex items-center gap-2">
+                <input type="color" value={theme[k]} onChange={(e) => setTheme((x) => ({ ...x, [k]: e.target.value.toUpperCase() }))} className="h-11 w-14 cursor-pointer rounded-lg border bg-card p-1" />
+                <span className="text-sm">{t(k === "primary" ? "colourButtons" : "colourHighlights")}</span>
+              </label>
+            ))}
+          </div>
+          {(() => {
+            // What the app will really use: adjusted until text on it reads clearly
+            const v = brandTheme(theme.primary, theme.accent)?.light
+            if (!v) return null
+            return (
+              <div className="flex flex-wrap items-center gap-3 rounded-xl bg-background p-3">
+                <span className="rounded-xl px-4 py-2 font-semibold" style={{ background: `hsl(${v.primary})`, color: `hsl(${v.primaryForeground})` }}>{t("sampleButton")}</span>
+                <span className="rounded-full px-2 text-sm font-bold leading-6" style={{ background: `hsl(${v.brandAccent})`, color: `hsl(${v.brandAccentForeground})` }}>3</span>
+                <span className="text-sm font-semibold underline" style={{ color: `hsl(${v.primary})` }}>{t("sampleLink")}</span>
+              </div>
+            )
+          })()}
         </div>
       )}
 

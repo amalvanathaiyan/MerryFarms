@@ -40,7 +40,7 @@ export function FarmNav({ items, badges }: { items: MenuItem[]; badges: Partial<
             </span>
             <span className="max-w-full truncate">{t(item.key)}</span>
             {badge > 0 && (
-              <span className="absolute top-1 left-1/2 ml-3 min-w-5 rounded-full bg-destructive px-1 text-center text-[11px] leading-5 font-bold text-destructive-foreground tabular-nums lg:static lg:ml-auto">
+              <span className="absolute top-1 left-1/2 ml-3 min-w-5 rounded-full bg-brand-accent px-1 text-center text-[11px] leading-5 font-bold text-brand-accent-foreground tabular-nums lg:static lg:ml-auto">
                 {badge}
               </span>
             )}

@@ -13,12 +13,16 @@ export async function GET(request: Request) {
   const app: InstallApp = param === "farm" || param === "admin" ? param : "shop"
   const tenant = app === "admin" ? null : await getTenant()
   const id = appIdentity(app, tenant)
+  // On one shared address (before farms have subdomains), another farm's apps open through /f/<farm>, which picks
+  // that farm again on every launch; the id differs too, so two farms' apps on one phone stay separate apps.
+  const shared = !process.env.NEXT_PUBLIC_ROOT_DOMAIN && tenant && tenant.slug !== process.env.DEFAULT_TENANT_SLUG
+  const start = shared ? `/f/${tenant.slug}${id.startUrl === "/" ? "" : id.startUrl}` || "/" : id.startUrl
   const manifest = {
-    id: id.startUrl,
+    id: start,
     name: id.name,
     short_name: id.shortName,
     description: id.description,
-    start_url: id.startUrl,
+    start_url: start,
     scope: "/",
     display: "standalone",
     // The splash screen is the icon's own colour, so each app is recognisable while it opens.
