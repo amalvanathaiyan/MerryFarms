@@ -11,7 +11,7 @@ export async function AuthShell({ title, children }: { title: string; children: 
   const locale = await getLocale()
 
   return (
-    <main className="mx-auto grid min-h-dvh w-full max-w-5xl items-center gap-8 px-4 py-8 sm:px-6 md:grid-cols-2 md:gap-12">
+    <main className="ffy-chrome mx-auto grid min-h-dvh w-full max-w-5xl items-center gap-8 px-4 py-8 sm:px-6 md:grid-cols-2 md:gap-12">
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <FfyMark tone="tile" small className="size-12" />

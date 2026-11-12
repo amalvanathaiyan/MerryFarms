@@ -24,12 +24,12 @@ type Farm = { nameTa: string; nameEn: string; defaultLanguage: string } | null
 
 export function appIdentity(app: InstallApp, farm: Farm): AppIdentity {
   if (app === "admin") {
-    return { name: "FarmForYou Admin", shortName: "FFY Admin", description: "Every farm on FarmForYou", startUrl: "/admin", colour: APP_COLOURS.admin, lang: "en" }
+    return { name: "Farm For You Admin", shortName: "FFY Admin", description: "Every farm on Farm For You", startUrl: "/admin", colour: APP_COLOURS.admin, lang: "en" }
   }
   const tamil = !farm || farm.defaultLanguage === "ta"
   const lang = tamil ? "ta" : "en"
-  const farmName = farm ? (tamil ? farm.nameTa : farm.nameEn) : "FarmForYou"
-  const brand = farm?.nameEn ?? "FarmForYou"
+  const farmName = farm ? (tamil ? farm.nameTa : farm.nameEn) : "Farm For You"
+  const brand = farm?.nameEn ?? "Farm For You"
   if (app === "farm") {
     return {
       name: `${farmName} · ${tamil ? "பண்ணை ஆப்" : "Farm app"}`,

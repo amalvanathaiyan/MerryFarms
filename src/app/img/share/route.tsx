@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og"
 import sharp from "sharp"
 import { getTenant } from "@/lib/tenant"
 import { prisma } from "@/lib/prisma"
+import { photoBytes } from "@/server/photos"
 
 /**
  * The link preview (1200×630) WhatsApp and Facebook show when a shop link is shared: the farm's own logo
@@ -13,10 +14,11 @@ const FIELD = "#FBF3DC", INK = "#16301F", LEAF = "#1E6B45", CREAM = "#FFF1C7"
 
 export async function GET() {
   const tenant = await getTenant()
-  const name = tenant?.nameEn ?? "FarmForYou"
-  const logo = tenant ? await prisma.tenantLogo.findUnique({ where: { tenantId: tenant.id } }) : null
+  const name = tenant?.nameEn ?? "Farm For You"
+  const row = tenant ? await prisma.tenantLogo.findUnique({ where: { tenantId: tenant.id } }) : null
+  const logo = row ? await photoBytes(row) : null
   // The logo is usually WebP (shrunk on the phone); the renderer wants PNG.
-  const logoSrc = logo ? `data:image/png;base64,${(await sharp(logo.data).png().toBuffer()).toString("base64")}` : null
+  const logoSrc = logo ? `data:image/png;base64,${(await sharp(logo).png().toBuffer()).toString("base64")}` : null
 
   return new ImageResponse(
     (
@@ -30,7 +32,7 @@ export async function GET() {
           </div>
         )}
         <div style={{ marginTop: 28, fontSize: 68, color: INK, textAlign: "center", maxWidth: 1080, lineHeight: 1.1 }}>{name}</div>
-        <div style={{ marginTop: 12, fontSize: 30, color: LEAF }}>Fresh from the farm · FarmForYou</div>
+        <div style={{ marginTop: 12, fontSize: 30, color: LEAF }}>Fresh from the farm · Farm For You</div>
       </div>
     ),
     { width: 1200, height: 630, headers: { "cache-control": "public, max-age=86400" } },

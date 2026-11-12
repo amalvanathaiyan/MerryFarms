@@ -2,6 +2,7 @@ import sharp from "sharp"
 import { getTenant } from "@/lib/tenant"
 import { prisma } from "@/lib/prisma"
 import { APP_COLOURS } from "@/domain/install-apps"
+import { photoBytes } from "@/server/photos"
 
 /**
  * The shop and farm apps' home-screen icons, made from this farm's own logo (Settings → Look). Farms without a
@@ -22,17 +23,18 @@ export async function GET(request: Request) {
   const farmApp = params.get("app") === "farm"
 
   const tenant = await getTenant()
-  const logo = tenant ? await prisma.tenantLogo.findUnique({ where: { tenantId: tenant.id } }) : null
-  if (!logo) return new Response("Not found", { status: 404 })
+  const row = tenant ? await prisma.tenantLogo.findUnique({ where: { tenantId: tenant.id } }) : null
+  const data = row ? await photoBytes(row) : null
+  if (!data) return new Response("Not found", { status: 404 })
 
   // A logo with a see-through background (a mark, like the Merry Egg) is measured and set straight on the app's colour;
   // a logo drawn on its own background keeps that background.
-  const mark = await transparentMark(logo.data)
+  const mark = await transparentMark(data)
   const png = mark
     ? await onColour(mark, size, maskable, farmApp ? APP_COLOURS.farm : APP_COLOURS.shop)
     : farmApp
-      ? await onGreen(logo.data, size, maskable)
-      : await filled(logo.data, size, maskable)
+      ? await onGreen(data, size, maskable)
+      : await filled(data, size, maskable)
   return new Response(new Uint8Array(png), {
     headers: { "content-type": "image/png", "cache-control": "public, max-age=31536000, immutable", "x-content-type-options": "nosniff" },
   })

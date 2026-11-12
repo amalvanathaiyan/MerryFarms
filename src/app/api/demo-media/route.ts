@@ -10,7 +10,7 @@ import { localDir, SAFE_PATH, validLocalSignature } from "@/server/media-store"
  * phones. Off in production and whenever Supabase is set up.
  */
 const off = () => process.env.NODE_ENV === "production" || !isDemoLoginEnabled() || !!process.env.SUPABASE_SERVICE_ROLE_KEY
-const TYPES: Record<string, string> = { mp4: "video/mp4", mov: "video/quicktime", webm: "video/webm", jpg: "image/jpeg" }
+const TYPES: Record<string, string> = { mp4: "video/mp4", mov: "video/quicktime", webm: "video/webm", jpg: "image/jpeg", webp: "image/webp", png: "image/png" }
 const MAX = 60 * 1024 * 1024
 
 function target(url: URL) {

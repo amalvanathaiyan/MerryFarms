@@ -25,12 +25,16 @@ export function FfyMark({ tone = "light", small, className, title }: { tone?: "t
   )
 }
 
-/** The farm's name, each word in the farm's name colours in turn (Merry red, Farms green). */
-export function FarmName({ name, colours, className }: { name: string; colours: readonly string[]; className?: string }) {
+/**
+ * The farm's name, each word in the farm's name colours in turn (Merry red, Farms green). Each colour shows in its
+ * readable version for light or dark mode (--name-N from the root layout's brand CSS); `exact` shows the colours as
+ * given, for previews of colours not saved yet.
+ */
+export function FarmName({ name, colours, className, exact }: { name: string; colours: readonly string[]; className?: string; exact?: boolean }) {
   return (
     <span className={className}>
       {colourName(name, colours).map((p, i) => (
-        <span key={i} style={p.colour ? { color: p.colour } : undefined}>
+        <span key={i} style={p.colour ? { color: exact ? p.colour : `var(--name-${colours.indexOf(p.colour) + 1}, ${p.colour})` } : undefined}>
           {p.text}
         </span>
       ))}
