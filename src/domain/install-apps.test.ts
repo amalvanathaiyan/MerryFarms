@@ -10,9 +10,14 @@ describe("install apps", () => {
     expect(appIdentity("shop", englishFarm)).toMatchObject({ name: "Green Acre", shortName: "Green Acre", lang: "en" })
   })
 
-  it("gives the farm app a one-word label in the farm's language, opening the farm app", () => {
-    expect(appIdentity("farm", tamilFarm)).toMatchObject({ shortName: "பண்ணை", startUrl: "/farm" })
-    expect(appIdentity("farm", englishFarm)).toMatchObject({ shortName: "My Farm", name: "Green Acre · Farm app" })
+  it("calls the farm app FarmForYou on the shared farm-app address", () => {
+    expect(appIdentity("farm", tamilFarm)).toMatchObject({ shortName: "FarmForYou", name: "Farm For You", startUrl: "/farm" })
+    expect(appIdentity("farm", null)).toMatchObject({ shortName: "FarmForYou" })
+  })
+
+  it("gives the farm app the farm's name on the farm's own address", () => {
+    expect(appIdentity("farm", tamilFarm, true)).toMatchObject({ shortName: "Merry Farms", name: "மெர்ரி ஃபார்ம்ஸ் · பண்ணை ஆப்", startUrl: "/farm" })
+    expect(appIdentity("farm", englishFarm, true)).toMatchObject({ shortName: "Green Acre", name: "Green Acre · Farm app" })
   })
 
   it("keeps the admin app the same for every farm", () => {

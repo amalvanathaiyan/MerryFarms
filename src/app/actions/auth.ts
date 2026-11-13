@@ -56,7 +56,7 @@ export async function signIn(raw: unknown): Promise<{ error: string } | undefine
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) return { error: error.code === "email_not_confirmed" ? "email_not_confirmed" : "wrong_login" }
 
-  if (farm && farm.id !== host?.id) redirect(farmUrl(farm.slug, "/farm") ?? "/farm")
+  if (farm && farm.id !== host?.id) redirect(farmUrl(farm.slug, "/farm"))
   redirect(await homeAfterSignIn(data.user.id, host?.id, next))
 }
 

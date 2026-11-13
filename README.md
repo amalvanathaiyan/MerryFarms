@@ -100,7 +100,17 @@ Open http://localhost:3000 for the shop. The farm app needs a real Supabase proj
 3. In Supabase → Authentication → URL Configuration, set the Site URL to the Vercel address and add `https://<address>/auth/callback**` to the Redirect URLs.
 4. Deploying needs the database to match the code first: `npm run db:push` and `npm run db:rls` from this computer.
 
-On a `*.vercel.app` address the site is one farm (`DEFAULT_TENANT_SLUG`) and registering new farms stays closed. For more farms, add your own domain with a wildcard (`*.your-domain`, which needs Vercel's nameservers) and set `NEXT_PUBLIC_ROOT_DOMAIN`. Vercel's free Hobby plan is for non-commercial use only; a business needs Pro.
+On a `*.vercel.app` address the site is one farm (`DEFAULT_TENANT_SLUG`) and registering new farms stays closed. For more farms, add your own domain with a wildcard (`*.your-domain`, which needs Vercel's nameservers) and set `NEXT_PUBLIC_ROOT_DOMAIN`.
+
+**One address per app** (`src/domain/app-hosts.ts`), so a phone can install the shop, the farm app and admin side by side (Android counts a second app on one address as "already installed"):
+
+| App | Before the domain (Vercel → Settings → Domains, one project) | With the domain (`NEXT_PUBLIC_ROOT_DOMAIN=farmforyou.in`) |
+|---|---|---|
+| Shop (customers) | `SHOP_HOST=merry-farms.vercel.app` | `merryfarms.farmforyou.in` |
+| Farm app (owners, staff) | `FARM_APP_HOST=farmforyou-farm.vercel.app` (labelled FarmForYou) | `merryfarms-farm.farmforyou.in` (labelled with the farm's name) |
+| Portal and admin (`/admin`) | `PORTAL_HOST=farmforyou.vercel.app` | `farmforyou.in` |
+
+A page asked for on another app's address is sent there. Before the domain the addresses can't share a sign-in, so a support visit stays on the portal's address. Any other address (local development, preview deployments) keeps every app on one address. Moving to the domain is settings only: set `NEXT_PUBLIC_ROOT_DOMAIN`, add `farmforyou.in` and `*.farmforyou.in` in Vercel; the three `*_HOST` settings are then not needed. Vercel's free Hobby plan is for non-commercial use only; a business needs Pro.
 
 ## Commands
 

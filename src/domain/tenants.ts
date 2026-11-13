@@ -11,7 +11,8 @@ export type SlugProblem = "slug_format" | "slug_reserved"
 /** 3–30 lowercase letters, digits and hyphens, starting with a letter, no hyphen at either end or twice in a row. */
 export function checkSlug(slug: string): SlugProblem | null {
   if (!/^[a-z][a-z0-9-]{1,28}[a-z0-9]$/.test(slug) || slug.includes("--")) return "slug_format"
-  if (RESERVED_SLUGS.includes(slug)) return "slug_reserved"
+  // "<farm>-farm" is a farm's farm-app address (src/domain/app-hosts.ts), so no farm may be named that way
+  if (RESERVED_SLUGS.includes(slug) || slug.endsWith("-farm")) return "slug_reserved"
   return null
 }
 
