@@ -7,9 +7,9 @@ import { getTenant } from "@/lib/tenant"
 import { appIcon } from "@/domain/install-apps"
 import "./globals.css"
 import { DISPLAY_SCRIPT } from "@/lib/display"
-import { OPENING_SCRIPT } from "@/lib/opening"
+import { openingScript } from "@/lib/opening"
 import { farmOpening } from "@/lib/farm-brand"
-import { FarmOpening } from "@/components/openings"
+import { FarmOpening, PlatformOpening } from "@/components/openings"
 import { brandThemeCss, FFY_THEME } from "@/domain/brand-theme"
 
 // Body: Hind Madurai, one family for Tamil and English. Headings: Baloo Thambi 2, rounded and warm.
@@ -59,12 +59,15 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale()
   const tenant = await getTenant()
+  // The app that opens at this address and page (worked out by src/proxy.ts); only its opening is drawn
+  const h = await headers()
+  const opening = (["shop", "farm", "admin"] as const).find((a) => a === h.get("x-opening-app")) ?? "shop"
   return (
     // The display choice (soft colours, light/dark, larger text) is set on <html> before React loads.
     <html lang={locale} className={`${body.variable} ${heading.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: DISPLAY_SCRIPT }} />
-        <script dangerouslySetInnerHTML={{ __html: OPENING_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: openingScript(opening) }} />
         {/* Brand colours: Farm For You's by default and always on its own screens (.ffy-chrome: admin, sign-in);
             the farm's own on its shop and farm app. Built from validated #rrggbb values only. */}
         <style
@@ -78,8 +81,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="min-h-dvh antialiased">
         <NextIntlClientProvider>
-          {/* The shop's opening, when it has just been opened from its home-screen icon (src/lib/opening.ts) */}
-          {tenant && <FarmOpening app="shop" farm={farmOpening(tenant, locale)} />}
+          {/* The app's opening, when it has just been opened from its home-screen icon (src/lib/opening.ts):
+              FarmForYou's alone for admin; FarmForYou's, then the farm's, for the shop and the farm app */}
+          {opening !== "admin" && tenant ? <FarmOpening app={opening} farm={farmOpening(tenant, locale)} /> : <PlatformOpening app={opening} />}
           {children}
         </NextIntlClientProvider>
       </body>

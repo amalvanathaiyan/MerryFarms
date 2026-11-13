@@ -1,18 +1,32 @@
+import { appBase, hostConfigFromEnv } from "@/domain/app-hosts"
+
 /**
- * A farm's own web address, from its slug: https://merryfarms.farmforyou.in when NEXT_PUBLIC_ROOT_DOMAIN is set;
- * http://merryfarms.localhost:3000 in local development (the proxy reads *.localhost the same way).
- * Without either (one address for every farm, before the domain is bought): /f/<farm><path>, which picks the farm for
- * the browser and goes on to <path> (src/proxy.ts).
+ * A farm's own web address, from its slug: its shop, or its farm app for a /farm path (src/domain/app-hosts.ts).
+ *   with the domain:            https://merryfarms.farmforyou.in, https://merryfarms-farm.farmforyou.in/farm
+ *   on the fixed addresses:     https://merry-farms.vercel.app, https://farmforyou-farm.vercel.app/f/<farm>/farm
+ *   local development:          http://merryfarms.localhost:3000 (the proxy reads *.localhost the same way)
+ *   otherwise (one address):    /f/<farm><path>, which picks the farm for the browser and goes on to <path>.
  */
-export function farmUrl(slug: string, path = ""): string | null {
-  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN
-  if (root) return `https://${slug}.${root}${path}`
+export function farmUrl(slug: string, path = ""): string {
+  const base = appBase(path.startsWith("/farm") ? "farm" : "shop", slug, hostConfigFromEnv(process.env))
+  if (base) return `${base}${path}`
   if (process.env.NODE_ENV !== "production") return `http://${slug}.localhost:${process.env.PORT ?? "3000"}${path}`
   return `/f/${slug}${path}`
 }
 
-/** FarmForYou admin's address: its own host (admin.farmforyou.in) once farms have their own addresses, else /admin here. */
+/** FarmForYou admin's address: /admin on the portal's address (farmforyou.in), else /admin here. */
 export function adminUrl(): string {
-  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN
-  return root ? `https://admin.${root}/admin` : "/admin"
+  const base = appBase("portal", null, hostConfigFromEnv(process.env))
+  return base ? `${base}/admin` : "/admin"
+}
+
+/**
+ * Where a support visit opens a farm's app. With the domain, the farm's own farm-app address (the sign-in is shared
+ * across farmforyou.in). Before it, the fixed addresses can't share a sign-in, so the visit stays on the portal's
+ * address, which shows a farm's app only in support mode.
+ */
+export function supportFarmUrl(slug: string): string {
+  const cfg = hostConfigFromEnv(process.env)
+  if (cfg.rootDomain || process.env.NODE_ENV !== "production") return farmUrl(slug, "/farm")
+  return `/f/${slug}/farm`
 }

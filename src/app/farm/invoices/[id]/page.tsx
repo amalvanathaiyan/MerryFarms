@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import { getTranslations } from "next-intl/server"
 import { MessageCircle } from "lucide-react"
 import { requireStaff } from "@/lib/auth"
-import { absoluteUrl } from "@/lib/urls"
+import { shopUrl } from "@/lib/urls"
 import { InvoiceView } from "@/components/invoice-view"
 import { PrintButton } from "@/components/print-button"
 import { Button } from "@/components/ui/button"
@@ -25,7 +25,7 @@ export default async function FarmInvoicePage({ params }: { params: Promise<{ id
   if (!invoice) notFound()
 
   const s = readSnapshot(invoice.snapshot)
-  const link = await absoluteUrl(`/i/${invoice.publicToken}`)
+  const link = await shopUrl(`/i/${invoice.publicToken}`)
   const lang = invoice.customer.language
   const farmName = lang === "ta" ? s.farm.nameTa : s.farm.nameEn
   const text = fillTemplate(templateText("invoice", lang, await templateOverrides(tenant.id)), {

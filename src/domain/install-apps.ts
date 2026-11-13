@@ -1,7 +1,9 @@
 /**
  * The three apps a phone can install, one per role. Pure, so it is tested.
  *   shop:  customers. Named after the farm.
- *   farm:  the farm admin and staff. Opens straight into /farm.
+ *   farm:  the farm admin and staff. Opens straight into /farm. On the farm's own address
+ *          (merryfarms-farm.farmforyou.in) it carries the farm's name; on the shared farm-app address (one for every
+ *          farm, before the domain) it is FarmForYou's app.
  *   admin: the FarmForYou super admin. Opens /admin; belongs to no farm.
  * Labels under home-screen icons show about 10 letters, and Tamil letters are wider, so short names stay short:
  * the shop keeps the farm's English name and the farm app is one word.
@@ -22,7 +24,8 @@ export const APP_COLOURS: Record<InstallApp, string> = { shop: "#FFF6D6", farm: 
 
 type Farm = { nameTa: string; nameEn: string; defaultLanguage: string } | null
 
-export function appIdentity(app: InstallApp, farm: Farm): AppIdentity {
+/** `farmAddress`: the address names this farm (its own subdomain), so its farm app can carry its name and logo. */
+export function appIdentity(app: InstallApp, farm: Farm, farmAddress = false): AppIdentity {
   if (app === "admin") {
     return { name: "Farm For You Admin", shortName: "FFY Admin", description: "Every farm on Farm For You", startUrl: "/admin", colour: APP_COLOURS.admin, lang: "en" }
   }
@@ -30,10 +33,13 @@ export function appIdentity(app: InstallApp, farm: Farm): AppIdentity {
   const lang = tamil ? "ta" : "en"
   const farmName = farm ? (tamil ? farm.nameTa : farm.nameEn) : "Farm For You"
   const brand = farm?.nameEn ?? "Farm For You"
+  if (app === "farm" && !farmAddress) {
+    return { name: "Farm For You", shortName: "FarmForYou", description: "Farm For You — orders, birds and money", startUrl: "/farm", colour: APP_COLOURS.farm, lang }
+  }
   if (app === "farm") {
     return {
       name: `${farmName} · ${tamil ? "பண்ணை ஆப்" : "Farm app"}`,
-      shortName: tamil ? "பண்ணை" : "My Farm",
+      shortName: brand,
       description: `${brand} — orders, birds and money`,
       startUrl: "/farm",
       colour: APP_COLOURS.farm,

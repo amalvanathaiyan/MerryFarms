@@ -16,6 +16,7 @@ describe("farm subdomains", () => {
     expect(checkSlug("merry farms")).toBe("slug_format")
     expect(checkSlug("admin")).toBe("slug_reserved")
     expect(checkSlug("www")).toBe("slug_reserved")
+    expect(checkSlug("merryfarms-farm")).toBe("slug_reserved")
   })
   it("suggests a subdomain from the English name", () => {
     expect(suggestSlug("Merry Farms")).toBe("merryfarms")

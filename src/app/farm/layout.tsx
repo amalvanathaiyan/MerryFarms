@@ -8,21 +8,24 @@ import { featuresOf } from "@/lib/features"
 import { mainMenu } from "@/lib/farm-sections"
 import { FarmName, FfyMark } from "@/components/art/brand-mark"
 import type { Metadata } from "next"
+import { headers } from "next/headers"
 import { getTenant } from "@/lib/tenant"
 import { appIcon, appIdentity } from "@/domain/install-apps"
 import { InstallCatcher } from "@/components/install-app"
-import { FarmOpening } from "@/components/openings"
-import { farmOpening } from "@/lib/farm-brand"
 import { HeaderHeight } from "@/components/header-height"
 import { SupportBar } from "@/components/farm/support-bar"
 
 export const dynamic = "force-dynamic"
 
-/** Installing from the farm app gives its own green icon that opens straight into the farm app (not the shop). */
+/**
+ * Installing from the farm app gives its own green icon that opens straight into the farm app (not the shop):
+ * FarmForYou's, or the farm's own on the farm's own address (src/app/app-manifest).
+ */
 export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getTenant()
-  const id = appIdentity("farm", tenant)
-  return { manifest: "/app-manifest?app=farm", appleWebApp: { capable: true, title: id.shortName, statusBarStyle: "default" }, icons: { apple: appIcon("farm", tenant?.logoUrl, 180) } }
+  const farmAddress = (await headers()).get("x-farm-address") === "1"
+  const id = appIdentity("farm", tenant, farmAddress)
+  return { manifest: "/app-manifest?app=farm", appleWebApp: { capable: true, title: id.shortName, statusBarStyle: "default" }, icons: { apple: appIcon("farm", farmAddress ? tenant?.logoUrl : null, 180) } }
 }
 
 export default async function FarmLayout({ children }: { children: React.ReactNode }) {
@@ -36,7 +39,6 @@ export default async function FarmLayout({ children }: { children: React.ReactNo
   return (
     <div className="flex min-h-dvh flex-col">
       <InstallCatcher />
-      <FarmOpening app="farm" farm={farmOpening(tenant, locale)} />
       {support && <SupportBar farm={pick(locale, tenant.nameTa, tenant.nameEn)} endsAt={support.endsAt} />}
       {/* Only the farm and the language here: everything else is one tap away in the menu (More). */}
       <HeaderHeight id="app-header" />

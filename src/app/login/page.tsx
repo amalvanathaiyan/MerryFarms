@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { headers } from "next/headers"
 import { getTranslations } from "next-intl/server"
 import { farmKnownFromAddress, getTenant } from "@/lib/tenant"
 import { LoginForm } from "./login-form"
@@ -10,7 +11,7 @@ import { AuthShell } from "@/components/auth-shell"
 
 /** Installing from the sign-in page gives the app being signed in to: the farm app, or FarmForYou admin. */
 export async function generateMetadata({ searchParams }: { searchParams: Promise<{ next?: string }> }): Promise<Metadata> {
-  const admin = (await searchParams).next?.startsWith("/admin")
+  const admin = (await searchParams).next?.startsWith("/admin") || (await headers()).get("x-host-app") === "portal"
   return admin
     ? { manifest: "/app-manifest?app=admin", icons: { apple: "/icons/admin-apple.png" } }
     : { manifest: "/app-manifest?app=farm", icons: { apple: "/icons/farm-apple.png" } }
@@ -20,9 +21,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { next, error } = await searchParams
   const t = await getTranslations("login")
   const tenant = await getTenant()
-  // Only allow redirects back into the farm app or the platform admin.
-  const forAdmin = next?.startsWith("/admin") ?? false
-  const target = next?.startsWith("/farm") || forAdmin ? next! : "/farm"
+  // Only allow redirects back into the farm app or the platform admin. The portal's address signs in to admin only.
+  const portal = (await headers()).get("x-host-app") === "portal"
+  const forAdmin = portal || (next?.startsWith("/admin") ?? false)
+  const target = next?.startsWith("/admin") || (!portal && next?.startsWith("/farm")) ? next! : forAdmin ? "/admin" : "/farm"
   const demoStaff = !isDemoLoginEnabled()
     ? []
     : forAdmin

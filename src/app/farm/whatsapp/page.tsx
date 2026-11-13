@@ -3,7 +3,7 @@ import QRCode from "qrcode"
 import { requireStaff } from "@/lib/auth"
 import { featuresOf } from "@/lib/features"
 import { requireFeature } from "@/lib/require-feature"
-import { absoluteUrl } from "@/lib/urls"
+import { shopUrl } from "@/lib/urls"
 import { pick } from "@/lib/i18n-helpers"
 import { templateOverrides } from "@/server/messages"
 import { fillTemplate, priceLines, TEMPLATE_KEYS, TEMPLATES, templateText, type Lang } from "@/domain/templates"
@@ -23,12 +23,12 @@ export default async function WhatsAppPage() {
   const t = await getTranslations("farm.whatsapp")
   const features = featuresOf(tenant)
 
-  const [shopUrl, overrides, products] = await Promise.all([
-    absoluteUrl("/"),
+  const [shopLink, overrides, products] = await Promise.all([
+    shopUrl("/"),
     templateOverrides(tenant.id),
     db.product.findMany({ where: { isActive: true, onWeb: true, deletedAt: null }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
   ])
-  const qrSvg = await QRCode.toString(shopUrl, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#1f3d2b", light: "#ffffff" } })
+  const qrSvg = await QRCode.toString(shopLink, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#1f3d2b", light: "#ffffff" } })
 
   // Ready-to-send messages in both languages; the page shows the viewer's language first.
   const build = (lang: Lang) => {
@@ -45,8 +45,8 @@ export default async function WhatsAppPage() {
     )
     const date = new Intl.DateTimeFormat(lang === "ta" ? "ta-IN" : "en-IN", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${istDate(new Date())}T00:00:00Z`))
     return {
-      shop: fillTemplate(templateText("share_shop", lang, overrides), { farm, link: shopUrl, phone }),
-      prices: fillTemplate(templateText("price_list", lang, overrides), { farm, date, prices, link: shopUrl, phone }),
+      shop: fillTemplate(templateText("share_shop", lang, overrides), { farm, link: shopLink, phone }),
+      prices: fillTemplate(templateText("price_list", lang, overrides), { farm, date, prices, link: shopLink, phone }),
     }
   }
   const order: Lang[] = locale === "en" ? ["en", "ta"] : ["ta", "en"]
@@ -55,7 +55,7 @@ export default async function WhatsAppPage() {
     <div className="flex flex-col gap-5">
       <SectionHeader section="whatsapp" back={{ href: "/farm/more" }} />
 
-      <ShareCard messages={order.map((lang) => ({ lang, ...build(lang) }))} shopUrl={shopUrl} />
+      <ShareCard messages={order.map((lang) => ({ lang, ...build(lang) }))} shopUrl={shopLink} />
 
       <section className="flex flex-col items-center gap-3 rounded-2xl border bg-card p-4 text-center print:border-0">
         <h2 className="self-start font-semibold print:self-center">{t("qrTitle")}</h2>

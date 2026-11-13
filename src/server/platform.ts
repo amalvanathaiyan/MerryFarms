@@ -2,7 +2,7 @@ import "server-only"
 import { usedVideoBytes } from "./videos"
 import { prisma } from "@/lib/prisma"
 import { checkSlug, isInvoicePrefix, trialEnd, type FarmStatus } from "@/domain/tenants"
-import { farmUrl } from "@/lib/farm-url"
+import { adminUrl, farmUrl } from "@/lib/farm-url"
 import type { Plan } from "@/domain/features"
 import { addStaff, resetStaffPassword } from "./staff"
 import { OrderError } from "./orders"
@@ -108,8 +108,8 @@ export async function homeAfterSignIn(authUserId: string, hostTenantId: string |
   if (wanted.startsWith("/admin") && admin) return wanted
   const farms = await prisma.staffMember.findMany({ where: { authUserId, isActive: true }, select: { tenantId: true, tenant: { select: { slug: true } } } })
   if (farms.some((f) => f.tenantId === hostTenantId)) return wanted.startsWith("/admin") ? "/farm" : wanted
-  if (admin) return "/admin"
-  return farms[0] ? (farmUrl(farms[0].tenant.slug, "/farm") ?? "/farm") : "/farm"
+  if (admin) return adminUrl()
+  return farms[0] ? farmUrl(farms[0].tenant.slug, "/farm") : "/farm"
 }
 
 export interface FarmChanges {

@@ -629,7 +629,7 @@
 @keyframes cheer-bar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 @keyframes cheer-spark { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(1); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-34px) scale(0.4); } }
 
-/* ── Opening animations (src/components/opening.tsx, openings.tsx; shown by OPENING_SCRIPT in src/lib/opening.ts) ──
+/* ── Opening animations (src/components/opening.tsx, openings.tsx; shown by openingScript in src/lib/opening.ts) ──
    Hidden until the <head> script marks <html> with the app that has just been opened from its home-screen icon.
    The drawings' own parts carry ffy-* (FarmForYou mark) and me-* (Merry Egg) classes from scripts/art/brand/build.cjs;
    their transform-origins are in the drawing's 64×64 units. Animated parts never carry their own transform attribute. */
@@ -638,6 +638,12 @@
 :root[data-opening="farm"] .opening[data-app="farm"],
 :root[data-opening="admin"] .opening[data-app="admin"] { display: flex; }
 :root[data-opening-out] .opening { opacity: 0; pointer-events: none; }
+/* Two-part openings (shop, farm app): FarmForYou's part, then the farm's. The farm's part is not drawn until
+   data-opening-stage="2", so its animations start as it appears. */
+.op-part { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.9rem; padding: 2rem 1rem; }
+.op-part-farm { display: none; }
+:root[data-opening-stage="2"] .op-part-intro { display: none; }
+:root[data-opening-stage="2"] .op-part-farm { display: flex; animation: op-fade 0.3s ease-out both; }
 .op-wide { max-width: 90vw; }
 .op-platform-tag { letter-spacing: 0.14em; }
 .op-rule { display: block; width: 1.75rem; height: 1px; background: #C9B98F; }
