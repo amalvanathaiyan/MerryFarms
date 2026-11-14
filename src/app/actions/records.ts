@@ -27,6 +27,8 @@ export async function addExpense(raw: unknown): Promise<Result> {
       amountRupees: z.number().positive().max(10_000_000),
       quantityKg: z.number().positive().max(1_000_000).nullable().optional(),
       batchId: z.string().uuid().nullable().optional(),
+      placeId: z.string().uuid().nullable().optional(),
+      assetId: z.string().uuid().nullable().optional(),
       spreadMonths: z.number().int().min(2).max(MAX_SPREAD_MONTHS).nullable().optional(),
       note: z.string().trim().max(120).optional(),
     })
@@ -44,6 +46,11 @@ export async function addExpense(raw: unknown): Promise<Result> {
   const spreadMonths = d.kind === "feed" || !isOwner ? null : (d.spreadMonths ?? null)
   const batchId = !poultry || d.kind === "feed" || spreadMonths ? null : (d.batchId ?? null)
   if (batchId && !(await db.batch.findFirst({ where: { id: batchId }, select: { id: true } }))) return { ok: false, error: "batch_not_found" }
+  // Or on a place or an asset (Farm Core's cost centres); one of them at most, and only the farm's own
+  const placeId = batchId ? null : (d.placeId ?? null)
+  const assetId = batchId || placeId ? null : (d.assetId ?? null)
+  if (placeId && !(await db.farmPlace.findFirst({ where: { id: placeId }, select: { id: true } }))) return { ok: false, error: "not_found" }
+  if (assetId && !(await db.farmAsset.findFirst({ where: { id: assetId }, select: { id: true } }))) return { ok: false, error: "not_found" }
   await db.expense.create({
     data: {
       tenantId: tenant.id,
@@ -52,6 +59,8 @@ export async function addExpense(raw: unknown): Promise<Result> {
       amountPaise: rupeesToPaise(d.amountRupees),
       quantityKg: poultry && d.kind === "feed" ? (d.quantityKg ?? null) : null,
       batchId,
+      placeId,
+      assetId,
       spreadMonths,
       note: d.note || null,
       byStaffId: staff.id,

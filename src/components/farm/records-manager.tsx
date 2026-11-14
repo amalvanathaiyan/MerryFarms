@@ -17,6 +17,8 @@ type ExpenseRow = { id: string; dayText: string; kind: string; amountPaise: numb
 const SPREADABLE: readonly string[] = ["infrastructure", "repairs"]
 const defaultSpread = (kind: string) => (kind === "infrastructure" ? 12 : null)
 type BatchOption = { id: string; name: string }
+/** Places (plots, sheds, ponds, wells) and assets (motors, tractors) spending can be put on: Farm Core's cost centres. */
+export type SpendOn = { places: BatchOption[]; assets: BatchOption[] }
 
 /** Production (any farm), batches of birds (poultry farms only) and expenses (owner). */
 export function RecordsManager({
@@ -27,6 +29,7 @@ export function RecordsManager({
   poultry,
   batchOptions,
   production,
+  spendOn = { places: [], assets: [] },
   periodLabel,
   footer,
   showTotals = true,
@@ -47,6 +50,7 @@ export function RecordsManager({
   /** Poultry care on: feed is bought by the kg and spending can go on one batch. */
   poultry: boolean
   batchOptions: BatchOption[]
+  spendOn?: SpendOn
   production: React.ReactNode
 }) {
   const t = useTranslations("farm.records")
@@ -54,7 +58,7 @@ export function RecordsManager({
   const cheer = useCheer()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const empty = { date: today, kind: "feed" as ExpenseKind, amount: "", kg: "", batchId: "", note: "", spread: null as number | null }
+  const empty = { date: today, kind: "feed" as ExpenseKind, amount: "", kg: "", on: "", note: "", spread: null as number | null }
   const [spend, setSpend] = useState(empty)
 
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>, after?: () => void) =>
@@ -70,6 +74,12 @@ export function RecordsManager({
   const canSpread = canSpreadCosts && SPREADABLE.includes(spend.kind)
   const spreads = canSpread && spend.spread != null
   const amountNow = Number(spend.amount)
+  // What it was spent on: "batch:<id>", "place:<id>", "asset:<id>" or "" (the whole farm). A batch can't take feed
+  // (priced by what it eats) or a spread cost (the whole farm's); a place or an asset can take either.
+  const [onKind, onId] = spend.on ? (spend.on.split(":") as ["batch" | "place" | "asset", string]) : [null, null]
+  const batchesOffered = poultry && !isFeed && !spreads ? batchOptions : []
+  const offerOn = batchesOffered.length + spendOn.places.length + spendOn.assets.length > 0
+  const pickedOn = onKind === "batch" && !batchesOffered.some((b) => b.id === onId) ? null : onKind
 
   return (
     <div className="flex flex-col gap-4">
@@ -104,12 +114,14 @@ export function RecordsManager({
                     kind: spend.kind,
                     amountRupees: Number(spend.amount),
                     quantityKg: isFeed && spend.kg ? Number(spend.kg) : null,
-                    batchId: !isFeed && spend.batchId && !spreads ? spend.batchId : null,
+                    batchId: pickedOn === "batch" ? onId : null,
+                    placeId: pickedOn === "place" ? onId : null,
+                    assetId: pickedOn === "asset" ? onId : null,
                     spreadMonths: spreads ? spend.spread : null,
                     note: spend.note || undefined,
                   }),
                 () => (
-                  setSpend({ ...empty, date: spend.date, kind: spend.kind, batchId: spend.batchId, spread: spend.spread }),
+                  setSpend({ ...empty, date: spend.date, kind: spend.kind, on: spend.on, spread: spend.spread }),
                   isFeed && spend.kg ? cheer("feed", { kg: spend.kg }) : cheer("expense", { amount: formatRupees(Math.round(Number(spend.amount) * 100)) })
                 )
               )
@@ -132,26 +144,47 @@ export function RecordsManager({
                 <Input type="date" max={today} value={spend.date} onChange={(e) => setSpend({ ...spend, date: e.target.value })} className="h-11 font-normal" />
               </label>
             </div>
-            {isFeed ? (
+            {isFeed && (
               <label className="flex flex-col gap-1.5 text-sm font-semibold">
                 {t("feedKgBought")}
                 <Input type="number" min={0} step="0.5" inputMode="decimal" value={spend.kg} onChange={(e) => setSpend({ ...spend, kg: e.target.value })} className="h-11 font-normal tabular-nums" />
                 <span className="text-xs font-normal text-muted-foreground">{t("feedKgHint")}</span>
               </label>
-            ) : (
-              poultry && batchOptions.length > 0 && !spreads && (
-                <label className="flex flex-col gap-1.5 text-sm font-semibold">
-                  {t("forBatch")}
-                  <select value={spend.batchId} onChange={(e) => setSpend({ ...spend, batchId: e.target.value })} className="h-11 rounded-md border bg-background px-3 font-normal">
-                    <option value="">{t("wholeFarm")}</option>
-                    {batchOptions.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )
+            )}
+            {offerOn && (
+              <label className="flex flex-col gap-1.5 text-sm font-semibold">
+                {t("spentOn")}
+                <select value={pickedOn ? spend.on : ""} onChange={(e) => setSpend({ ...spend, on: e.target.value })} className="h-11 rounded-md border bg-background px-3 font-normal">
+                  <option value="">{t("wholeFarm")}</option>
+                  {batchesOffered.length > 0 && (
+                    <optgroup label={t("onBatches")}>
+                      {batchesOffered.map((b) => (
+                        <option key={b.id} value={`batch:${b.id}`}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {spendOn.places.length > 0 && (
+                    <optgroup label={t("onPlaces")}>
+                      {spendOn.places.map((b) => (
+                        <option key={b.id} value={`place:${b.id}`}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {spendOn.assets.length > 0 && (
+                    <optgroup label={t("onAssets")}>
+                      {spendOn.assets.map((b) => (
+                        <option key={b.id} value={`asset:${b.id}`}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              </label>
             )}
             {canSpread && (
               <fieldset className="flex flex-col gap-2">

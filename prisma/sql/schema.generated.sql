@@ -667,6 +667,8 @@ CREATE TABLE "expenses" (
     "amountPaise" INTEGER NOT NULL,
     "quantityKg" DOUBLE PRECISION,
     "batchId" TEXT,
+    "placeId" TEXT,
+    "assetId" TEXT,
     "spreadMonths" INTEGER,
     "note" TEXT,
     "byStaffId" TEXT,
@@ -1022,6 +1024,46 @@ CREATE TABLE "compliance_cases" (
     CONSTRAINT "compliance_cases_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "farm_places" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "kind" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "parentId" TEXT,
+    "area" DOUBLE PRECISION,
+    "areaUnit" TEXT NOT NULL DEFAULT 'acre',
+    "surveyNo" TEXT,
+    "soil" TEXT,
+    "depthFt" DOUBLE PRECISION,
+    "notes" TEXT,
+    "retiredAt" TIMESTAMP(3),
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "farm_places_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "farm_assets" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "kind" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "placeId" TEXT,
+    "boughtOn" TEXT,
+    "costPaise" INTEGER,
+    "serviceEveryDays" INTEGER,
+    "lastServiceOn" TEXT,
+    "notes" TEXT,
+    "retiredAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "farm_assets_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -1173,6 +1215,12 @@ CREATE INDEX "expenses_tenantId_date_idx" ON "expenses"("tenantId", "date");
 CREATE INDEX "expenses_batchId_idx" ON "expenses"("batchId");
 
 -- CreateIndex
+CREATE INDEX "expenses_placeId_idx" ON "expenses"("placeId");
+
+-- CreateIndex
+CREATE INDEX "expenses_assetId_idx" ON "expenses"("assetId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "production_entries_tenantId_date_productId_key" ON "production_entries"("tenantId", "date", "productId");
 
 -- CreateIndex
@@ -1264,6 +1312,12 @@ CREATE INDEX "compliance_cases_tenantId_status_idx" ON "compliance_cases"("tenan
 
 -- CreateIndex
 CREATE INDEX "compliance_cases_subjectId_idx" ON "compliance_cases"("subjectId");
+
+-- CreateIndex
+CREATE INDEX "farm_places_tenantId_idx" ON "farm_places"("tenantId");
+
+-- CreateIndex
+CREATE INDEX "farm_assets_tenantId_idx" ON "farm_assets"("tenantId");
 
 -- AddForeignKey
 ALTER TABLE "staff_members" ADD CONSTRAINT "staff_members_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;

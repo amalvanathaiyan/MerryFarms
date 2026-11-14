@@ -15,6 +15,7 @@ export type SectionKey =
   | "money"
   | "more"
   | "products"
+  | "land"
   | "customers"
   | "slots"
   | "messages"
@@ -41,6 +42,8 @@ export const SECTION_LOOK: Record<SectionKey, SectionLook> = {
   money: { strong: "bg-sec-money text-sec-on", tint: "bg-sec-money-tint", text: "text-sec-money", border: "border-sec-money" },
   more: { strong: "bg-sec-more text-sec-on", tint: "bg-sec-more-tint", text: "text-sec-more", border: "border-sec-more" },
   products: { strong: "bg-sec-products text-sec-on", tint: "bg-sec-products-tint", text: "text-sec-products", border: "border-sec-products" },
+  // My farm (Farm Core): places and assets, in the plans colour
+  land: { strong: "bg-sec-plans text-sec-on", tint: "bg-sec-plans-tint", text: "text-sec-plans", border: "border-sec-plans" },
   customers: { strong: "bg-sec-customers text-sec-on", tint: "bg-sec-customers-tint", text: "text-sec-customers", border: "border-sec-customers" },
   slots: { strong: "bg-sec-slots text-sec-on", tint: "bg-sec-slots-tint", text: "text-sec-slots", border: "border-sec-slots" },
   messages: { strong: "bg-sec-messages text-sec-on", tint: "bg-sec-messages-tint", text: "text-sec-messages", border: "border-sec-messages" },
@@ -99,6 +102,14 @@ export function moneyTabs(who: Who): Tab[] {
   return tabs
 }
 
+/** My farm (Farm Core)'s tabs: its places (land, sheds, ponds, wells) and assets (motors, tractors). */
+export function landTabs(): Tab[] {
+  return [
+    { key: "places", href: "/farm/land" },
+    { key: "assets", href: "/farm/land/assets" },
+  ]
+}
+
 /** Settings' tabs (owner only; the pages check that). Videos only when the farm has them switched on. */
 export function settingsTabs(features: { farmVideos: boolean }): Tab[] {
   return [
@@ -119,7 +130,7 @@ export interface MenuItem {
 }
 
 /** Pages reached from More: they light up the More button. */
-const MORE_PATHS = ["/farm/more", "/farm/catalogue", "/farm/customers", "/farm/slots", "/farm/messages", "/farm/whatsapp", "/farm/plans", "/farm/staff", "/farm/settings", "/farm/account"]
+const MORE_PATHS = ["/farm/more", "/farm/land", "/farm/catalogue", "/farm/customers", "/farm/slots", "/farm/messages", "/farm/whatsapp", "/farm/plans", "/farm/staff", "/farm/settings", "/farm/account"]
 
 /** The bottom menu for this person: at most five big buttons. */
 export function mainMenu(who: Who): MenuItem[] {
@@ -136,7 +147,7 @@ export function mainMenu(who: Who): MenuItem[] {
 
 export const menuItemActive = (item: MenuItem, path: string) => (item.key === "today" ? path === "/farm" : item.prefixes.some((p) => path === p || path.startsWith(`${p}/`)))
 
-export type MoreKey = "products" | "customers" | "slots" | "messages" | "whatsapp" | "plans" | "staff" | "settings" | "account"
+export type MoreKey = "land" | "products" | "customers" | "slots" | "messages" | "whatsapp" | "plans" | "staff" | "settings" | "account"
 
 export interface MoreTile {
   key: MoreKey
@@ -148,6 +159,8 @@ export function moreTiles(who: Who): MoreTile[] {
   const desk = has(who, "owner", "order_desk")
   const f = who.features
   const tiles: (MoreTile | false)[] = [
+    // My farm: the owner and a manager keep the farm's places and assets
+    has(who, "owner") && { key: "land", href: "/farm/land" },
     has(who, "owner", "order_desk", "packing") && { key: "products", href: "/farm/catalogue" },
     desk && { key: "customers", href: "/farm/customers" },
     desk && { key: "slots", href: "/farm/slots" },

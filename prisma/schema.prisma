@@ -942,6 +942,10 @@ model Expense {
   amountPaise  Int
   quantityKg   Float?
   batchId      String?
+  /// What it was spent on (Farm Core cost centres): a place (plot, shed, pond, well) or an asset (motor, tractor),
+  /// whose repair and running costs it then shows; neither = the whole farm (common costs).
+  placeId      String?
+  assetId      String?
   /// A big cost (building, equipment) shared out over this many months in profit; null = counted on the day paid.
   spreadMonths Int?
   note         String?
@@ -951,6 +955,8 @@ model Expense {
 
   @@index([tenantId, date])
   @@index([batchId])
+  @@index([placeId])
+  @@index([assetId])
   @@map("expenses")
 }
 
@@ -1433,4 +1439,61 @@ model ComplianceCase {
   @@index([tenantId, status])
   @@index([subjectId])
   @@map("compliance_cases")
+}
+
+// ─────────────────────────────────────────────────
+// FARM CORE: PLACES AND ASSETS (docs/platform-plan.md §3.2; src/server/farm-core.ts)
+// ─────────────────────────────────────────────────
+
+/// A part of the farm: land (a block, or a plot inside one), a shed, a pond, a well or borewell, a store.
+/// Spending can be put on it (expenses.placeId); modules later hang their work on it (crops on a plot, fish in a pond).
+model FarmPlace {
+  id        String    @id @default(uuid())
+  tenantId  String
+  /// block | plot | shed | pond | well | borewell | store | other (src/domain/farm-core.ts)
+  kind      String
+  name      String
+  /// A plot inside a block
+  parentId  String?
+  /// Size, in areaUnit (land, ponds) — acre | cent | hectare | sqft
+  area      Float?
+  areaUnit  String    @default("acre")
+  surveyNo  String?
+  /// red | black | sandy | clay | loam | laterite (land)
+  soil      String?
+  /// Depth in feet (wells and borewells)
+  depthFt   Float?
+  notes     String?
+  /// No longer used; kept so old records stay readable
+  retiredAt DateTime?
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@map("farm_places")
+}
+
+/// Something the farm owns and keeps running: a motor, pump, tractor, vehicle, generator, solar panels, a tool.
+/// Its repairs and running costs are expenses with assetId; a service due date reminds the farm.
+model FarmAsset {
+  id               String    @id @default(uuid())
+  tenantId         String
+  /// motor | pump | tractor | vehicle | generator | solar | sprayer | tool | building | other
+  kind             String
+  name             String
+  /// Where it is
+  placeId          String?
+  boughtOn         String?
+  costPaise        Int?
+  /// Service every so many days; null = no regular service
+  serviceEveryDays Int?
+  lastServiceOn    String?
+  notes            String?
+  retiredAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@map("farm_assets")
 }
