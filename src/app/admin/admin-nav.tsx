@@ -3,20 +3,26 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { Blocks, Bot, Inbox, Layers, SlidersHorizontal, Tractor } from "lucide-react"
+import { Activity, Blocks, Bot, History, Inbox, LayoutDashboard, Layers, SlidersHorizontal, Tractor } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-/** Farm For You admin's menu: farms, plans, modules, requests (with how many are waiting), settings, automation. Words beside every icon. */
+/**
+ * Farm For You admin's menu: dashboard, farms, requests (with how many are waiting), plans, modules, settings,
+ * automation, tech monitor and audit log. Words beside every icon.
+ */
 export function AdminNav({ pending }: { pending: number }) {
   const t = useTranslations("admin.nav")
   const path = usePathname()
   const items = [
-    { href: "/admin", key: "farms", icon: Tractor, active: path === "/admin" || path.startsWith("/admin/farms") },
+    { href: "/admin", key: "dashboard", icon: LayoutDashboard, active: path === "/admin" },
+    { href: "/admin/farms", key: "farms", icon: Tractor, active: path.startsWith("/admin/farms") },
+    { href: "/admin/requests", key: "requests", icon: Inbox, active: path.startsWith("/admin/requests"), badge: pending },
     { href: "/admin/plans", key: "plans", icon: Layers, active: path.startsWith("/admin/plans") },
     { href: "/admin/modules", key: "modules", icon: Blocks, active: path.startsWith("/admin/modules") },
-    { href: "/admin/requests", key: "requests", icon: Inbox, active: path.startsWith("/admin/requests"), badge: pending },
     { href: "/admin/settings", key: "settings", icon: SlidersHorizontal, active: path.startsWith("/admin/settings") },
     { href: "/admin/automation", key: "automation", icon: Bot, active: path.startsWith("/admin/automation") },
+    { href: "/admin/tech", key: "tech", icon: Activity, active: path.startsWith("/admin/tech") },
+    { href: "/admin/audit", key: "audit", icon: History, active: path.startsWith("/admin/audit") },
   ]
   return (
     <nav aria-label={t("label")} className="mx-auto flex w-full max-w-6xl gap-1.5 overflow-x-auto px-4 pb-2 sm:px-6">

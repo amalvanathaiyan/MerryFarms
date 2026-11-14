@@ -77,7 +77,7 @@ export function NewFarmForm({ rootDomain }: { rootDomain: string | null }) {
             <Link href={`/admin/farms/${made.id}`}>{t("manage")}</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href="/admin">{t("farms")}</Link>
+            <Link href="/admin/farms">{t("farms")}</Link>
           </Button>
         </div>
       </section>
