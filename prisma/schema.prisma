@@ -1321,3 +1321,59 @@ model Announcement {
   @@index([startsOn])
   @@map("announcements")
 }
+
+// ─────────────────────────────────────────────────
+// JOINING: FARMS THAT REGISTER THEMSELVES (docs/platform-plan.md §3.8; src/server/applications.ts)
+// ─────────────────────────────────────────────────
+
+/// A farm asking to join from the home page. Not a farm yet: the Farm For You team reviews it, and on approval adds
+/// the farm (and its owner's login) from it, as when admin adds one.
+model FarmApplication {
+  id               String    @id @default(uuid())
+  /// Short number told to the farm: "FFY-J0007"
+  number           Int       @unique
+  ownerName        String
+  /// +91XXXXXXXXXX
+  phone            String
+  email            String
+  nameTa           String
+  nameEn           String?
+  /// Module keys the farm is interested in (src/domain/modules.ts)
+  modules          String[]  @default([])
+  district         String
+  address          String
+  pincode          String
+  lat              Float?
+  lng              Float?
+  fssai            String?
+  gstin            String?
+  pan              String?
+  /// The public plan the farm liked, if any
+  planId           String?
+  message          String?
+  language         String    @default("ta")
+  /// The seller agreement and prohibited items policy, as accepted
+  agreementVersion String
+  agreedAt         DateTime
+  /// applied | reviewing | needs_info | on_hold | approved | rejected
+  status           String    @default("applied")
+  /// { phone: true, location: true, documents: true, call: true, visit: true }: what the reviewer has checked
+  checklist        Json      @default("{}")
+  /// The team's own notes (never shown to the farm)
+  notes            String?
+  /// What the farm was told: details still needed, or why it was turned down
+  reply            String?
+  reviewedBy       String?
+  decidedAt        DateTime?
+  /// The farm made from it, once approved
+  tenantId         String?
+  /// A one-way hash of where it was sent from, to stop floods
+  sourceHash       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([phone])
+  @@index([sourceHash, createdAt])
+  @@map("farm_applications")
+}

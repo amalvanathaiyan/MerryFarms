@@ -946,6 +946,43 @@ CREATE TABLE "announcements" (
     CONSTRAINT "announcements_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "farm_applications" (
+    "id" TEXT NOT NULL,
+    "number" INTEGER NOT NULL,
+    "ownerName" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "nameTa" TEXT NOT NULL,
+    "nameEn" TEXT,
+    "modules" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "district" TEXT NOT NULL,
+    "address" TEXT NOT NULL,
+    "pincode" TEXT NOT NULL,
+    "lat" DOUBLE PRECISION,
+    "lng" DOUBLE PRECISION,
+    "fssai" TEXT,
+    "gstin" TEXT,
+    "pan" TEXT,
+    "planId" TEXT,
+    "message" TEXT,
+    "language" TEXT NOT NULL DEFAULT 'ta',
+    "agreementVersion" TEXT NOT NULL,
+    "agreedAt" TIMESTAMP(3) NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'applied',
+    "checklist" JSONB NOT NULL DEFAULT '{}',
+    "notes" TEXT,
+    "reply" TEXT,
+    "reviewedBy" TEXT,
+    "decidedAt" TIMESTAMP(3),
+    "tenantId" TEXT,
+    "sourceHash" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "farm_applications_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -1167,6 +1204,18 @@ CREATE INDEX "platform_payments_tenantId_paidOn_idx" ON "platform_payments"("ten
 
 -- CreateIndex
 CREATE INDEX "announcements_startsOn_idx" ON "announcements"("startsOn");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "farm_applications_number_key" ON "farm_applications"("number");
+
+-- CreateIndex
+CREATE INDEX "farm_applications_status_createdAt_idx" ON "farm_applications"("status", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "farm_applications_phone_idx" ON "farm_applications"("phone");
+
+-- CreateIndex
+CREATE INDEX "farm_applications_sourceHash_createdAt_idx" ON "farm_applications"("sourceHash", "createdAt");
 
 -- AddForeignKey
 ALTER TABLE "staff_members" ADD CONSTRAINT "staff_members_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;

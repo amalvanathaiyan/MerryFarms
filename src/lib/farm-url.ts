@@ -30,3 +30,16 @@ export function supportFarmUrl(slug: string): string {
   if (cfg.rootDomain || process.env.NODE_ENV !== "production") return farmUrl(slug, "/farm")
   return `/f/${slug}/farm`
 }
+
+/** Where a farm's owner or staff sign in: the farm app's address (any farm's; the sign-in finds theirs). */
+export function farmSignInUrl(): string {
+  const base = appBase("farm", null, hostConfigFromEnv(process.env))
+  return base ? `${base}/login` : "/login"
+}
+
+/** A farm's logo wherever it is shown, not only on its own address (admin, Farm For You's home page). */
+export function farmLogoUrl(slug: string, logoUrl: string | null): string | null {
+  if (!logoUrl) return null
+  const v = logoUrl.split("?")[1]
+  return `/img/logo?farm=${slug}${v ? `&${v}` : ""}`
+}

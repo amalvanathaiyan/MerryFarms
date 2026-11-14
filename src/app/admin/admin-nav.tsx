@@ -7,15 +7,15 @@ import { Activity, Blocks, Bot, History, Inbox, LayoutDashboard, Layers, Megapho
 import { cn } from "@/lib/utils"
 
 /**
- * Farm For You admin's menu: dashboard, farms, requests (with how many are waiting), billing, plans, modules, announcements, settings,
+ * Farm For You admin's menu: dashboard, farms (with how many want to join), requests (with how many are waiting), billing, plans, modules, announcements, settings,
  * automation, tech monitor and audit log. Words beside every icon.
  */
-export function AdminNav({ pending }: { pending: number }) {
+export function AdminNav({ pending, joining }: { pending: number; joining: number }) {
   const t = useTranslations("admin.nav")
   const path = usePathname()
   const items = [
     { href: "/admin", key: "dashboard", icon: LayoutDashboard, active: path === "/admin" },
-    { href: "/admin/farms", key: "farms", icon: Tractor, active: path.startsWith("/admin/farms") },
+    { href: "/admin/farms", key: "farms", icon: Tractor, active: path.startsWith("/admin/farms"), badge: joining },
     { href: "/admin/requests", key: "requests", icon: Inbox, active: path.startsWith("/admin/requests"), badge: pending },
     { href: "/admin/billing", key: "billing", icon: ReceiptIndianRupee, active: path.startsWith("/admin/billing") },
     { href: "/admin/plans", key: "plans", icon: Layers, active: path.startsWith("/admin/plans") },
