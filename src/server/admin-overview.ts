@@ -69,12 +69,34 @@ async function maybe<T>(fn: () => Promise<T>): Promise<T | null> {
 }
 
 /**
- * The tech monitor: which service keys are set (never their values), the version running and where, database and
- * file storage against the free limits with rows per table, and how the job engine is doing.
+ * The job engine, for admin's Automation page: whether the tick is running, jobs done and failed in the last day,
+ * jobs waiting, the last success of each kind of job, and the latest failures.
  */
-export async function techMonitor(now = new Date()) {
+export async function jobEngine(now = new Date()) {
   const since24h = new Date(now.getTime() - DAY)
-  const [dbBytes, tables, storage, lastTick, jobs24h, lastDone, failures, pending] = await Promise.all([
+  const [lastTick, jobs24h, lastDone, failures, pending] = await Promise.all([
+    prisma.job.findFirst({ where: { type: "tick", status: "done" }, orderBy: { finishedAt: "desc" }, select: { finishedAt: true } }),
+    prisma.job.groupBy({ by: ["status"], where: { updatedAt: { gte: since24h } }, _count: { _all: true } }),
+    prisma.job.groupBy({ by: ["type"], where: { status: "done" }, _max: { finishedAt: true } }),
+    prisma.job.findMany({ where: { status: "failed" }, orderBy: { updatedAt: "desc" }, take: 10, select: { id: true, type: true, tenantId: true, attempts: true, lastError: true, updatedAt: true } }),
+    prisma.job.count({ where: { status: "pending", runAt: { lte: now } } }),
+  ])
+  return {
+    lastTickAt: lastTick?.finishedAt ?? null,
+    tick: tickHealth(lastTick?.finishedAt ?? null, now),
+    last24h: Object.fromEntries(jobs24h.map((j) => [j.status, j._count._all])) as Record<string, number>,
+    waiting: pending,
+    lastDone: lastDone.map((j) => ({ type: j.type, at: j._max.finishedAt })).sort((a, b) => a.type.localeCompare(b.type)),
+    failures,
+  }
+}
+
+/**
+ * The tech monitor: which service keys are set (never their values), the version running and where, and database and
+ * file storage against the free limits with rows per table. The job engine is on the Automation page (jobEngine).
+ */
+export async function techMonitor() {
+  const [dbBytes, tables, storage] = await Promise.all([
     maybe(async () => n((await prisma.$queryRaw<{ bytes: bigint }[]>`select pg_database_size(current_database()) as bytes`)[0]?.bytes)),
     maybe(async () =>
       (await prisma.$queryRaw<{ name: string; rows: bigint }[]>`select relname as name, n_live_tup as rows from pg_stat_user_tables where schemaname = 'public' order by n_live_tup desc, relname`).map((r) => ({ name: r.name, rows: n(r.rows) }))
@@ -83,11 +105,6 @@ export async function techMonitor(now = new Date()) {
       const r = (await prisma.$queryRaw<{ bytes: bigint; files: bigint }[]>`select coalesce(sum((metadata->>'size')::bigint), 0) as bytes, count(*) as files from storage.objects`)[0]
       return { bytes: n(r?.bytes), files: n(r?.files) }
     }),
-    prisma.job.findFirst({ where: { type: "tick", status: "done" }, orderBy: { finishedAt: "desc" }, select: { finishedAt: true } }),
-    prisma.job.groupBy({ by: ["status"], where: { updatedAt: { gte: since24h } }, _count: { _all: true } }),
-    prisma.job.groupBy({ by: ["type"], where: { status: "done" }, _max: { finishedAt: true } }),
-    prisma.job.findMany({ where: { status: "failed" }, orderBy: { updatedAt: "desc" }, take: 5, select: { id: true, type: true, tenantId: true, attempts: true, lastError: true, updatedAt: true } }),
-    prisma.job.count({ where: { status: "pending", runAt: { lte: now } } }),
   ])
   const env = process.env
   const sha = env.VERCEL_GIT_COMMIT_SHA
@@ -110,14 +127,6 @@ export async function techMonitor(now = new Date()) {
     database: dbBytes == null ? null : { bytes: dbBytes, limit: FREE_LIMITS.databaseBytes, ...fillLevel(dbBytes, FREE_LIMITS.databaseBytes) },
     storage: storage == null ? null : { ...storage, limit: FREE_LIMITS.storageBytes, ...fillLevel(storage.bytes, FREE_LIMITS.storageBytes) },
     tables: tables ?? [],
-    jobs: {
-      lastTickAt: lastTick?.finishedAt ?? null,
-      tick: tickHealth(lastTick?.finishedAt ?? null, now),
-      last24h: Object.fromEntries(jobs24h.map((j) => [j.status, j._count._all])) as Record<string, number>,
-      waiting: pending,
-      lastDone: lastDone.map((j) => ({ type: j.type, at: j._max.finishedAt })).sort((a, b) => a.type.localeCompare(b.type)),
-      failures,
-    },
   }
 }
 

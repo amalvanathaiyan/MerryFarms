@@ -1,12 +1,10 @@
-import Link from "next/link"
 import { getTranslations } from "next-intl/server"
 import { CheckCircle2, CircleAlert, CircleDashed, ExternalLink } from "lucide-react"
 import { techMonitor } from "@/server/admin-overview"
 import { cn } from "@/lib/utils"
-import { Panel, Tile, whenFormat } from "../admin-ui"
+import { Panel } from "../admin-ui"
 
 const BACKUPS_URL = "https://github.com/amalvanathaiyan/MerryFarms/actions/workflows/backup.yml"
-const TICK_URL = "https://github.com/amalvanathaiyan/MerryFarms/actions/workflows/tick.yml"
 
 const mb = (bytes: number) => (bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(2)} GB` : `${(bytes / 1024 ** 2).toFixed(1)} MB`)
 
@@ -14,12 +12,11 @@ const LEVEL_BAR = { ok: "bg-primary", watch: "bg-sun", near: "bg-destructive" } 
 
 /**
  * Admin · Tech monitor: is everything the app needs in place and healthy? Service keys (set or not; never their
- * values), the version running, database and file storage against the free limits, rows per table, the job engine,
- * and where the backups are.
+ * values), the version running, database and file storage against the free limits, rows per table, and where the
+ * backups are. The job engine has its own page (Automation).
  */
 export default async function AdminTechPage() {
   const t = await getTranslations("admin.tech")
-  const when = await whenFormat()
   const m = await techMonitor()
 
   const usage = (label: string, u: { bytes: number; limit: number; pct: number; level: keyof typeof LEVEL_BAR } | null, extra?: string) => (
@@ -113,60 +110,6 @@ export default async function AdminTechPage() {
           <dt className="text-muted-foreground">{t("providerPush")}</dt>
           <dd className="font-semibold">{m.providers.push ? t("pushWeb") : t("providerNone")}</dd>
         </dl>
-      </Panel>
-
-      <Panel
-        title={t("jobsTitle")}
-        hint={t("jobsHint")}
-        action={
-          <Link href="/admin/automation" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
-            {t("automationPage")} →
-          </Link>
-        }
-      >
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Tile label={t("tick")} value={t(`tick_${m.jobs.tick}`)} sub={m.jobs.lastTickAt ? when.format(m.jobs.lastTickAt) : undefined} tone={m.jobs.tick === "running" ? "good" : "warn"} />
-          <Tile label={t("done24h")} value={m.jobs.last24h.done ?? 0} />
-          <Tile label={t("failed24h")} value={m.jobs.last24h.failed ?? 0} tone={(m.jobs.last24h.failed ?? 0) > 0 ? "bad" : undefined} />
-          <Tile label={t("waiting")} value={m.jobs.waiting} tone={m.jobs.waiting > 20 ? "warn" : undefined} />
-        </div>
-        {m.jobs.tick !== "running" && (
-          <p className="rounded-lg bg-yolk px-3 py-2 text-sm text-yolk-foreground">
-            {t("tickStopped")}{" "}
-            <a href={TICK_URL} target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-4">
-              {t("tickWorkflow")}
-            </a>
-          </p>
-        )}
-        {m.jobs.lastDone.length > 0 && (
-          <div>
-            <h3 className="mb-1 font-semibold">{t("lastSuccess")}</h3>
-            <ul className="divide-y text-sm">
-              {m.jobs.lastDone.map((j) => (
-                <li key={j.type} className="flex justify-between gap-3 py-1.5">
-                  <span className="font-mono">{j.type}</span>
-                  <span className="tabular-nums text-muted-foreground">{j.at ? when.format(j.at) : "—"}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {m.jobs.failures.length > 0 && (
-          <div>
-            <h3 className="mb-1 font-semibold text-destructive">{t("recentFailures")}</h3>
-            <ul className="divide-y text-sm">
-              {m.jobs.failures.map((j) => (
-                <li key={j.id} className="flex flex-col py-1.5">
-                  <span className="flex justify-between gap-3">
-                    <span className="font-mono">{j.type}</span>
-                    <span className="tabular-nums text-muted-foreground">{when.format(j.updatedAt)}</span>
-                  </span>
-                  {j.lastError && <span className="break-words text-xs text-muted-foreground">{j.lastError.slice(0, 200)}</span>}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </Panel>
 
       <div className="grid gap-4 lg:grid-cols-2">
