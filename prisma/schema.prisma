@@ -194,14 +194,16 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  subscription FarmSubscription?
-  requests     FarmRequest[]
-  staff        StaffMember[]
-  categories   Category[]
-  products     Product[]
-  slots        DeliverySlot[]
-  customers    Customer[]
-  orders       Order[]
+  subscription     FarmSubscription?
+  platformInvoices PlatformInvoice[]
+  platformPayments PlatformPayment[]
+  requests         FarmRequest[]
+  staff            StaffMember[]
+  categories       Category[]
+  products         Product[]
+  slots            DeliverySlot[]
+  customers        Customer[]
+  orders           Order[]
 
   @@map("tenants")
 }
@@ -1222,4 +1224,100 @@ model AuditEntry {
   @@index([tenantId, createdAt])
   @@index([action, createdAt])
   @@map("audit_log")
+}
+
+// ─────────────────────────────────────────────────
+// PLATFORM BILLING AND ANNOUNCEMENTS (docs/platform-plan.md §3.5, §3.6; src/server/platform-billing.ts)
+// Farm For You's own billing details and GST switch are one saved value: setting_values, scope "platform",
+// key "billing.profile" (src/domain/platform-billing.ts).
+// ─────────────────────────────────────────────────
+
+/// Farm For You's invoice to a farm (its plan fee and add-ons). The lines, Farm For You's details and the farm's are
+/// copied in when it is made, so a sent invoice never changes. Paid when its payments reach the total.
+model PlatformInvoice {
+  id            String    @id @default(uuid())
+  /// e.g. FFY/26-27/0001: numbered per Indian financial year (April to March)
+  number        String    @unique
+  tenantId      String
+  periodStart   String?
+  periodEnd     String?
+  /// [{ text, amountPaise }]
+  lines         Json
+  subtotalPaise Int
+  /// 0 while GST is switched off
+  gstRatePct    Int       @default(0)
+  /// cgst_sgst (same state) | igst (another state) | none
+  gstKind       String    @default("none")
+  gstPaise      Int       @default(0)
+  totalPaise    Int
+  /// due | paid | void
+  status        String    @default("due")
+  issuedOn      String
+  dueOn         String
+  /// Farm For You's details when it was made (name, address, GSTIN, SAC, UPI, bank)
+  seller        Json
+  /// The farm's details when it was made (name, phone, GSTIN)
+  buyer         Json
+  notes         String?
+  voidReason    String?
+  createdBy     String?
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant   Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payments PlatformPayment[]
+
+  @@index([tenantId, issuedOn])
+  @@index([status, dueOn])
+  @@map("platform_invoices")
+}
+
+/// Money a farm paid Farm For You (UPI or bank for now), against one invoice.
+model PlatformPayment {
+  id          String   @id @default(uuid())
+  tenantId    String
+  invoiceId   String
+  amountPaise Int
+  /// upi | bank | cash | other
+  method      String
+  /// UPI or bank reference
+  reference   String?
+  paidOn      String
+  notes       String?
+  recordedBy  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant  Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice PlatformInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([tenantId, paidOn])
+  @@map("platform_payments")
+}
+
+/// A note from Farm For You shown on farms' Today page between its dates: to every farm or chosen ones, to owners
+/// or all staff.
+model Announcement {
+  id        String   @id @default(uuid())
+  titleTa   String
+  titleEn   String
+  bodyTa    String?
+  bodyEn    String?
+  /// info | important
+  tone      String   @default("info")
+  /// owners | everyone
+  audience  String   @default("owners")
+  /// Empty = every farm
+  onlyFarms String[] @default([])
+  startsOn  String
+  /// null = until ended
+  endsOn    String?
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([startsOn])
+  @@map("announcements")
 }

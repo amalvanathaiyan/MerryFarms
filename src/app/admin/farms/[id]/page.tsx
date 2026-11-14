@@ -1,7 +1,12 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getLocale, getTranslations } from "next-intl/server"
-import { ArrowLeft, ExternalLink } from "lucide-react"
+import { ArrowLeft, ExternalLink, Plus } from "lucide-react"
+import { istDate } from "@/domain/ist"
+import { formatRupees } from "@/domain/money"
+import { invoiceState } from "@/domain/platform-billing"
+import { farmInvoices } from "@/server/platform-billing"
+import { InvoiceBadge } from "@/components/invoice-badge"
 import { farmDetail } from "@/server/platform"
 import { statusLabel } from "@/domain/tenants"
 import { pick } from "@/lib/i18n-helpers"
@@ -28,10 +33,13 @@ export default async function FarmAdminPage({ params }: { params: Promise<{ id: 
   const shop = farmUrl(farm.slug)
   const hasOwner = staff.some((s) => s.isActive && s.roles.includes("owner"))
   const ts = await getTranslations("admin.subscription")
-  const [sub, plans, row] = await Promise.all([
+  const tb = await getTranslations("admin.billing")
+  const today = istDate(new Date())
+  const [sub, plans, row, bills] = await Promise.all([
     prisma.farmSubscription.findUnique({ where: { tenantId: farm.id } }),
     prisma.platformPlan.findMany({ orderBy: [{ sortOrder: "asc" }, { version: "desc" }] }),
     prisma.tenant.findUnique({ where: { id: farm.id }, select: { entitlements: true } }),
+    farmInvoices(farm.id, 3),
   ])
   const ent = parseEntitlement(row?.entitlements)
 
@@ -100,6 +108,39 @@ export default async function FarmAdminPage({ params }: { params: Promise<{ id: 
               : null
           }
         />
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-3xl border bg-card p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-bold">{tb("title")}</h2>
+          <Button asChild variant="outline">
+            <Link href={`/admin/billing/new?farm=${farm.id}`}>
+              <Plus /> {tb("newInvoice")}
+            </Link>
+          </Button>
+        </div>
+        {bills.invoices.length === 0 ? (
+          <p className="text-muted-foreground">{tb("noInvoicesFarm")}</p>
+        ) : (
+          <>
+            <p className={bills.owedPaise > 0 ? "font-semibold" : "text-muted-foreground"}>{bills.owedPaise > 0 ? tb("farmOwes", { amount: formatRupees(bills.owedPaise) }) : tb("nothingOwedFarm")}</p>
+            <ul className="flex flex-col divide-y text-sm">
+              {bills.invoices.map((i) => ({ ...i, state: invoiceState(i, today) })).map((i) => (
+                <li key={i.id}>
+                  <Link href={`/admin/billing/${i.id}`} className="flex min-h-11 items-center justify-between gap-3 py-1.5 hover:text-primary">
+                    <span className="tabular-nums">
+                      {i.number} · <b>{formatRupees(i.totalPaise)}</b>
+                    </span>
+                    <InvoiceBadge state={i.state} label={tb(`state_${i.state}`)} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <Link href={`/admin/billing?farm=${farm.id}`} className="self-start text-sm font-semibold text-primary underline underline-offset-4">
+              {tb("allInvoicesFarm")}
+            </Link>
+          </>
+        )}
       </section>
 
       <EditFarmForm
