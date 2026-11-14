@@ -1177,7 +1177,7 @@
       },
       "land": {
         "title": "My farm",
-        "hint": "Land, sheds, ponds, wells, motors and tractors"
+        "hint": "Land, sheds, ponds, wells, machines and workers"
       }
     },
     "tabs": {
@@ -1205,7 +1205,8 @@
       },
       "land": {
         "places": "Places",
-        "assets": "Machines"
+        "assets": "Machines",
+        "workers": "Workers"
       }
     },
     "more": {
@@ -1592,7 +1593,71 @@
       "serviceOverdue": "Service was due {day}",
       "serviceDue": "Next service {day}",
       "history": "Latest repairs and costs",
-      "noAssets": "Add your motors, pumps, tractors and other machines. You'll see when each needs a service and what it costs to keep running."
+      "noAssets": "Add your motors, pumps, tractors and other machines. You'll see when each needs a service and what it costs to keep running.",
+      "labourYear": "Workers' days here in the last year: {amount}"
+    },
+    "workers": {
+      "none": "Add the people who work on your farm. Mark who came each day, and see what each is owed.",
+      "dayTitle": "Who came · {day}",
+      "dayBefore": "Day before",
+      "dayAfter": "Day after",
+      "noneThatDay": "No one was working here that day.",
+      "allPresent": "Everyone else present ({count})",
+      "state_present": "Present",
+      "state_half": "Half day",
+      "state_absent": "Absent",
+      "workedAt": "Where they worked",
+      "workedAtFarm": "Worked: whole farm",
+      "workedAtPlace": "Worked: {place}",
+      "saveDay": "Save the day",
+      "saved": "Saved.",
+      "everyone": "Workers",
+      "totalOwed": "You owe {amount} in all",
+      "leftTitle": "No longer working here ({count})",
+      "rateDayLine": "{amount} a day",
+      "rateMonthLine": "{amount} a month",
+      "owesLine": "Owed {amount}",
+      "aheadLine": "Paid {amount} ahead",
+      "settled": "All paid",
+      "name": "Name",
+      "phone": "Phone (optional)",
+      "role": "Work (optional)",
+      "rolePlaceholder": "e.g. milking, tractor",
+      "payType": "Paid",
+      "pay_daily": "By the day",
+      "pay_monthly": "By the month",
+      "ratePerDay": "Pay for a day (₹)",
+      "ratePerMonth": "Pay for a month (₹)",
+      "monthlyHint": "A day away takes one thirtieth off the month's pay.",
+      "joinedOn": "Started on (optional)",
+      "notes": "Notes (optional)",
+      "save": "Save",
+      "addWorker": "Add a worker",
+      "cancel": "Cancel",
+      "payTitle": "Pay",
+      "kind_wage": "Wages",
+      "kind_advance": "Advance",
+      "amount": "Amount (₹)",
+      "date": "Date",
+      "payNote": "Note (optional)",
+      "payHint": "Added to spending in Money as labour. An advance is taken off what they earn later.",
+      "pay": "Pay",
+      "payAmount": "Pay {amount}",
+      "removePayment": "Take back this payment",
+      "removeSure": "Take back",
+      "back": "Workers",
+      "monthBefore": "Month before",
+      "monthAfter": "Month after",
+      "monthLine": "{days} days worked · earned {amount}",
+      "noDays": "No days marked this month.",
+      "given": "Money given",
+      "noPayments": "Nothing given yet.",
+      "details": "Details",
+      "joinedLine": "Started {day}",
+      "leftLine": "Stopped {day}",
+      "change": "Change",
+      "left": "Stopped working here",
+      "cameBack": "Working here again"
     }
   },
   "login": {

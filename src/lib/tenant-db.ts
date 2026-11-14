@@ -37,6 +37,9 @@ const TENANT_MODELS = new Set([
   "ProductionEntry",
   "FarmPlace",
   "FarmAsset",
+  "Worker",
+  "WorkerDay",
+  "WorkerPayment",
 ])
 
 const WHERE_OPS = new Set([
