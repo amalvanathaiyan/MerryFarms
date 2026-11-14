@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useLocale, useTranslations } from "next-intl"
-import { ArrowDown, ArrowUp, Camera, Minus, Pencil, Plus, Tag, Trash2 } from "lucide-react"
+import { ArrowDown, ArrowUp, Camera, Minus, Pencil, Plus, ShieldAlert, Tag, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -56,8 +56,10 @@ type Product = {
   offerEndsOn: string
   /** The offer applies today. */
   offerLive: boolean
+  /** Hidden by Farm For You (src/server/compliance.ts): why, in the farm's language; null = free */
+  held: { reason: string | null; checking: boolean } | null
 }
-type Draft = Omit<Product, "id" | "imageUrl" | "offerLive"> & { id?: string }
+type Draft = Omit<Product, "id" | "imageUrl" | "offerLive" | "held"> & { id?: string }
 
 const UNITS = ["packs", "kg", "grams", "litres", "ml", "bottles", "jars", "pieces", "dozen", "bunches", "trays", "boxes", "bags", "birds"]
 
@@ -463,13 +465,22 @@ export function CatalogueManager({
                         {tracksStock && ` · ${t("left", { count: p.stockQty, unit: unitName(p.stockUnit) })}`}
                         {tracksStock && p.eggsPerUnit != null && ` · ${t("fromEggStore")}`}
                       </div>
+                      {p.held && (
+                        <p className="mt-1 flex items-start gap-1.5 rounded-lg bg-yolk px-2 py-1 text-sm text-yolk-foreground">
+                          <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+                          <span>
+                            <span className="font-semibold">{p.held.checking ? t("heldChecking") : t("heldKept")}</span>
+                            {p.held.reason && <span> {p.held.reason}</span>}
+                          </span>
+                        </p>
+                      )}
                     </div>
                     <label className="flex shrink-0 flex-col items-center gap-0.5 text-xs text-muted-foreground">
                       <input
                         type="checkbox"
                         className="size-6 accent-[hsl(var(--primary))]"
                         checked={p.isActive}
-                        disabled={!canEdit || pending}
+                        disabled={!canEdit || pending || !!p.held}
                         aria-label={t("showInShop")}
                         onChange={(e) => run(() => quickUpdateProduct({ id: p.id, isActive: e.target.checked }), undefined, "product")}
                       />

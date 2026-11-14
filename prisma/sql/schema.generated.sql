@@ -172,6 +172,7 @@ CREATE TABLE "products" (
     "onWeb" BOOLEAN NOT NULL DEFAULT true,
     "onWhatsApp" BOOLEAN NOT NULL DEFAULT true,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "complianceHold" TEXT,
     "sortOrder" INTEGER NOT NULL DEFAULT 0,
     "deletedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -983,6 +984,44 @@ CREATE TABLE "farm_applications" (
     CONSTRAINT "farm_applications_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "restricted_items" (
+    "id" TEXT NOT NULL,
+    "labelTa" TEXT NOT NULL,
+    "labelEn" TEXT NOT NULL,
+    "wordsTa" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "wordsEn" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "action" TEXT NOT NULL,
+    "reasonTa" TEXT NOT NULL,
+    "reasonEn" TEXT NOT NULL,
+    "active" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "restricted_items_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "compliance_cases" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "kind" TEXT NOT NULL,
+    "subjectId" TEXT NOT NULL,
+    "subjectName" TEXT NOT NULL,
+    "matched" TEXT NOT NULL,
+    "itemId" TEXT,
+    "action" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'open',
+    "wasActive" BOOLEAN NOT NULL DEFAULT false,
+    "note" TEXT,
+    "decidedBy" TEXT,
+    "decidedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "compliance_cases_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -1216,6 +1255,15 @@ CREATE INDEX "farm_applications_phone_idx" ON "farm_applications"("phone");
 
 -- CreateIndex
 CREATE INDEX "farm_applications_sourceHash_createdAt_idx" ON "farm_applications"("sourceHash", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "compliance_cases_status_createdAt_idx" ON "compliance_cases"("status", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "compliance_cases_tenantId_status_idx" ON "compliance_cases"("tenantId", "status");
+
+-- CreateIndex
+CREATE INDEX "compliance_cases_subjectId_idx" ON "compliance_cases"("subjectId");
 
 -- AddForeignKey
 ALTER TABLE "staff_members" ADD CONSTRAINT "staff_members_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
