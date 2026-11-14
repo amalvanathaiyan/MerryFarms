@@ -1,13 +1,14 @@
 import type { Metadata, Viewport } from "next"
 import { Baloo_Thambi_2, Hind_Madurai } from "next/font/google"
 import { NextIntlClientProvider } from "next-intl"
-import { getLocale } from "next-intl/server"
+import { getLocale, getTranslations } from "next-intl/server"
 import { headers } from "next/headers"
 import { getTenant } from "@/lib/tenant"
 import { appIcon } from "@/domain/install-apps"
 import "./globals.css"
 import { DISPLAY_SCRIPT } from "@/lib/display"
-import { openingScript } from "@/lib/opening"
+import { openingParts, openingScript } from "@/lib/opening"
+import { openingMarkOf } from "@/domain/brand"
 import { farmOpening } from "@/lib/farm-brand"
 import { FarmOpening, PlatformOpening } from "@/components/openings"
 import { brandThemeCss, FFY_THEME } from "@/domain/brand-theme"
@@ -62,12 +63,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // The app that opens at this address and page (worked out by src/proxy.ts); only its opening is drawn
   const h = await headers()
   const opening = (["shop", "farm", "admin"] as const).find((a) => a === h.get("x-opening-app")) ?? "shop"
+  const ts = await getTranslations("sound")
+  const sound = { on: ts("on"), off: ts("off") }
+  const parts = openingParts(opening, tenant ? { hasMark: !!openingMarkOf(tenant.openingMark) } : null)
   return (
     // The display choice (soft colours, light/dark, larger text) is set on <html> before React loads.
     <html lang={locale} className={`${body.variable} ${heading.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: DISPLAY_SCRIPT }} />
-        <script dangerouslySetInnerHTML={{ __html: openingScript(opening) }} />
+        <script dangerouslySetInnerHTML={{ __html: openingScript(opening, parts) }} />
         {/* Brand colours: Farm For You's by default and always on its own screens (.ffy-chrome: admin, sign-in);
             the farm's own on its shop and farm app. Built from validated #rrggbb values only. */}
         <style
@@ -83,7 +87,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <NextIntlClientProvider>
           {/* The app's opening, when it has just been opened from its home-screen icon (src/lib/opening.ts):
               FarmForYou's alone for admin; FarmForYou's, then the farm's, for the shop and the farm app */}
-          {opening !== "admin" && tenant ? <FarmOpening app={opening} farm={farmOpening(tenant, locale)} /> : <PlatformOpening app={opening} />}
+          {opening !== "admin" && tenant ? <FarmOpening app={opening} farm={farmOpening(tenant, locale)} sound={sound} /> : <PlatformOpening app={opening} sound={sound} />}
           {children}
         </NextIntlClientProvider>
       </body>

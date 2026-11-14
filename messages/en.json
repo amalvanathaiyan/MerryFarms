@@ -1977,6 +1977,13 @@
       "backToOldLevel": "Back to the old level"
     }
   },
+  "sound": {
+    "on": "Sound on",
+    "off": "Sound off",
+    "title": "Sound when the app opens",
+    "hint": "A short, soft sound with the opening animation. Turn it off if you open the app in quiet places.",
+    "thisPhone": "Saved on this phone."
+  },
   "display": {
     "title": "Easy on the eyes",
     "hint": "Choose colours and text size that are comfortable for you.",

@@ -644,6 +644,10 @@
 .op-part-farm { display: none; }
 :root[data-opening-stage="2"] .op-part-intro { display: none; }
 :root[data-opening-stage="2"] .op-part-farm { display: flex; animation: op-fade 0.3s ease-out both; }
+/* The sound button (top right, above both parts): shows "on" or "off" from data-opening-sound, set by the script */
+.op-sound { position: absolute; z-index: 1; top: max(1rem, env(safe-area-inset-top)); right: 1rem; display: flex; align-items: center; min-height: 2.75rem; padding: 0 0.9rem; border-radius: 9999px; background: rgb(0 0 0 / 0.28); color: #fff; font-size: 0.875rem; font-weight: 600; }
+.op-sound-on, .op-sound-off { display: none; align-items: center; gap: 0.375rem; }
+:root[data-opening-sound="on"] .op-sound-on, :root[data-opening-sound="off"] .op-sound-off { display: flex; }
 .op-wide { max-width: 90vw; }
 .op-platform-tag { letter-spacing: 0.14em; }
 .op-rule { display: block; width: 1.75rem; height: 1px; background: #C9B98F; }

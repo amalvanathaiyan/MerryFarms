@@ -1,8 +1,7 @@
-import { Opening } from "@/components/opening"
+import { Opening, type SoundLabels } from "@/components/opening"
 import { FarmName, OnFarmForYou } from "@/components/art/brand-mark"
 import { FFY_ANIMATED, MERRY_EGG_ANIMATED, MERRY_EGG_DEFS } from "@/components/art/brand-marks.generated"
 import { openingMarkOf, showPlatformLine } from "@/domain/brand"
-import { OPENING_MS } from "@/lib/opening"
 
 /** FarmForYou's mark and name: the turmeric heart pops up, the leaves unfurl, the heart smiles. */
 function PlatformMark({ app }: { app: string }) {
@@ -22,9 +21,9 @@ function PlatformMark({ app }: { app: string }) {
 const FFY_GREEN = "#1E8A4C"
 
 /** FarmForYou's own opening: the admin app, and a farm's apps when there is no farm to show. */
-export function PlatformOpening({ app = "admin" }: { app?: "admin" | "shop" | "farm" }) {
+export function PlatformOpening({ app = "admin", sound }: { app?: "admin" | "shop" | "farm"; sound: SoundLabels }) {
   return (
-    <Opening app={app} ms={OPENING_MS.platform} background={FFY_GREEN}>
+    <Opening app={app} background={FFY_GREEN} sound={sound}>
       <PlatformMark app={app} />
     </Opening>
   )
@@ -43,13 +42,13 @@ type Farm = { name: string; otherName: string | null; colours: string[]; tagline
  * from the platform (the Merry Egg), that mark plays; otherwise the farm's own logo pops in. The farm's name and
  * tagline lead; FarmForYou's small line comes last.
  */
-export function FarmOpening({ app, farm }: { app: "shop" | "farm"; farm: Farm }) {
+export function FarmOpening({ app, farm, sound }: { app: "shop" | "farm"; farm: Farm; sound: SoundLabels }) {
   const mark = openingMarkOf(farm.openingMark)
   const platformLine = showPlatformLine(farm.tagline)
   // Animation steps: a mark takes longer to draw, so the words wait for it (globals.css, Opening animations)
   const step = (n: 1 | 2 | 3 | 4) => (mark ? `op-d${n}` : `op-l${n}`)
   return (
-    <Opening app={app} ms={mark ? OPENING_MS.mark : OPENING_MS.logo} background="#FBF6EC" intro={{ ms: OPENING_MS.intro, background: FFY_GREEN, content: <PlatformMark app={app} /> }}>
+    <Opening app={app} background="#FBF6EC" sound={sound} intro={{ background: FFY_GREEN, content: <PlatformMark app={app} /> }}>
       {mark === "merry-egg" ? (
         <svg viewBox="0 0 64 64" className="size-52" aria-hidden dangerouslySetInnerHTML={{ __html: ownIds(MERRY_EGG_DEFS + MERRY_EGG_ANIMATED, app) }} />
       ) : farm.logoUrl ? (
