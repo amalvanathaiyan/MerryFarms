@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import { Baloo_Thambi_2, Hind_Madurai } from "next/font/google"
 import { NextIntlClientProvider } from "next-intl"
-import { getLocale } from "next-intl/server"
+import { getLocale, getTranslations } from "next-intl/server"
 import { headers } from "next/headers"
 import { getTenant } from "@/lib/tenant"
 import { appIcon } from "@/domain/install-apps"
@@ -63,6 +63,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // The app that opens at this address and page (worked out by src/proxy.ts); only its opening is drawn
   const h = await headers()
   const opening = (["shop", "farm", "admin"] as const).find((a) => a === h.get("x-opening-app")) ?? "shop"
+  const ts = await getTranslations("sound")
+  const sound = { on: ts("on"), off: ts("off") }
   const parts = openingParts(opening, tenant ? { hasMark: !!openingMarkOf(tenant.openingMark) } : null)
   return (
     // The display choice (soft colours, light/dark, larger text) is set on <html> before React loads.
@@ -85,7 +87,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <NextIntlClientProvider>
           {/* The app's opening, when it has just been opened from its home-screen icon (src/lib/opening.ts):
               FarmForYou's alone for admin; FarmForYou's, then the farm's, for the shop and the farm app */}
-          {opening !== "admin" && tenant ? <FarmOpening app={opening} farm={farmOpening(tenant, locale)} /> : <PlatformOpening app={opening} />}
+          {opening !== "admin" && tenant ? <FarmOpening app={opening} farm={farmOpening(tenant, locale)} sound={sound} /> : <PlatformOpening app={opening} sound={sound} />}
           {children}
         </NextIntlClientProvider>
       </body>
