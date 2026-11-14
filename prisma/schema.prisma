@@ -1612,3 +1612,36 @@ model InputUse {
   @@index([tenantId, inputId])
   @@map("input_uses")
 }
+
+// ─────────────────────────────────────────────────
+// FARM CORE: JOBS (docs/platform-plan.md §3.2; src/server/tasks.ts)
+// ─────────────────────────────────────────────────
+
+/// A job to do on the farm: once, or again every so many days, weeks or months. Due jobs show on Today with a Done
+/// button; a repeating job moves on to its next day when done.
+model FarmTask {
+  id          String   @id @default(uuid())
+  tenantId    String
+  title       String
+  note        String?
+  /// IST day it is due (for a repeating job: the next time)
+  dueOn       String
+  /// Repeats every repeatEvery repeatUnit (day | week | month); null = once
+  repeatEvery Int?
+  repeatUnit  String?
+  /// Where, or which machine (optional)
+  placeId     String?
+  assetId     String?
+  /// Only this staff member sees it on Today (null = the owner and managers)
+  forStaffId  String?
+  /// A one-off job done (null while to do)
+  doneOn      String?
+  lastDoneOn  String?
+  lastDoneBy  String?
+  byStaffId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId, dueOn])
+  @@map("farm_tasks")
+}

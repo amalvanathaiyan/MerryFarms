@@ -193,7 +193,12 @@
       "greet_afternoon": "Good afternoon, {name}!",
       "greet_evening": "Good evening, {name}!",
       "greet_night": "Good night, {name}!",
-      "yourShop": "Your shop"
+      "yourShop": "Your shop",
+      "jobService": "{name}: service due",
+      "jobServiceLate": "Was due {day}. Note the service in My farm · Machines.",
+      "jobServiceDue": "Due {day}",
+      "jobStoreLow": "{name} is running low",
+      "jobStoreLowHint": "{left} {unit} left. Buy more soon."
     },
     "orders": {
       "tab_to_confirm": "To call",
@@ -1177,7 +1182,7 @@
       },
       "land": {
         "title": "My farm",
-        "hint": "Land, machines, workers and the store"
+        "hint": "Land, machines, workers, store and jobs"
       }
     },
     "tabs": {
@@ -1207,7 +1212,8 @@
         "places": "Places",
         "assets": "Machines",
         "workers": "Workers",
-        "store": "Store"
+        "store": "Store",
+        "tasks": "Jobs"
       }
     },
     "more": {
@@ -1744,6 +1750,47 @@
       "moveButton_count": "Save the count",
       "removeUse": "Take this back",
       "removeSure": "Take back"
+    },
+    "tasks": {
+      "none": "Add the farm's jobs: once, or again every day, week or month (clean the shed every Sunday, spray the coconut plot each month). Jobs due show on Today with a Done button.",
+      "addTask": "Add a job",
+      "title": "What to do",
+      "titlePlaceholder": "e.g. Clean the water tank",
+      "howOften": "How often",
+      "repeat_once": "Once",
+      "repeat_day": "Daily",
+      "repeat_week": "Weekly",
+      "repeat_month": "Monthly",
+      "on": "On",
+      "firstOn": "Next on",
+      "every_day": "Every how many days",
+      "every_week": "Every how many weeks",
+      "every_month": "Every how many months",
+      "where": "Where (optional)",
+      "wholeFarm": "Whole farm",
+      "machine": "Machine (optional)",
+      "noMachine": "No machine",
+      "forWho": "Who sees it on Today",
+      "forBosses": "The owner and managers",
+      "forPerson": "For {name}",
+      "note": "Note (optional)",
+      "save": "Save",
+      "cancel": "Cancel",
+      "done": "Done",
+      "notDone": "Not done yet",
+      "change": "Change",
+      "remove": "Remove",
+      "removeSure": "Yes, remove it",
+      "doneLine": "Done {day}",
+      "lateLine": "Late · was due {day}",
+      "repeatLine_day": "{count, plural, one {every day} other {every # days}}",
+      "repeatLine_week": "{count, plural, one {every week} other {every # weeks}}",
+      "repeatLine_month": "{count, plural, one {every month} other {every # months}}",
+      "lastDoneLine": "Last done {day}",
+      "group_now": "To do now",
+      "group_soon": "This week",
+      "group_later": "Later",
+      "doneTitle": "Done lately ({count})"
     }
   },
   "login": {
