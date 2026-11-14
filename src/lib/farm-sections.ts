@@ -109,6 +109,7 @@ export function landTabs(): Tab[] {
     { key: "assets", href: "/farm/land/assets" },
     { key: "workers", href: "/farm/land/workers" },
     { key: "store", href: "/farm/land/store" },
+    { key: "tasks", href: "/farm/land/tasks" },
   ]
 }
 

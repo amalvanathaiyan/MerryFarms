@@ -1149,6 +1149,28 @@ CREATE TABLE "input_uses" (
     CONSTRAINT "input_uses_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "farm_tasks" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "note" TEXT,
+    "dueOn" TEXT NOT NULL,
+    "repeatEvery" INTEGER,
+    "repeatUnit" TEXT,
+    "placeId" TEXT,
+    "assetId" TEXT,
+    "forStaffId" TEXT,
+    "doneOn" TEXT,
+    "lastDoneOn" TEXT,
+    "lastDoneBy" TEXT,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "farm_tasks_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -1424,6 +1446,9 @@ CREATE INDEX "farm_inputs_tenantId_idx" ON "farm_inputs"("tenantId");
 
 -- CreateIndex
 CREATE INDEX "input_uses_tenantId_inputId_idx" ON "input_uses"("tenantId", "inputId");
+
+-- CreateIndex
+CREATE INDEX "farm_tasks_tenantId_dueOn_idx" ON "farm_tasks"("tenantId", "dueOn");
 
 -- AddForeignKey
 ALTER TABLE "staff_members" ADD CONSTRAINT "staff_members_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;

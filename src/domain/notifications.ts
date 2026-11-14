@@ -118,3 +118,16 @@ export function ownerTrialEndingNote(days: number, date: string): Note {
     tag: "trial-ending",
   }
 }
+
+// ── Farm jobs (staff: Tamil and English together) ─────────────────────────────
+
+/** Morning: jobs due today or late, machines due for a service, the store running low. Job titles are the farm's own words. */
+export function staffFarmJobsNote(lines: string[]): Note {
+  const n = lines.length
+  return {
+    title: `இன்றைய வேலைகள் · ${n === 1 ? "1 thing to do" : `${n} things to do`}`,
+    body: clip(lines.join(" · "), 160),
+    url: "/farm",
+    tag: "farm-jobs",
+  }
+}

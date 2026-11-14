@@ -4,9 +4,11 @@ import { featuresOf } from "@/lib/features"
 import { tenantDb } from "@/lib/tenant-db"
 import { addDays, istDate } from "@/domain/ist"
 import { batchesNotEntered, farmAlerts, type Alert } from "@/domain/alerts"
-import { staffNotEnteredNote, staffVaccinesDueNote, staffWarningsNote } from "@/domain/notifications"
+import { staffFarmJobsNote, staffNotEnteredNote, staffVaccinesDueNote, staffWarningsNote } from "@/domain/notifications"
+import type { FarmReminder } from "@/domain/tasks"
+import { remindersFor } from "./tasks"
 import { batchBook } from "./batches"
-import { notifyStaff } from "./notify"
+import { notifyStaff, notifyStaffMembers } from "./notify"
 
 /** Owner and packing staff keep the batches, so they get the poultry reminders. */
 const KEEPERS = ["owner", "packing"] as const
@@ -80,4 +82,43 @@ export async function morningReminders(now = new Date()) {
     out.push({ slug: t.slug, vaccines: doses.length, warnings: warnings.length })
   }
   return out
+}
+
+/** A farm reminder in both languages, for a phone notification. */
+export function reminderLine(r: FarmReminder): string {
+  return r.kind === "service" ? `${r.name}: சர்வீஸ் / service` : `${r.name}: குறைவு / low`
+}
+
+/**
+ * Morning (about 7 am), every farm with notifications on: the owner and managers get the jobs due today or late that
+ * are theirs, machines due for a service and the store running low; anyone a job is for gets their own jobs.
+ */
+export async function farmJobReminders(now = new Date()) {
+  const today = istDate(now)
+  const out: { slug: string; jobs: number; reminders: number }[] = []
+  const tenants = await prisma.tenant.findMany({ where: { status: { not: "suspended" } } })
+  for (const t of tenants) {
+    const f = featuresOf(t)
+    if (!f.pushNotifications) continue
+    try {
+      out.push(await farmJobsFor(t, f.poultryCare, today))
+    } catch (e) {
+      console.error("[farm jobs]", t.slug, (e as Error).message)
+    }
+  }
+  return out
+}
+
+async function farmJobsFor(t: { id: string; slug: string }, poultry: boolean, today: string) {
+  const db = tenantDb(t.id)
+  const due = await db.farmTask.findMany({ where: { doneOn: null, dueOn: { lte: today } }, orderBy: { dueOn: "asc" } })
+  const feedWarned = poultry && (await alertsFor(t.id, today)).some((a) => a.kind === "feed")
+  const reminders = await remindersFor(db, today, feedWarned)
+  const late = (x: { dueOn: string; title: string }) => (x.dueOn < today ? `${x.title} (தாமதம் / late)` : x.title)
+  const bossLines = [...due.filter((x) => !x.forStaffId).map(late), ...reminders.map(reminderLine)]
+  if (bossLines.length) await notifyStaff(t.id, staffFarmJobsNote(bossLines), ["owner"])
+  for (const staffId of new Set(due.map((x) => x.forStaffId).filter((x): x is string => !!x))) {
+    await notifyStaffMembers(t.id, [staffId], staffFarmJobsNote(due.filter((x) => x.forStaffId === staffId).map(late)))
+  }
+  return { slug: t.slug, jobs: due.length, reminders: reminders.length }
 }
