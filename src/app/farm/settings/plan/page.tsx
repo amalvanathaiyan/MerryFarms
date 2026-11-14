@@ -9,18 +9,28 @@ import { formatRupees } from "@/domain/money"
 import { MODULE_KEYS, MODULES } from "@/domain/modules"
 import { SectionHeader } from "@/components/farm/section-header"
 import { PlanModules } from "@/components/farm/plan-modules"
+import Link from "next/link"
+import { ChevronRight } from "lucide-react"
+import { istDate } from "@/domain/ist"
+import { invoiceState } from "@/domain/platform-billing"
+import { InvoiceBadge } from "@/components/invoice-badge"
+import { farmInvoices } from "@/server/platform-billing"
 
-/** Settings · Plan & modules (owner): what the farm has, what it can add, and its requests to Farm For You. */
+/** Settings · Plan & modules (owner): what the farm has, its invoices from Farm For You, what it can add, and its requests. */
 export default async function SettingsPlanPage() {
   const { tenant } = await requireStaff(OWNER_ONLY)
   const t = await getTranslations("farm.planModules")
   const locale = await getLocale()
   const source = featureSource(tenant)
-  const [sub, plans, settings, requests] = await Promise.all([
+  const today = istDate(new Date())
+  const date = new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })
+  const fmt = (d: string) => date.format(new Date(`${d}T00:00:00Z`))
+  const [sub, plans, settings, requests, bills] = await Promise.all([
     prisma.farmSubscription.findUnique({ where: { tenantId: tenant.id }, include: { plan: true } }),
     prisma.platformPlan.findMany({ where: { isPublic: true, retired: false }, orderBy: [{ sortOrder: "asc" }] }),
     moduleSettings(),
     prisma.farmRequest.findMany({ where: { tenantId: tenant.id }, orderBy: { createdAt: "desc" }, take: 10 }),
+    farmInvoices(tenant.id, 12),
   ])
   const has = typeof source === "string" ? null : source.modules
   const day = new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kolkata" })
@@ -45,6 +55,31 @@ export default async function SettingsPlanPage() {
           <p className="text-muted-foreground">{t("noPlanYet")}</p>
         )}
       </section>
+
+      {bills.invoices.length > 0 && (
+        <section id="invoices" className="flex scroll-mt-24 flex-col gap-2 rounded-2xl border bg-card p-4">
+          <h2 className="text-lg font-bold">{t("invoicesTitle")}</h2>
+          <p className={bills.owedPaise > 0 ? "font-semibold" : "text-muted-foreground"}>{bills.owedPaise > 0 ? t("owe", { amount: formatRupees(bills.owedPaise) }) : t("allPaid")}</p>
+          <ul className="flex flex-col divide-y">
+            {bills.invoices.map((i) => ({ ...i, state: invoiceState(i, today) })).map((i) => (
+              <li key={i.id}>
+                <Link href={`/farm/settings/plan/invoices/${i.id}`} className="flex min-h-14 items-center justify-between gap-3 py-2">
+                  <span className="flex min-w-0 flex-col">
+                    <span className="font-semibold tabular-nums">{formatRupees(i.totalPaise)}</span>
+                    <span className="text-sm text-muted-foreground tabular-nums">
+                      {i.number} · {fmt(i.issuedOn)}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <InvoiceBadge state={i.state} label={i.state === "due" || i.state === "overdue" ? t("payBy", { date: fmt(i.dueOn) }) : t(`bill_${i.state}`)} />
+                    <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <PlanModules
         modules={MODULE_KEYS.filter((m) => !MODULES[m].alwaysOn).map((m) => {

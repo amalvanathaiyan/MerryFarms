@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { pick } from "@/lib/i18n-helpers"
 import { formatRupees } from "@/domain/money"
 import { adminDashboard } from "@/server/admin-overview"
+import { overdueCount } from "@/server/platform-billing"
 import { AuditRows, Panel, Tile } from "./admin-ui"
 
 /**
@@ -19,7 +20,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const t = await getTranslations("admin.dashboard")
   const ta = await getTranslations("admin")
   const locale = await getLocale()
-  const d = await adminDashboard()
+  const [d, overdue] = await Promise.all([adminDashboard(), overdueCount()])
   const farms = await prisma.tenant.findMany({ select: { id: true, nameTa: true, nameEn: true } })
   const day = new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })
 
@@ -33,6 +34,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     })),
     ...(d.farms.trialOver > 0 ? [{ key: "trial-over", text: t("needTrialOver", { count: d.farms.trialOver }), href: "/admin/farms?show=trial_over", tone: "warn" as const }] : []),
     ...(d.subscriptions.byStatus.past_due > 0 ? [{ key: "past-due", text: t("needPastDue", { count: d.subscriptions.byStatus.past_due }), href: "/admin/farms", tone: "bad" as const }] : []),
+    ...(overdue > 0 ? [{ key: "overdue", text: t("needOverdue", { count: overdue }), href: "/admin/billing?show=overdue", tone: "bad" as const }] : []),
     ...(d.requests.pending > 0 ? [{ key: "requests", text: t("needRequests", { count: d.requests.pending }), href: "/admin/requests", tone: "warn" as const }] : []),
     ...(d.selling.quietFarms > 0 ? [{ key: "quiet", text: t("needQuiet", { count: d.selling.quietFarms }), href: "/admin/farms?show=quiet", tone: "warn" as const }] : []),
     ...(d.automation.tick !== "running" ? [{ key: "tick", text: t("needTick"), href: "/admin/automation", tone: "bad" as const }] : []),

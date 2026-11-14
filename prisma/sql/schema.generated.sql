@@ -882,6 +882,70 @@ CREATE TABLE "audit_log" (
     CONSTRAINT "audit_log_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "platform_invoices" (
+    "id" TEXT NOT NULL,
+    "number" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "periodStart" TEXT,
+    "periodEnd" TEXT,
+    "lines" JSONB NOT NULL,
+    "subtotalPaise" INTEGER NOT NULL,
+    "gstRatePct" INTEGER NOT NULL DEFAULT 0,
+    "gstKind" TEXT NOT NULL DEFAULT 'none',
+    "gstPaise" INTEGER NOT NULL DEFAULT 0,
+    "totalPaise" INTEGER NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'due',
+    "issuedOn" TEXT NOT NULL,
+    "dueOn" TEXT NOT NULL,
+    "seller" JSONB NOT NULL,
+    "buyer" JSONB NOT NULL,
+    "notes" TEXT,
+    "voidReason" TEXT,
+    "createdBy" TEXT,
+    "paidAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "platform_invoices_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "platform_payments" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "invoiceId" TEXT NOT NULL,
+    "amountPaise" INTEGER NOT NULL,
+    "method" TEXT NOT NULL,
+    "reference" TEXT,
+    "paidOn" TEXT NOT NULL,
+    "notes" TEXT,
+    "recordedBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "platform_payments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "announcements" (
+    "id" TEXT NOT NULL,
+    "titleTa" TEXT NOT NULL,
+    "titleEn" TEXT NOT NULL,
+    "bodyTa" TEXT,
+    "bodyEn" TEXT,
+    "tone" TEXT NOT NULL DEFAULT 'info',
+    "audience" TEXT NOT NULL DEFAULT 'owners',
+    "onlyFarms" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "startsOn" TEXT NOT NULL,
+    "endsOn" TEXT,
+    "createdBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "announcements_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -1086,6 +1150,24 @@ CREATE INDEX "audit_log_tenantId_createdAt_idx" ON "audit_log"("tenantId", "crea
 -- CreateIndex
 CREATE INDEX "audit_log_action_createdAt_idx" ON "audit_log"("action", "createdAt");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "platform_invoices_number_key" ON "platform_invoices"("number");
+
+-- CreateIndex
+CREATE INDEX "platform_invoices_tenantId_issuedOn_idx" ON "platform_invoices"("tenantId", "issuedOn");
+
+-- CreateIndex
+CREATE INDEX "platform_invoices_status_dueOn_idx" ON "platform_invoices"("status", "dueOn");
+
+-- CreateIndex
+CREATE INDEX "platform_payments_invoiceId_idx" ON "platform_payments"("invoiceId");
+
+-- CreateIndex
+CREATE INDEX "platform_payments_tenantId_paidOn_idx" ON "platform_payments"("tenantId", "paidOn");
+
+-- CreateIndex
+CREATE INDEX "announcements_startsOn_idx" ON "announcements"("startsOn");
+
 -- AddForeignKey
 ALTER TABLE "staff_members" ADD CONSTRAINT "staff_members_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -1187,4 +1269,13 @@ ALTER TABLE "farm_subscriptions" ADD CONSTRAINT "farm_subscriptions_planId_fkey"
 
 -- AddForeignKey
 ALTER TABLE "farm_requests" ADD CONSTRAINT "farm_requests_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "platform_invoices" ADD CONSTRAINT "platform_invoices_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "platform_payments" ADD CONSTRAINT "platform_payments_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "platform_payments" ADD CONSTRAINT "platform_payments_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "platform_invoices"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

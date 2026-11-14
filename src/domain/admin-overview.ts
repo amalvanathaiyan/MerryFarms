@@ -65,6 +65,6 @@ export function tickHealth(lastTickAt: Date | null, now: Date): "running" | "lat
 }
 
 /** The family of an audit action ("plan.changed" → "plan"), for the audit log's filter. */
-export const AUDIT_GROUPS = ["farm", "plan", "subscription", "module", "request", "support", "setting", "feature", "poultry"] as const
+export const AUDIT_GROUPS = ["farm", "plan", "subscription", "module", "request", "billing", "announcement", "support", "setting", "feature", "poultry"] as const
 export type AuditGroup = (typeof AUDIT_GROUPS)[number]
 export const auditGroup = (action: string): string => action.split(".")[0]

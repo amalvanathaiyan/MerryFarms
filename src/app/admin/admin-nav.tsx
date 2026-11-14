@@ -3,11 +3,11 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { Activity, Blocks, Bot, History, Inbox, LayoutDashboard, Layers, SlidersHorizontal, Tractor } from "lucide-react"
+import { Activity, Blocks, Bot, History, Inbox, LayoutDashboard, Layers, Megaphone, ReceiptIndianRupee, SlidersHorizontal, Tractor } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 /**
- * Farm For You admin's menu: dashboard, farms, requests (with how many are waiting), plans, modules, settings,
+ * Farm For You admin's menu: dashboard, farms, requests (with how many are waiting), billing, plans, modules, announcements, settings,
  * automation, tech monitor and audit log. Words beside every icon.
  */
 export function AdminNav({ pending }: { pending: number }) {
@@ -17,8 +17,10 @@ export function AdminNav({ pending }: { pending: number }) {
     { href: "/admin", key: "dashboard", icon: LayoutDashboard, active: path === "/admin" },
     { href: "/admin/farms", key: "farms", icon: Tractor, active: path.startsWith("/admin/farms") },
     { href: "/admin/requests", key: "requests", icon: Inbox, active: path.startsWith("/admin/requests"), badge: pending },
+    { href: "/admin/billing", key: "billing", icon: ReceiptIndianRupee, active: path.startsWith("/admin/billing") },
     { href: "/admin/plans", key: "plans", icon: Layers, active: path.startsWith("/admin/plans") },
     { href: "/admin/modules", key: "modules", icon: Blocks, active: path.startsWith("/admin/modules") },
+    { href: "/admin/announcements", key: "announcements", icon: Megaphone, active: path.startsWith("/admin/announcements") },
     { href: "/admin/settings", key: "settings", icon: SlidersHorizontal, active: path.startsWith("/admin/settings") },
     { href: "/admin/automation", key: "automation", icon: Bot, active: path.startsWith("/admin/automation") },
     { href: "/admin/tech", key: "tech", icon: Activity, active: path.startsWith("/admin/tech") },
