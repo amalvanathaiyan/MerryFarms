@@ -12,8 +12,9 @@ import { photoBytes } from "@/server/photos"
  */
 const FIELD = "#FBF3DC", INK = "#16301F", LEAF = "#1E6B45", CREAM = "#FFF1C7"
 
-export async function GET() {
-  const tenant = await getTenant()
+export async function GET(request: Request) {
+  // ?ffy=1: Farm For You's own pages (home, Register your farm), whatever farm the address defaults to
+  const tenant = new URL(request.url).searchParams.get("ffy") ? null : await getTenant()
   const name = tenant?.nameEn ?? "Farm For You"
   const row = tenant ? await prisma.tenantLogo.findUnique({ where: { tenantId: tenant.id } }) : null
   const logo = row ? await photoBytes(row) : null

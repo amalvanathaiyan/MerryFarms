@@ -10,7 +10,7 @@ import { InvoiceBadge } from "@/components/invoice-badge"
 import { farmDetail } from "@/server/platform"
 import { statusLabel } from "@/domain/tenants"
 import { pick } from "@/lib/i18n-helpers"
-import { farmUrl } from "@/lib/farm-url"
+import { farmLogoUrl, farmUrl } from "@/lib/farm-url"
 import { Button } from "@/components/ui/button"
 import { FarmMark, StatusBadge } from "../../farm-bits"
 import { EditFarmForm, OwnerForm, StaffRow } from "./farm-forms"
@@ -50,7 +50,7 @@ export default async function FarmAdminPage({ params }: { params: Promise<{ id: 
       </Link>
 
       <section className="flex flex-wrap items-center gap-4">
-        <FarmMark logoUrl={farm.logoUrl} initials={farm.invoicePrefix} className="size-16" />
+        <FarmMark logoUrl={farmLogoUrl(farm.slug, farm.logoUrl)} initials={farm.invoicePrefix} className="size-16" />
         <div className="flex min-w-[12rem] flex-1 flex-col">
           <h1 className="text-2xl font-bold">{pick(locale, farm.nameTa, farm.nameEn)}</h1>
           <span className="text-sm text-muted-foreground" lang="en">

@@ -6,6 +6,7 @@ import { pick } from "@/lib/i18n-helpers"
 import { formatRupees } from "@/domain/money"
 import { adminDashboard } from "@/server/admin-overview"
 import { overdueCount } from "@/server/platform-billing"
+import { openApplicationsCount } from "@/server/applications"
 import { AuditRows, Panel, Tile } from "./admin-ui"
 
 /**
@@ -20,12 +21,13 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const t = await getTranslations("admin.dashboard")
   const ta = await getTranslations("admin")
   const locale = await getLocale()
-  const [d, overdue] = await Promise.all([adminDashboard(), overdueCount()])
+  const [d, overdue, joining] = await Promise.all([adminDashboard(), overdueCount(), openApplicationsCount()])
   const farms = await prisma.tenant.findMany({ select: { id: true, nameTa: true, nameEn: true } })
   const day = new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })
 
   // Each line: what is wrong, in words, and where to deal with it. Only lines with something in them.
   const needs: { key: string; text: string; href: string; tone: "warn" | "bad" }[] = [
+    ...(joining > 0 ? [{ key: "joining", text: t("needJoining", { count: joining }), href: "/admin/farms/applications", tone: "warn" as const }] : []),
     ...d.subscriptions.trialsEnding.map((s) => ({
       key: `trial-${s.tenantId}`,
       text: t("needTrialEnds", { farm: pick(locale, s.nameTa, s.nameEn), day: day.format(s.endsAt) }),

@@ -70,7 +70,10 @@ describe("belongsElsewhere", () => {
   })
 
   it("keeps admin on the portal, and a farm's app there only in support mode", () => {
-    expect(belongsElsewhere("portal", "/", "", false)).toBe("admin-home")
+    expect(belongsElsewhere("portal", "/", "", false)).toBe("home")
+    expect(belongsElsewhere("portal", "/join", "", false)).toBeNull()
+    expect(belongsElsewhere("shop", "/join", "", false)).toBe("portal")
+    expect(belongsElsewhere("farm", "/welcome", "", false)).toBe("portal")
     expect(belongsElsewhere("portal", "/admin", "", false)).toBeNull()
     expect(belongsElsewhere("portal", "/login", "?next=/admin", false)).toBeNull()
     expect(belongsElsewhere("portal", "/farm", "", true)).toBeNull()
@@ -80,7 +83,7 @@ describe("belongsElsewhere", () => {
 
   it("serves sign-in links, images and the manifest everywhere", () => {
     for (const app of ["shop", "farm", "portal"] as const) {
-      for (const p of ["/auth/callback", "/forgot-password", "/app-manifest", "/img/logo", "/api/cron/tick"]) expect(belongsElsewhere(app, p, "", false)).toBeNull()
+      for (const p of ["/auth/callback", "/forgot-password", "/app-manifest", "/img/logo", "/api/cron/tick", "/legal/terms"]) expect(belongsElsewhere(app, p, "", false)).toBeNull()
     }
   })
 

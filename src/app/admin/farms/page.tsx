@@ -1,11 +1,12 @@
 import Link from "next/link"
 import { getLocale, getTranslations } from "next-intl/server"
-import { ExternalLink, Plus } from "lucide-react"
+import { ChevronRight, ExternalLink, Plus } from "lucide-react"
 import { listFarms } from "@/server/platform"
+import { openApplicationsCount } from "@/server/applications"
 import { statusLabel } from "@/domain/tenants"
 import { formatRupees } from "@/domain/money"
 import { pick } from "@/lib/i18n-helpers"
-import { farmUrl } from "@/lib/farm-url"
+import { farmLogoUrl, farmUrl } from "@/lib/farm-url"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { FarmMark, StatusBadge } from "../farm-bits"
@@ -25,6 +26,7 @@ export default async function AdminFarms({ searchParams }: { searchParams: Promi
   const locale = await getLocale()
   const now = new Date()
   const since30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+  const joining = await openApplicationsCount()
   const farms = (await listFarms(now)).map((f) => ({ ...f, label: statusLabel(f.status, f.trialEndsAt, now), quiet: !f.lastOrderAt || f.lastOrderAt < since30 }))
   const matches = (f: (typeof farms)[number], s: Show) => s === "all" || (s === "quiet" ? f.quiet : f.label === s)
   const counts = Object.fromEntries(SHOWS.map((s) => [s, farms.filter((f) => matches(f, s)).length])) as Record<Show, number>
@@ -42,6 +44,13 @@ export default async function AdminFarms({ searchParams }: { searchParams: Promi
           </Link>
         </Button>
       </div>
+
+      {joining > 0 && (
+        <Link href="/admin/farms/applications" className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-yolk px-4 py-3 font-semibold text-yolk-foreground hover:underline">
+          {t("join.waiting", { count: joining })}
+          <ChevronRight className="size-5 shrink-0" aria-hidden />
+        </Link>
+      )}
 
       {farms.length === 0 ? (
         <p className="rounded-2xl border border-dashed p-6 text-center text-muted-foreground">{t("noFarms")}</p>
@@ -69,7 +78,7 @@ export default async function AdminFarms({ searchParams }: { searchParams: Promi
             {shown.map((f) => (
               <li key={f.id} className="flex flex-col gap-3 rounded-3xl border bg-card p-4">
                 <div className="flex items-start gap-3">
-                  <FarmMark logoUrl={f.logoUrl} initials={f.invoicePrefix} />
+                  <FarmMark logoUrl={farmLogoUrl(f.slug, f.logoUrl)} initials={f.invoicePrefix} />
                   <div className="flex min-w-0 flex-1 flex-col">
                     <span className="font-display text-lg leading-snug font-bold">{pick(locale, f.nameTa, f.nameEn)}</span>
                     <span className="text-sm text-muted-foreground" lang="en">
