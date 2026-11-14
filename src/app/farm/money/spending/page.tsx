@@ -38,13 +38,17 @@ export default async function MoneySpendingPage({ searchParams }: { searchParams
   const next = addMonths(from, 1).slice(0, 7)
   const monthName = new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${from}T00:00:00Z`))
 
-  const [expenses, batches] = await Promise.all([
+  const [expenses, batches, places, assets] = await Promise.all([
     db.expense.findMany({ where: { date: { gte: from, lte: to }, ...(isOwner ? {} : { byStaffId: staff.id }) }, orderBy: [{ date: "desc" }, { createdAt: "desc" }] }),
     features.poultryCare ? db.batch.findMany({ orderBy: { number: "desc" } }) : Promise.resolve([]),
+    db.farmPlace.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true, name: true, retiredAt: true } }),
+    db.farmAsset.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, retiredAt: true } }),
   ])
-  const batchName = (id: string | null) => {
-    const b = id ? batches.find((x) => x.id === id) : null
-    return b ? `${b.name} · #${b.number}` : null
+  // What each expense was on: a batch, a place or an asset (the whole farm when none)
+  const onName = (e: { batchId: string | null; placeId: string | null; assetId: string | null }) => {
+    const b = e.batchId ? batches.find((x) => x.id === e.batchId) : null
+    if (b) return `${b.name} · #${b.number}`
+    return places.find((p) => p.id === e.placeId)?.name ?? assets.find((a) => a.id === e.assetId)?.name ?? null
   }
   const monthLink = (m: string) => (m === thisMonth ? "/farm/money/spending" : `/farm/money/spending?month=${m}`)
 
@@ -60,6 +64,7 @@ export default async function MoneySpendingPage({ searchParams }: { searchParams
         batches={null}
         production={null}
         periodLabel={month === thisMonth ? t("thisMonth") : monthName}
+        spendOn={{ places: places.filter((p) => !p.retiredAt).map(({ id, name }) => ({ id, name })), assets: assets.filter((a) => !a.retiredAt).map(({ id, name }) => ({ id, name })) }}
         batchOptions={batches.filter((b) => onFarm(b, today)).map((b) => ({ id: b.id, name: `${b.name} · #${b.number}` }))}
         expenses={expenses.map((e) => ({
           id: e.id,
@@ -67,7 +72,7 @@ export default async function MoneySpendingPage({ searchParams }: { searchParams
           kind: e.kind,
           amountPaise: e.amountPaise,
           quantityKg: e.quantityKg,
-          batchName: batchName(e.batchId),
+          batchName: onName(e),
           spreadMonths: e.spreadMonths,
           note: e.note,
         }))}

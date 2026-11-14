@@ -1,5 +1,8 @@
 import {
   Bot,
+  LandPlot,
+  MapPin,
+  Wrench,
   PencilLine,
   Scale,
   Layers,
@@ -42,6 +45,9 @@ const ICONS: Record<string, LucideIcon> = {
   money: IndianRupee,
   more: LayoutGrid,
   products: Package,
+  land: LandPlot,
+  places: MapPin,
+  assets: Wrench,
   customers: Users,
   slots: Clock,
   messages: MessagesSquare,

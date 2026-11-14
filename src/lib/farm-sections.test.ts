@@ -59,7 +59,7 @@ describe("the bottom menu", () => {
 
 describe("the More page", () => {
   it("shows the owner everything the farm has switched on", () => {
-    expect(keys(moreTiles({ roles: ["owner"], features: plain }))).toEqual(["products", "customers", "slots", "messages", "whatsapp", "staff", "settings", "account"])
+    expect(keys(moreTiles({ roles: ["owner"], features: plain }))).toEqual(["land", "products", "customers", "slots", "messages", "whatsapp", "staff", "settings", "account"])
   })
 
   it("adds Plans only when regular orders are switched on", () => {
