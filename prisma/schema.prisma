@@ -303,6 +303,9 @@ model Product {
   onWeb           Boolean   @default(true)
   onWhatsApp      Boolean   @default(true)
   isActive        Boolean   @default(true)
+  /// Hidden by Farm For You's screening (src/domain/compliance.ts): block | hold | licence; null = free. While set,
+  /// the farm can't show the product; Farm For You allows it, keeps it hidden or removes it.
+  complianceHold  String?
   sortOrder       Int       @default(0)
   deletedAt       DateTime? // soft delete keeps old orders readable
   createdAt       DateTime  @default(now())
@@ -1376,4 +1379,58 @@ model FarmApplication {
   @@index([phone])
   @@index([sourceHash, createdAt])
   @@map("farm_applications")
+}
+
+// ─────────────────────────────────────────────────
+// ITEMS AGAINST THE LAW: SCREENING AND CASES (docs/platform-plan.md §3.9; src/server/compliance.ts)
+// ─────────────────────────────────────────────────
+
+/// One entry of the restricted items list, edited in admin: the words that find it and what a match does.
+model RestrictedItem {
+  id        String   @id @default(uuid())
+  labelTa   String
+  labelEn   String
+  wordsTa   String[] @default([])
+  wordsEn   String[] @default([])
+  /// block | hold | licence
+  action    String
+  /// Told to the farm when its product is hidden
+  reasonTa  String
+  reasonEn  String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("restricted_items")
+}
+
+/// Something a farm listed that matched the restricted items list, waiting for or decided by Farm For You.
+model ComplianceCase {
+  id          String    @id @default(uuid())
+  tenantId    String
+  /// product | category
+  kind        String
+  subjectId   String
+  /// The names as they were when it matched
+  subjectName String
+  /// The word that matched, and the list entry
+  matched     String
+  itemId      String?
+  /// block | hold | licence
+  action      String
+  /// open | allowed | kept_hidden | removed | cleared
+  status      String    @default("open")
+  /// Whether the farm had the product showing, to put back when allowed
+  wasActive   Boolean   @default(false)
+  /// Farm For You's note on the decision
+  note        String?
+  decidedBy   String?
+  decidedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([tenantId, status])
+  @@index([subjectId])
+  @@map("compliance_cases")
 }

@@ -7,6 +7,7 @@ import { formatRupees } from "@/domain/money"
 import { adminDashboard } from "@/server/admin-overview"
 import { overdueCount } from "@/server/platform-billing"
 import { openApplicationsCount } from "@/server/applications"
+import { openCasesCount, repeatFarms } from "@/server/compliance"
 import { AuditRows, Panel, Tile } from "./admin-ui"
 
 /**
@@ -21,12 +22,14 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const t = await getTranslations("admin.dashboard")
   const ta = await getTranslations("admin")
   const locale = await getLocale()
-  const [d, overdue, joining] = await Promise.all([adminDashboard(), overdueCount(), openApplicationsCount()])
+  const [d, overdue, joining, cases, repeat] = await Promise.all([adminDashboard(), overdueCount(), openApplicationsCount(), openCasesCount(), repeatFarms()])
   const farms = await prisma.tenant.findMany({ select: { id: true, nameTa: true, nameEn: true } })
   const day = new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })
 
   // Each line: what is wrong, in words, and where to deal with it. Only lines with something in them.
   const needs: { key: string; text: string; href: string; tone: "warn" | "bad" }[] = [
+    ...(cases > 0 ? [{ key: "compliance", text: t("needCompliance", { count: cases }), href: "/admin/compliance", tone: "bad" as const }] : []),
+    ...repeat.map((f) => ({ key: `repeat-${f.id}`, text: t("needRepeat", { farm: pick(locale, f.nameTa, f.nameEn), count: f.count }), href: `/admin/farms/${f.id}`, tone: "bad" as const })),
     ...(joining > 0 ? [{ key: "joining", text: t("needJoining", { count: joining }), href: "/admin/farms/applications", tone: "warn" as const }] : []),
     ...d.subscriptions.trialsEnding.map((s) => ({
       key: `trial-${s.tenantId}`,
