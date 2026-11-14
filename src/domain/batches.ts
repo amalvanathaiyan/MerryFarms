@@ -178,13 +178,16 @@ export interface FeedStore {
   pricePerKgPaise: number | null
 }
 
-/** Feed bought (feed expenses with their kg) against feed used (daily entries). */
-export function feedStore(purchases: { quantityKg: number | null; amountPaise: number }[], usedKg: number): FeedStore {
+/**
+ * The hens' feed in the store: bought (with its kg) against given to batches (daily entries). otherKg is the rest of
+ * the store's book for it: used elsewhere, less counts that found more (src/domain/inputs.ts).
+ */
+export function feedStore(purchases: { quantityKg: number | null; amountPaise: number }[], usedKg: number, otherKg = 0): FeedStore {
   const withKg = purchases.filter((p) => p.quantityKg != null && p.quantityKg > 0)
   const boughtKg = withKg.reduce((a, p) => a + p.quantityKg!, 0)
   const paid = withKg.reduce((a, p) => a + p.amountPaise, 0)
   const round = (n: number) => Math.round(n * 10) / 10
-  return { boughtKg: round(boughtKg), usedKg: round(usedKg), leftKg: round(boughtKg - usedKg), pricePerKgPaise: boughtKg > 0 ? Math.round(paid / boughtKg) : null }
+  return { boughtKg: round(boughtKg), usedKg: round(usedKg), leftKg: round(boughtKg - usedKg - otherKg), pricePerKgPaise: boughtKg > 0 ? Math.round(paid / boughtKg) : null }
 }
 
 // ── Money per batch ───────────────────────────────────────────────────────────
