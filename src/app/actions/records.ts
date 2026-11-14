@@ -8,6 +8,8 @@ import { istDate } from "@/domain/ist"
 import { rupeesToPaise } from "@/domain/money"
 import { EXPENSE_KINDS, MAX_SPREAD_MONTHS } from "@/domain/records"
 import { saveProduction } from "@/server/production"
+import { henFeedItem } from "@/server/inputs"
+import { henFeedName } from "@/domain/inputs"
 import { OrderError } from "@/server/orders"
 
 type Result = { ok: true } | { ok: false; error: string }
@@ -51,13 +53,18 @@ export async function addExpense(raw: unknown): Promise<Result> {
   const assetId = batchId || placeId ? null : (d.assetId ?? null)
   if (placeId && !(await db.farmPlace.findFirst({ where: { id: placeId }, select: { id: true } }))) return { ok: false, error: "not_found" }
   if (assetId && !(await db.farmAsset.findFirst({ where: { id: assetId }, select: { id: true } }))) return { ok: false, error: "not_found" }
+  // Feed bought by the kg goes into the store as the hens' feed (src/server/inputs.ts)
+  const feedKg = poultry && d.kind === "feed" ? (d.quantityKg ?? null) : null
+  const inputId = feedKg ? await henFeedItem(db, tenant.id, henFeedName(tenant.defaultLanguage)) : null
   await db.expense.create({
     data: {
       tenantId: tenant.id,
       date: d.date,
       kind: d.kind,
       amountPaise: rupeesToPaise(d.amountRupees),
-      quantityKg: poultry && d.kind === "feed" ? (d.quantityKg ?? null) : null,
+      quantityKg: feedKg,
+      inputId,
+      quantity: feedKg,
       batchId,
       placeId,
       assetId,

@@ -8,6 +8,7 @@ import { poultryTabs } from "@/lib/farm-sections"
 import { addDays, istDate } from "@/domain/ist"
 import { formatRupees } from "@/domain/money"
 import { batchBook } from "@/server/batches"
+import { henFeedBuys } from "@/server/inputs"
 import { SectionHeader } from "@/components/farm/section-header"
 import { FeedBuyForm } from "@/components/farm/feed-buy-form"
 import { FEED_DAYS_WARNING, feedDaysLeft } from "@/domain/alerts"
@@ -34,7 +35,7 @@ export default async function PoultryFeedPage({ searchParams }: { searchParams: 
 
   const [book, buys] = await Promise.all([
     batchBook(tenant.id, today),
-    isOwner ? db.expense.findMany({ where: { kind: "feed" }, orderBy: [{ date: "desc" }, { createdAt: "desc" }], take: 10 }) : Promise.resolve([]),
+    isOwner ? henFeedBuys(db, 10) : Promise.resolve([]),
   ])
   const feed = book.feed
   // Feed given per day over the last 7 days (only days with feed entered), to say about how long the store lasts.

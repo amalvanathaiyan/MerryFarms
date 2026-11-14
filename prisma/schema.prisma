@@ -932,7 +932,7 @@ model BatchWeight {
 }
 
 /// Money spent running the farm (feed, medicine, chicks, labour…), for profit.
-/// batchId: spent on one batch (chicks, medicine). quantityKg: feed bought, which fills the feed store.
+/// batchId: spent on one batch (chicks, medicine). quantityKg: feed bought by the kg (the hens' feed in the store).
 /// spreadMonths: see src/domain/records.ts costInPeriod.
 model Expense {
   id           String   @id @default(uuid())
@@ -946,6 +946,10 @@ model Expense {
   /// whose repair and running costs it then shows; neither = the whole farm (common costs).
   placeId      String?
   assetId      String?
+  /// Bought into the farm store (src/server/inputs.ts): which item, and how much in its unit. The hens' feed is the
+  /// item with batchFeed; its quantity is kg (written to quantityKg too, as before the store).
+  inputId      String?
+  quantity     Float?
   /// A big cost (building, equipment) shared out over this many months in profit; null = counted on the day paid.
   spreadMonths Int?
   note         String?
@@ -957,6 +961,7 @@ model Expense {
   @@index([batchId])
   @@index([placeId])
   @@index([assetId])
+  @@index([inputId])
   @@map("expenses")
 }
 
@@ -1560,4 +1565,50 @@ model WorkerPayment {
 
   @@index([tenantId, workerId])
   @@map("worker_payments")
+}
+
+// ─────────────────────────────────────────────────
+// FARM CORE: THE STORE (docs/platform-plan.md §3.2; src/server/inputs.ts)
+// ─────────────────────────────────────────────────
+
+/// Something the farm buys and uses up: feed, seed, fertiliser, medicine, packing. Bought = expenses with inputId;
+/// used = InputUse rows, plus (for the batchFeed item) the kg given in each batch's daily entry.
+model FarmInput {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  /// feed | seed | fertiliser | medicine | packing | other (src/domain/inputs.ts)
+  kind      String
+  /// kg | litre | bag | packet | bottle | piece
+  unit      String    @default("kg")
+  /// Warn when this much or less is left; null = no warning
+  lowAt     Float?
+  /// The hens' feed: what batches are given in the daily entry comes out of it (one per farm; unit kg)
+  batchFeed Boolean   @default(false)
+  retiredAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@map("farm_inputs")
+}
+
+/// Taken out of the store (used), or a count that puts the store right (count: quantity is the change, + or -).
+model InputUse {
+  id        String   @id @default(uuid())
+  tenantId  String
+  inputId   String
+  date      String
+  /// used | count
+  kind      String   @default("used")
+  quantity  Float
+  /// Used on a place (fertiliser on a plot), so its cost shows there
+  placeId   String?
+  note      String?
+  byStaffId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, inputId])
+  @@map("input_uses")
 }

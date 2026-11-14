@@ -23,16 +23,24 @@ export async function loadBatches(tenantId: string) {
  */
 export async function batchBook(tenantId: string, asOf: string) {
   const db = tenantDb(tenantId)
-  const [{ batches, days, losses }, feedBuys, batchSpend] = await Promise.all([
+  // The hens' feed is the store's hen-feed item (src/server/inputs.ts). Feed bought by the kg before the store (not
+  // linked to an item) still counts, so the feed left and its price never jump.
+  const henFeed = await db.farmInput.findFirst({ where: { batchFeed: true }, select: { id: true } })
+  const [{ batches, days, losses }, feedBuys, feedOther, batchSpend] = await Promise.all([
     loadBatches(tenantId),
-    db.expense.findMany({ where: { kind: "feed", date: { lte: asOf } }, select: { quantityKg: true, amountPaise: true } }),
+    db.expense.findMany({
+      where: { date: { lte: asOf }, OR: [...(henFeed ? [{ inputId: henFeed.id }] : []), { kind: "feed", inputId: null }] },
+      select: { quantityKg: true, quantity: true, amountPaise: true },
+    }),
+    henFeed ? db.inputUse.findMany({ where: { inputId: henFeed.id, date: { lte: asOf } }, select: { kind: true, quantity: true } }) : Promise.resolve([]),
     db.expense.findMany({ where: { batchId: { not: null }, date: { lte: asOf } }, select: { batchId: true, kind: true, amountPaise: true } }),
   ])
   const dayRows = days.map(asDay)
   const lossRows = losses.map(asLoss)
   const feed = feedStore(
-    feedBuys,
-    dayRows.filter((d) => d.date <= asOf).reduce((a, d) => a + (d.feedKg ?? 0), 0)
+    feedBuys.map((b) => ({ quantityKg: b.quantity ?? b.quantityKg, amountPaise: b.amountPaise })),
+    dayRows.filter((d) => d.date <= asOf).reduce((a, d) => a + (d.feedKg ?? 0), 0),
+    feedOther.reduce((a, u) => a + (u.kind === "count" ? -u.quantity : u.quantity), 0)
   )
   const rows = batches.map((batch) => {
     const info = asInfo(batch)
