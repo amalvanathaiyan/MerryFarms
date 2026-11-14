@@ -7,6 +7,8 @@ import { normaliseIndianMobile } from "@/domain/phone"
 import { OrderError } from "@/server/orders"
 import { addOwner, createFarm, resetPassword, updateFarm } from "@/server/platform"
 import { OPENING_MARKS } from "@/domain/brand"
+import { adminActor, audit } from "@/server/audit"
+import { prisma } from "@/lib/prisma"
 
 /** Platform admin actions (FarmForYou, all farms). Every one checks the caller is a platform admin first. */
 
@@ -46,9 +48,10 @@ export async function createFarmAction(raw: unknown): Promise<Result> {
   const phone = normaliseIndianMobile(parsed.data.phone)
   const ownerPhone = parsed.data.owner.phone ? normaliseIndianMobile(parsed.data.owner.phone) : undefined
   if (!phone || ownerPhone === null) return { ok: false, error: "phone_invalid" }
-  await requirePlatformAdmin()
+  const admin = await requirePlatformAdmin()
   return attempt(async () => {
     const r = await createFarm({ ...parsed.data, phone, owner: { ...parsed.data.owner, phone: ownerPhone } })
+    await audit(adminActor(admin), [{ tenantId: r.tenant.id, action: "farm.created", subject: r.tenant.id, after: { nameEn: parsed.data.nameEn, slug: parsed.data.slug, plan: parsed.data.plan, owner: parsed.data.owner.email } }])
     return { ok: true, id: r.tenant.id, password: r.password }
   })
 }
@@ -72,10 +75,12 @@ export async function updateFarmAction(raw: unknown): Promise<Result> {
   if (!parsed.success) return { ok: false, error: "invalid_form" }
   const phone = normaliseIndianMobile(parsed.data.phone)
   if (!phone) return { ok: false, error: "phone_invalid" }
-  await requirePlatformAdmin()
+  const admin = await requirePlatformAdmin()
   const { id, ...changes } = parsed.data
   return attempt(async () => {
+    const before = await prisma.tenant.findUnique({ where: { id }, select: { nameTa: true, nameEn: true, phone: true, invoicePrefix: true, defaultLanguage: true, plan: true, status: true, trialEndsAt: true } })
     await updateFarm(id, { ...changes, phone })
+    await audit(adminActor(admin), [{ tenantId: id, action: "farm.changed", subject: id, before, after: { ...changes, phone } }])
     return { ok: true }
   })
 }
@@ -85,14 +90,20 @@ export async function addOwnerAction(raw: unknown): Promise<Result> {
   if (!parsed.success) return { ok: false, error: "invalid_form" }
   const ownerPhone = parsed.data.owner.phone ? normaliseIndianMobile(parsed.data.owner.phone) : undefined
   if (ownerPhone === null) return { ok: false, error: "phone_invalid" }
-  await requirePlatformAdmin()
+  const admin = await requirePlatformAdmin()
   return attempt(async () => {
     const r = await addOwner(parsed.data.tenantId, { ...parsed.data.owner, phone: ownerPhone })
+    await audit(adminActor(admin), [{ tenantId: parsed.data.tenantId, action: "farm.owner_added", subject: parsed.data.tenantId, after: { name: parsed.data.owner.name, email: parsed.data.owner.email } }])
     return { ok: true, password: r.password }
   })
 }
 
 export async function resetPasswordAction(tenantId: string, staffId: string): Promise<Result> {
-  await requirePlatformAdmin()
-  return attempt(async () => ({ ok: true, password: await resetPassword(tenantId, staffId) }))
+  const admin = await requirePlatformAdmin()
+  return attempt(async () => {
+    const password = await resetPassword(tenantId, staffId)
+    // Never the password itself: only whose was reset.
+    await audit(adminActor(admin), [{ tenantId, action: "farm.password_reset", subject: staffId }])
+    return { ok: true, password }
+  })
 }

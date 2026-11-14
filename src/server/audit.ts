@@ -54,6 +54,11 @@ export function staffActor(staff: { id: string; name: string | null }, support: 
   return { kind: "staff", id: staff.id, name: staff.name, viaSupport: !!support }
 }
 
+/** Farm For You admin, as an actor. */
+export function adminActor(admin: { id: string; name: string | null }): Actor {
+  return { kind: "platform_admin", id: admin.id, name: admin.name }
+}
+
 /** A farm's recent changes, newest first (optionally only some actions). */
 export function recentAudit(tenantId: string | null, opts: { actions?: string[]; take?: number } = {}) {
   return prisma.auditEntry.findMany({
