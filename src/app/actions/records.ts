@@ -76,6 +76,8 @@ export async function deleteExpense(id: string): Promise<Result> {
   const isOwner = staff.roles.includes("owner")
   const { count } = await db.expense.deleteMany({ where: isOwner ? { id } : { id, byStaffId: staff.id } })
   if (count === 0 && !isOwner) return { ok: false, error: "not_your_expense" }
+  // A worker's wage or advance goes with its labour expense, so what they're owed stays right
+  if (count > 0) await db.workerPayment.deleteMany({ where: { expenseId: id } })
   revalidatePath("/farm", "layout")
   return { ok: true }
 }

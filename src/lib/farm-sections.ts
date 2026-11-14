@@ -102,11 +102,12 @@ export function moneyTabs(who: Who): Tab[] {
   return tabs
 }
 
-/** My farm (Farm Core)'s tabs: its places (land, sheds, ponds, wells) and assets (motors, tractors). */
+/** My farm (Farm Core)'s tabs: its places (land, sheds, ponds, wells), machines (motors, tractors) and workers. */
 export function landTabs(): Tab[] {
   return [
     { key: "places", href: "/farm/land" },
     { key: "assets", href: "/farm/land/assets" },
+    { key: "workers", href: "/farm/land/workers" },
   ]
 }
 
