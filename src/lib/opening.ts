@@ -16,7 +16,7 @@ const PART_END = 3200
  * My account. Android plays them as an installed app opens; iPhone stays silent until the screen is touched.
  */
 export const SOUND_KEY = "ffy-sound"
-/** The set the last opening played, kept on this device so the next one plays the next set. */
+/** How many openings this device has played (the set is this count, in turn), so the next one plays the next set. */
 export const SOUND_SET_KEY = "ffy-sound-set"
 
 export type PartKind = "platform" | "mark" | "logo"
@@ -57,7 +57,7 @@ export function openingParts(app: InstalledApp, farm: { hasMark: boolean } | nul
  */
 export function openingScript(app: InstalledApp, parts: Part[]): string {
   const p = JSON.stringify(parts.map((x) => [x.drawn, x.end, x.kind]))
-  return `try{(function(){var a="${app}",P=${p},k="ffy-opened-"+a,m=window.matchMedia;if(!(m("(display-mode: standalone)").matches||navigator.standalone===true)||m("(prefers-reduced-motion: reduce)").matches||sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1");var r=document.documentElement,i=0,t=0,h=0,on=0,done=0,d=document,c=null,S=null,set=0,snd=1;try{snd=localStorage.getItem("${SOUND_KEY}")!=="off";set=(Number(localStorage.getItem("${SOUND_SET_KEY}"))+1)%${SOUND_SETS}||0;localStorage.setItem("${SOUND_SET_KEY}",String(set))}catch(e){}r.setAttribute("data-opening",a);r.setAttribute("data-opening-sound",snd?"on":"off");${SOUND_JS}function fin(){if(done)return;done=1;clearTimeout(h);r.setAttribute("data-opening-out","");setTimeout(function(){r.removeAttribute("data-opening");r.removeAttribute("data-opening-out");r.removeAttribute("data-opening-stage");r.removeAttribute("data-opening-sound");if(c)try{c.close()}catch(e){}},380)}function go(){clearTimeout(h);if(i>=P.length-1){fin();return}i++;t=Date.now();r.setAttribute("data-opening-stage",String(i+1));play(i);h=setTimeout(go,P[i][1])}function start(){if(on)return;on=1;t=Date.now();play(0);h=setTimeout(go,P[0][1])}d.addEventListener("animationstart",function(e){var n=e.target;if(n&&n.closest&&n.closest(".opening"))start()},true);d.addEventListener("DOMContentLoaded",function(){setTimeout(start,1500)});d.addEventListener("click",function(e){var n=e.target;if(!on||done||!n||!n.closest||!n.closest(".opening"))return;if(n.closest("[data-op-sound]")){toggle();return}if(Date.now()-t>=P[i][0])go()},true)})()}catch(e){}`
+  return `try{(function(){var a="${app}",P=${p},k="ffy-opened-"+a,m=window.matchMedia;if(!(m("(display-mode: standalone)").matches||navigator.standalone===true)||m("(prefers-reduced-motion: reduce)").matches||sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1");var r=document.documentElement,i=0,t=0,h=0,on=0,done=0,d=document,c=null,S=null,set=1,turn=1,snd=1;try{snd=localStorage.getItem("${SOUND_KEY}")!=="off";turn=(Number(localStorage.getItem("${SOUND_SET_KEY}"))||0)+1;if(!(turn<1e6))turn=1;set=turn%${SOUND_SETS};localStorage.setItem("${SOUND_SET_KEY}",String(turn))}catch(e){}r.setAttribute("data-opening",a);r.setAttribute("data-opening-sound",snd?"on":"off");${SOUND_JS}function fin(){if(done)return;done=1;clearTimeout(h);r.setAttribute("data-opening-out","");setTimeout(function(){r.removeAttribute("data-opening");r.removeAttribute("data-opening-out");r.removeAttribute("data-opening-stage");r.removeAttribute("data-opening-sound");if(c)try{c.close()}catch(e){}},380)}function go(){clearTimeout(h);if(i>=P.length-1){fin();return}i++;t=Date.now();r.setAttribute("data-opening-stage",String(i+1));play(i);h=setTimeout(go,P[i][1])}function start(){if(on)return;on=1;t=Date.now();play(0);h=setTimeout(go,P[0][1])}d.addEventListener("animationstart",function(e){var n=e.target;if(n&&n.closest&&n.closest(".opening"))start()},true);d.addEventListener("DOMContentLoaded",function(){setTimeout(start,1500)});d.addEventListener("click",function(e){var n=e.target;if(!on||done||!n||!n.closest||!n.closest(".opening"))return;if(n.closest("[data-op-sound]")){toggle();return}if(Date.now()-t>=P[i][0])go()},true)})()}catch(e){}`
 }
 
 /**
@@ -69,6 +69,6 @@ const SOUND_JS = [
   OPENING_SOUNDS_JS.split("\n").join(""),
   `function ctx(){if(!c){var A=window.AudioContext||window.webkitAudioContext;if(!A)return null;c=new A();S=ffySounds(c)}if(c.state==="suspended")c.resume();return c}`,
   // Sound never holds up the opening: if a phone's audio fails, the opening plays on in silence
-  `function play(n){if(!snd)return;try{var x=ctx();if(!x)return;S(set,P[n][2],x.currentTime-(Date.now()-t)/1000,x.currentTime)}catch(e){}}`,
+  `function play(n){if(!snd)return;try{var x=ctx();if(!x)return;S(set,P[n][2],x.currentTime-(Date.now()-t)/1000,x.currentTime,Math.floor(turn/${SOUND_SETS}))}catch(e){}}`,
   `function toggle(){if(snd&&c&&c.state!=="running"){c.resume();play(i);return}snd=!snd;try{localStorage.setItem("${SOUND_KEY}",snd?"on":"off")}catch(e){}r.setAttribute("data-opening-sound",snd?"on":"off");if(!snd){if(c)c.suspend()}else{ctx();play(i)}}`,
 ].join("")

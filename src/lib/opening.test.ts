@@ -25,7 +25,7 @@ function fakePage(stored: Record<string, string> = {}) {
   const attrs = new Map<string, string>()
   const listeners: Record<string, ((e: { target: unknown }) => void)[]> = {}
   const tones: { f: number; at: number }[] = []
-  const param = () => ({ value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} })
+  const param = () => ({ value: 0, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} })
   const node = () => ({ connect() {}, gain: param(), frequency: param(), Q: param(), type: "", buffer: null, start() {}, stop() {} })
   const ctx = {
     state: "running",
@@ -104,10 +104,10 @@ describe("opening script on a page", () => {
     vi.useFakeTimers()
     const page = fakePage({ "ffy-sound-set": "2" })
     new Function(openingScript("shop", openingParts("shop", { hasMark: true })))()
-    expect(page.store["ffy-sound-set"]).toBe("0")
-    const again = fakePage({ "ffy-sound-set": "0" })
+    expect(page.store["ffy-sound-set"]).toBe("3")
+    const again = fakePage({ "ffy-sound-set": "3" })
     new Function(openingScript("shop", openingParts("shop", { hasMark: true })))()
-    expect(again.store["ffy-sound-set"]).toBe("1")
+    expect(again.store["ffy-sound-set"]).toBe("4")
     const first = fakePage()
     new Function(openingScript("shop", openingParts("shop", { hasMark: true })))()
     expect(first.store["ffy-sound-set"]).toBe("1")
@@ -115,7 +115,8 @@ describe("opening script on a page", () => {
 
   it("every set makes sounds in every part", () => {
     vi.useFakeTimers()
-    for (const start of ["2", "0", "1"]) {
+    // Every set; from 1 and 4 the next opening plays Village, with each of its two hens
+    for (const start of ["0", "1", "2", "4", "5"]) {
       for (const hasMark of [true, false]) {
         const page = fakePage({ "ffy-sound-set": start })
         new Function(openingScript("farm", openingParts("farm", { hasMark })))()
