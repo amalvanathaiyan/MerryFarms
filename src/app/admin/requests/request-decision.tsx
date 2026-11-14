@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { decideRequestAction } from "@/app/actions/platform-plans"
 
 /** Approve or decline, with a short reply the farm sees. */
-export function RequestDecision({ id }: { id: string }) {
+export function RequestDecision({ id, canApprove = true }: { id: string; canApprove?: boolean }) {
   const t = useTranslations("admin.requests")
   const te = useTranslations("errors")
   const router = useRouter()
@@ -31,7 +31,7 @@ export function RequestDecision({ id }: { id: string }) {
       </label>
       {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex flex-wrap gap-2">
-        <Button type="button" disabled={pending} onClick={() => decide(true)}>
+        <Button type="button" disabled={pending || !canApprove} onClick={() => decide(true)}>
           <Check /> {t("approve")}
         </Button>
         <Button type="button" variant="outline" disabled={pending} onClick={() => decide(false)}>

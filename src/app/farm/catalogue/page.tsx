@@ -7,12 +7,14 @@ import { SectionHeader } from "@/components/farm/section-header"
 import { EggStoreCard } from "@/components/farm/egg-store-card"
 import { getLocale } from "next-intl/server"
 import { pick } from "@/lib/i18n-helpers"
+import { farmHolds } from "@/server/compliance"
 
 export default async function CataloguePage() {
   const { db, staff, tenant } = await requireStaff()
-  const [categories, products] = await Promise.all([
+  const [categories, products, holds] = await Promise.all([
     db.category.findMany({ where: { deletedAt: null }, orderBy: { sortOrder: "asc" } }),
     db.product.findMany({ where: { deletedAt: null }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
+    farmHolds(tenant.id),
   ])
 
   const today = istDate(new Date())
@@ -56,6 +58,7 @@ export default async function CataloguePage() {
           offerRupees: p.offerPricePaise != null ? p.offerPricePaise / 100 : null,
           offerEndsOn: p.offerEndsOn ?? "",
           offerLive: offerActive(p, today),
+          held: holds[p.id] ? { reason: pick(locale, holds[p.id].note ?? holds[p.id].reasonTa, holds[p.id].note ?? holds[p.id].reasonEn), checking: holds[p.id].status === "open" } : null,
         }))}
       />
     </div>

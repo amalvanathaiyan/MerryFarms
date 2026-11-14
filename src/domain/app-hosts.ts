@@ -102,17 +102,24 @@ export function appOfPath(pathname: string, search = ""): InstalledApp {
   return "shop"
 }
 
-/** Pages every address serves: sign-in links from emails, images, the install manifest, background jobs. */
-const EVERYWHERE = /^\/(auth|forgot-password|app-manifest|img|api|offline|_next)(\/|$)/
+/** Pages every address serves: sign-in links from emails, images, the install manifest, background jobs, legal pages. */
+const EVERYWHERE = /^\/(auth|forgot-password|app-manifest|img|api|offline|_next|legal)(\/|$)/
+
+/** Farm For You's own pages, on the portal: the home page (the portal's "/") and "Register your farm". */
+export const HOME_PATH = "/welcome"
+const PORTAL_PAGES = /^\/(welcome|join)(\/|$)/
 
 /**
  * Where a request belongs, when this address is for another app: the app to send it to, or null to serve it here.
  *   the shop:      the farm app's and admin's pages go to their addresses;
  *   the farm app:  opens at /farm; admin goes to the portal, customers' pages (bills, "my orders") to the shop;
- *   the portal:    "/" is admin for now; a farm's app only in support mode (the super admin is signed in here).
+ *   the portal:    "/" is Farm For You's home page (shown from /welcome); a farm's app only in support mode (the super
+ *                  admin is signed in here).
+ *   Farm For You's home page and "Register your farm" are the portal's: the other apps send them there.
  */
-export function belongsElsewhere(app: HostApp, pathname: string, search: string, support: boolean): Exclude<HostApp, "all"> | "farm-home" | "admin-home" | null {
+export function belongsElsewhere(app: HostApp, pathname: string, search: string, support: boolean): Exclude<HostApp, "all"> | "farm-home" | "home" | null {
   if (app === "all" || EVERYWHERE.test(pathname)) return null
+  if (PORTAL_PAGES.test(pathname)) return app === "portal" ? null : "portal"
   const owner = appOfPath(pathname, search)
   if (app === "shop") return owner === "shop" ? null : owner === "admin" ? "portal" : "farm"
   if (app === "farm") {
@@ -120,7 +127,7 @@ export function belongsElsewhere(app: HostApp, pathname: string, search: string,
     return owner === "farm" ? null : owner === "admin" ? "portal" : "shop"
   }
   // portal
-  if (pathname === "/") return "admin-home"
+  if (pathname === "/") return "home"
   if (owner === "admin") return null
   if (owner === "farm") return support || pathname === "/login" ? null : "farm"
   return "shop"

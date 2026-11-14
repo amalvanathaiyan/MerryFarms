@@ -194,14 +194,16 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  subscription FarmSubscription?
-  requests     FarmRequest[]
-  staff        StaffMember[]
-  categories   Category[]
-  products     Product[]
-  slots        DeliverySlot[]
-  customers    Customer[]
-  orders       Order[]
+  subscription     FarmSubscription?
+  platformInvoices PlatformInvoice[]
+  platformPayments PlatformPayment[]
+  requests         FarmRequest[]
+  staff            StaffMember[]
+  categories       Category[]
+  products         Product[]
+  slots            DeliverySlot[]
+  customers        Customer[]
+  orders           Order[]
 
   @@map("tenants")
 }
@@ -301,6 +303,9 @@ model Product {
   onWeb           Boolean   @default(true)
   onWhatsApp      Boolean   @default(true)
   isActive        Boolean   @default(true)
+  /// Hidden by Farm For You's screening (src/domain/compliance.ts): block | hold | licence; null = free. While set,
+  /// the farm can't show the product; Farm For You allows it, keeps it hidden or removes it.
+  complianceHold  String?
   sortOrder       Int       @default(0)
   deletedAt       DateTime? // soft delete keeps old orders readable
   createdAt       DateTime  @default(now())
@@ -937,6 +942,10 @@ model Expense {
   amountPaise  Int
   quantityKg   Float?
   batchId      String?
+  /// What it was spent on (Farm Core cost centres): a place (plot, shed, pond, well) or an asset (motor, tractor),
+  /// whose repair and running costs it then shows; neither = the whole farm (common costs).
+  placeId      String?
+  assetId      String?
   /// A big cost (building, equipment) shared out over this many months in profit; null = counted on the day paid.
   spreadMonths Int?
   note         String?
@@ -946,6 +955,8 @@ model Expense {
 
   @@index([tenantId, date])
   @@index([batchId])
+  @@index([placeId])
+  @@index([assetId])
   @@map("expenses")
 }
 
@@ -1222,4 +1233,267 @@ model AuditEntry {
   @@index([tenantId, createdAt])
   @@index([action, createdAt])
   @@map("audit_log")
+}
+
+// ─────────────────────────────────────────────────
+// PLATFORM BILLING AND ANNOUNCEMENTS (docs/platform-plan.md §3.5, §3.6; src/server/platform-billing.ts)
+// Farm For You's own billing details and GST switch are one saved value: setting_values, scope "platform",
+// key "billing.profile" (src/domain/platform-billing.ts).
+// ─────────────────────────────────────────────────
+
+/// Farm For You's invoice to a farm (its plan fee and add-ons). The lines, Farm For You's details and the farm's are
+/// copied in when it is made, so a sent invoice never changes. Paid when its payments reach the total.
+model PlatformInvoice {
+  id            String    @id @default(uuid())
+  /// e.g. FFY/26-27/0001: numbered per Indian financial year (April to March)
+  number        String    @unique
+  tenantId      String
+  periodStart   String?
+  periodEnd     String?
+  /// [{ text, amountPaise }]
+  lines         Json
+  subtotalPaise Int
+  /// 0 while GST is switched off
+  gstRatePct    Int       @default(0)
+  /// cgst_sgst (same state) | igst (another state) | none
+  gstKind       String    @default("none")
+  gstPaise      Int       @default(0)
+  totalPaise    Int
+  /// due | paid | void
+  status        String    @default("due")
+  issuedOn      String
+  dueOn         String
+  /// Farm For You's details when it was made (name, address, GSTIN, SAC, UPI, bank)
+  seller        Json
+  /// The farm's details when it was made (name, phone, GSTIN)
+  buyer         Json
+  notes         String?
+  voidReason    String?
+  createdBy     String?
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant   Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payments PlatformPayment[]
+
+  @@index([tenantId, issuedOn])
+  @@index([status, dueOn])
+  @@map("platform_invoices")
+}
+
+/// Money a farm paid Farm For You (UPI or bank for now), against one invoice.
+model PlatformPayment {
+  id          String   @id @default(uuid())
+  tenantId    String
+  invoiceId   String
+  amountPaise Int
+  /// upi | bank | cash | other
+  method      String
+  /// UPI or bank reference
+  reference   String?
+  paidOn      String
+  notes       String?
+  recordedBy  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant  Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice PlatformInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([tenantId, paidOn])
+  @@map("platform_payments")
+}
+
+/// A note from Farm For You shown on farms' Today page between its dates: to every farm or chosen ones, to owners
+/// or all staff.
+model Announcement {
+  id        String   @id @default(uuid())
+  titleTa   String
+  titleEn   String
+  bodyTa    String?
+  bodyEn    String?
+  /// info | important
+  tone      String   @default("info")
+  /// owners | everyone
+  audience  String   @default("owners")
+  /// Empty = every farm
+  onlyFarms String[] @default([])
+  startsOn  String
+  /// null = until ended
+  endsOn    String?
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([startsOn])
+  @@map("announcements")
+}
+
+// ─────────────────────────────────────────────────
+// JOINING: FARMS THAT REGISTER THEMSELVES (docs/platform-plan.md §3.8; src/server/applications.ts)
+// ─────────────────────────────────────────────────
+
+/// A farm asking to join from the home page. Not a farm yet: the Farm For You team reviews it, and on approval adds
+/// the farm (and its owner's login) from it, as when admin adds one.
+model FarmApplication {
+  id               String    @id @default(uuid())
+  /// Short number told to the farm: "FFY-J0007"
+  number           Int       @unique
+  ownerName        String
+  /// +91XXXXXXXXXX
+  phone            String
+  email            String
+  nameTa           String
+  nameEn           String?
+  /// Module keys the farm is interested in (src/domain/modules.ts)
+  modules          String[]  @default([])
+  district         String
+  address          String
+  pincode          String
+  lat              Float?
+  lng              Float?
+  fssai            String?
+  gstin            String?
+  pan              String?
+  /// The public plan the farm liked, if any
+  planId           String?
+  message          String?
+  language         String    @default("ta")
+  /// The seller agreement and prohibited items policy, as accepted
+  agreementVersion String
+  agreedAt         DateTime
+  /// applied | reviewing | needs_info | on_hold | approved | rejected
+  status           String    @default("applied")
+  /// { phone: true, location: true, documents: true, call: true, visit: true }: what the reviewer has checked
+  checklist        Json      @default("{}")
+  /// The team's own notes (never shown to the farm)
+  notes            String?
+  /// What the farm was told: details still needed, or why it was turned down
+  reply            String?
+  reviewedBy       String?
+  decidedAt        DateTime?
+  /// The farm made from it, once approved
+  tenantId         String?
+  /// A one-way hash of where it was sent from, to stop floods
+  sourceHash       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([phone])
+  @@index([sourceHash, createdAt])
+  @@map("farm_applications")
+}
+
+// ─────────────────────────────────────────────────
+// ITEMS AGAINST THE LAW: SCREENING AND CASES (docs/platform-plan.md §3.9; src/server/compliance.ts)
+// ─────────────────────────────────────────────────
+
+/// One entry of the restricted items list, edited in admin: the words that find it and what a match does.
+model RestrictedItem {
+  id        String   @id @default(uuid())
+  labelTa   String
+  labelEn   String
+  wordsTa   String[] @default([])
+  wordsEn   String[] @default([])
+  /// block | hold | licence
+  action    String
+  /// Told to the farm when its product is hidden
+  reasonTa  String
+  reasonEn  String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("restricted_items")
+}
+
+/// Something a farm listed that matched the restricted items list, waiting for or decided by Farm For You.
+model ComplianceCase {
+  id          String    @id @default(uuid())
+  tenantId    String
+  /// product | category
+  kind        String
+  subjectId   String
+  /// The names as they were when it matched
+  subjectName String
+  /// The word that matched, and the list entry
+  matched     String
+  itemId      String?
+  /// block | hold | licence
+  action      String
+  /// open | allowed | kept_hidden | removed | cleared
+  status      String    @default("open")
+  /// Whether the farm had the product showing, to put back when allowed
+  wasActive   Boolean   @default(false)
+  /// Farm For You's note on the decision
+  note        String?
+  decidedBy   String?
+  decidedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([tenantId, status])
+  @@index([subjectId])
+  @@map("compliance_cases")
+}
+
+// ─────────────────────────────────────────────────
+// FARM CORE: PLACES AND ASSETS (docs/platform-plan.md §3.2; src/server/farm-core.ts)
+// ─────────────────────────────────────────────────
+
+/// A part of the farm: land (a block, or a plot inside one), a shed, a pond, a well or borewell, a store.
+/// Spending can be put on it (expenses.placeId); modules later hang their work on it (crops on a plot, fish in a pond).
+model FarmPlace {
+  id        String    @id @default(uuid())
+  tenantId  String
+  /// block | plot | shed | pond | well | borewell | store | other (src/domain/farm-core.ts)
+  kind      String
+  name      String
+  /// A plot inside a block
+  parentId  String?
+  /// Size, in areaUnit (land, ponds) — acre | cent | hectare | sqft
+  area      Float?
+  areaUnit  String    @default("acre")
+  surveyNo  String?
+  /// red | black | sandy | clay | loam | laterite (land)
+  soil      String?
+  /// Depth in feet (wells and borewells)
+  depthFt   Float?
+  notes     String?
+  /// No longer used; kept so old records stay readable
+  retiredAt DateTime?
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@map("farm_places")
+}
+
+/// Something the farm owns and keeps running: a motor, pump, tractor, vehicle, generator, solar panels, a tool.
+/// Its repairs and running costs are expenses with assetId; a service due date reminds the farm.
+model FarmAsset {
+  id               String    @id @default(uuid())
+  tenantId         String
+  /// motor | pump | tractor | vehicle | generator | solar | sprayer | tool | building | other
+  kind             String
+  name             String
+  /// Where it is
+  placeId          String?
+  boughtOn         String?
+  costPaise        Int?
+  /// Service every so many days; null = no regular service
+  serviceEveryDays Int?
+  lastServiceOn    String?
+  notes            String?
+  retiredAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@map("farm_assets")
 }

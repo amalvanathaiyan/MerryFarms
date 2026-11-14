@@ -21,6 +21,8 @@ import { batchStatus } from "@/domain/batches"
 import { asDay, asInfo, asLoss, loadBatches } from "@/server/batches"
 import { InstallApp } from "@/components/install-app"
 import { alertsFor } from "@/server/reminders"
+import { announcementsFor, farmInvoices } from "@/server/platform-billing"
+import { FarmAnnouncements } from "@/components/farm/announcements"
 
 /**
  * True when a batch on the farm has no entry for today (with poultry care on); otherwise, or with no batches,
@@ -76,6 +78,12 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const alerts = canRecord && features.poultryCare ? await alertsFor(tenant.id, today) : []
   const unreadMessages = features.messages ? await db.message.count({ where: { sender: "customer", seenAt: null } }) : 0
   const activePlans = features.subscriptions ? await db.subscription.count({ where: { status: "active" } }) : 0
+
+  // From Farm For You: its announcements, and (owner) an invoice still to pay.
+  const isOwner = staff.roles.includes("owner")
+  const [notes, ffyBill] = await Promise.all([announcementsFor(tenant.id, isOwner), isOwner ? farmInvoices(tenant.id, 6) : null])
+  const billDue = ffyBill?.invoices.filter((i) => i.leftPaise > 0).sort((a, b) => a.dueOn.localeCompare(b.dueOn))[0]
+  const ta = await getTranslations("farm.announcements")
 
   const [toConfirm, open, todays, balances, toPack, lowStock] = await Promise.all([
     db.order.count({ where: { status: "to_confirm" } }),
@@ -207,6 +215,14 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
         date={new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Kolkata" }).format(new Date())}
         shopLabel={t("yourShop")}
       />
+
+      {billDue && ffyBill && (
+        <Link href="/farm/settings/plan#invoices" className={cn("flex min-h-14 items-center justify-between gap-3 rounded-2xl px-4 py-3 font-semibold", billDue.dueOn < today ? "bg-destructive/10 text-destructive" : "bg-yolk text-yolk-foreground")}>
+          <span>{ta(billDue.dueOn < today ? "billLate" : "billDue", { amount: formatRupees(ffyBill.owedPaise), date: dayLabel(billDue.dueOn, locale, labels) })}</span>
+          <ChevronRight className="size-5 shrink-0" aria-hidden />
+        </Link>
+      )}
+      <FarmAnnouncements notes={notes.map((n) => ({ id: n.id, title: pick(locale, n.titleTa, n.titleEn), body: pick(locale, n.bodyTa, n.bodyEn), important: n.tone === "important" }))} />
 
       {warnings.length > 0 && (
         <section className="flex flex-col gap-2.5">

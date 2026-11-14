@@ -12,22 +12,37 @@ import { cn } from "@/lib/utils"
 
 const PLANS = ["free", "starter", "growth", "pro"] as const
 
-/** Adds a farm and its owner's login. The subdomain and bill prefix follow the English name until changed by hand. */
-export function NewFarmForm({ rootDomain }: { rootDomain: string | null }) {
+/** What a farm's application already says (src/server/applications.ts); adding the farm then approves it. */
+export interface FromApplication {
+  id: string
+  nameTa: string
+  nameEn: string
+  phone: string
+  language: "ta" | "en"
+  ownerName: string
+  ownerEmail: string
+  trialDays: number | null
+}
+
+/**
+ * Adds a farm and its owner's login. The subdomain and bill prefix follow the English name until changed by hand.
+ * From an application, everything the farm told us is filled in.
+ */
+export function NewFarmForm({ rootDomain, from }: { rootDomain: string | null; from?: FromApplication }) {
   const t = useTranslations("admin")
   const te = useTranslations("errors")
   const [f, setF] = useState({
-    nameTa: "",
-    nameEn: "",
-    slug: "",
-    phone: "",
-    defaultLanguage: "ta" as "ta" | "en",
-    invoicePrefix: "",
+    nameTa: from?.nameTa ?? "",
+    nameEn: from?.nameEn ?? "",
+    slug: from?.nameEn ? suggestSlug(from.nameEn) : "",
+    phone: from?.phone ?? "",
+    defaultLanguage: (from?.language ?? "ta") as "ta" | "en",
+    invoicePrefix: from?.nameEn ? suggestInvoicePrefix(from.nameEn) : "",
     plan: "free" as (typeof PLANS)[number],
-    trialDays: 30,
-    ownerName: "",
-    ownerEmail: "",
-    ownerPhone: "",
+    trialDays: from?.trialDays ?? 30,
+    ownerName: from?.ownerName ?? "",
+    ownerEmail: from?.ownerEmail ?? "",
+    ownerPhone: from?.phone ?? "",
   })
   const [touched, setTouched] = useState({ slug: false, prefix: false })
   const [error, setError] = useState<string | null>(null)
@@ -52,6 +67,7 @@ export function NewFarmForm({ rootDomain }: { rootDomain: string | null }) {
         plan: f.plan,
         trialDays: f.trialDays,
         owner: { name: f.ownerName, email: f.ownerEmail, phone: f.ownerPhone || undefined },
+        applicationId: from?.id,
       })
       if (!r.ok) return setError(te.has(r.error) ? te(r.error) : te("generic"))
       setMade({ id: r.id!, password: r.password ?? null, email: f.ownerEmail })

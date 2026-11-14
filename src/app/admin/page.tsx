@@ -5,6 +5,9 @@ import { prisma } from "@/lib/prisma"
 import { pick } from "@/lib/i18n-helpers"
 import { formatRupees } from "@/domain/money"
 import { adminDashboard } from "@/server/admin-overview"
+import { overdueCount } from "@/server/platform-billing"
+import { openApplicationsCount } from "@/server/applications"
+import { openCasesCount, repeatFarms } from "@/server/compliance"
 import { AuditRows, Panel, Tile } from "./admin-ui"
 
 /**
@@ -19,12 +22,15 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const t = await getTranslations("admin.dashboard")
   const ta = await getTranslations("admin")
   const locale = await getLocale()
-  const d = await adminDashboard()
+  const [d, overdue, joining, cases, repeat] = await Promise.all([adminDashboard(), overdueCount(), openApplicationsCount(), openCasesCount(), repeatFarms()])
   const farms = await prisma.tenant.findMany({ select: { id: true, nameTa: true, nameEn: true } })
   const day = new Intl.DateTimeFormat(locale === "ta" ? "ta-IN" : "en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })
 
   // Each line: what is wrong, in words, and where to deal with it. Only lines with something in them.
   const needs: { key: string; text: string; href: string; tone: "warn" | "bad" }[] = [
+    ...(cases > 0 ? [{ key: "compliance", text: t("needCompliance", { count: cases }), href: "/admin/compliance", tone: "bad" as const }] : []),
+    ...repeat.map((f) => ({ key: `repeat-${f.id}`, text: t("needRepeat", { farm: pick(locale, f.nameTa, f.nameEn), count: f.count }), href: `/admin/farms/${f.id}`, tone: "bad" as const })),
+    ...(joining > 0 ? [{ key: "joining", text: t("needJoining", { count: joining }), href: "/admin/farms/applications", tone: "warn" as const }] : []),
     ...d.subscriptions.trialsEnding.map((s) => ({
       key: `trial-${s.tenantId}`,
       text: t("needTrialEnds", { farm: pick(locale, s.nameTa, s.nameEn), day: day.format(s.endsAt) }),
@@ -33,6 +39,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     })),
     ...(d.farms.trialOver > 0 ? [{ key: "trial-over", text: t("needTrialOver", { count: d.farms.trialOver }), href: "/admin/farms?show=trial_over", tone: "warn" as const }] : []),
     ...(d.subscriptions.byStatus.past_due > 0 ? [{ key: "past-due", text: t("needPastDue", { count: d.subscriptions.byStatus.past_due }), href: "/admin/farms", tone: "bad" as const }] : []),
+    ...(overdue > 0 ? [{ key: "overdue", text: t("needOverdue", { count: overdue }), href: "/admin/billing?show=overdue", tone: "bad" as const }] : []),
     ...(d.requests.pending > 0 ? [{ key: "requests", text: t("needRequests", { count: d.requests.pending }), href: "/admin/requests", tone: "warn" as const }] : []),
     ...(d.selling.quietFarms > 0 ? [{ key: "quiet", text: t("needQuiet", { count: d.selling.quietFarms }), href: "/admin/farms?show=quiet", tone: "warn" as const }] : []),
     ...(d.automation.tick !== "running" ? [{ key: "tick", text: t("needTick"), href: "/admin/automation", tone: "bad" as const }] : []),

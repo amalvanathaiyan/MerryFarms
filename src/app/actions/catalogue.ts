@@ -11,6 +11,7 @@ import { addEggs, putStock, removeStockUpTo, setEggStore, syncEggStock, type Tx 
 import { dropPhoto, storePhoto } from "@/server/photos"
 import { planLimits } from "@/lib/features"
 import { atLimit } from "@/domain/entitlements"
+import { screenCategory, screenProduct, screenSafely } from "@/server/compliance"
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
 
@@ -31,7 +32,8 @@ export async function addCategory(raw: unknown): Promise<ActionResult> {
   if (!parsed.success) return { ok: false, error: "category_names_required" }
   const { db, tenant } = await requireStaff(OWNER_ONLY)
   const count = await db.category.count({ where: { deletedAt: null } })
-  await db.category.create({ data: { ...parsed.data, sortOrder: count, tenantId: tenant.id } })
+  const made = await db.category.create({ data: { ...parsed.data, sortOrder: count, tenantId: tenant.id } })
+  await screenSafely(() => screenCategory(tenant.id, made.id))
   return done()
 }
 
@@ -83,9 +85,10 @@ export async function saveProduct(raw: unknown): Promise<ActionResult> {
   const ok = await db.$transaction(async (tx) => {
     let productId = id
     if (id) {
-      const before = await tx.product.findFirst({ where: { id, deletedAt: null }, select: { stockQty: true, eggsPerUnit: true } })
-      if (!before) return false
-      await tx.product.updateMany({ where: { id }, data: { ...data, eggsPerUnit, ...(eggsPerUnit ? {} : { stockQty }) } })
+      const before = await tx.product.findFirst({ where: { id, deletedAt: null }, select: { stockQty: true, eggsPerUnit: true, complianceHold: true } })
+      if (!before) return null
+      // Held by Farm For You: it stays hidden whatever the form says (screening below may lift the hold)
+      await tx.product.updateMany({ where: { id }, data: { ...data, isActive: before.complianceHold ? false : data.isActive, eggsPerUnit, ...(eggsPerUnit ? {} : { stockQty }) } })
       if (eggsPerUnit && !before.eggsPerUnit) await joinEggStore(tx, tenant.id, stockQty, eggsPerUnit)
       else if (eggsPerUnit && before.eggsPerUnit !== eggsPerUnit) await syncEggStock(tx, tenant.id)
       else if (eggsPerUnit) await moveTo(tx, tenant.id, id, before.stockQty, stockQty)
@@ -94,9 +97,13 @@ export async function saveProduct(raw: unknown): Promise<ActionResult> {
       productId = created.id
       if (eggsPerUnit) await joinEggStore(tx, tenant.id, stockQty, eggsPerUnit)
     }
-    return !!productId
+    return productId ?? null
   })
   if (!ok) return { ok: false, error: "product_not_found" }
+  // Checked against the restricted items list once saved; a match hides it until Farm For You looks, and the
+  // catalogue says why. A hold this save lifted (the words changed) puts back what the farm asked for.
+  await screenSafely(() => screenProduct(tenant.id, ok))
+  if (id && data.isActive) await db.product.updateMany({ where: { id, complianceHold: null }, data: { isActive: true } })
   return done()
 }
 
@@ -131,8 +138,9 @@ export async function quickUpdateProduct(raw: unknown): Promise<ActionResult> {
   const ownerOnly = priceRupees !== undefined || isActive !== undefined
   const { db, tenant } = await requireStaff(ownerOnly ? OWNER_ONLY : ["owner", "packing"])
   const ok = await db.$transaction(async (tx) => {
-    const p = await tx.product.findFirst({ where: { id, deletedAt: null }, select: { stockQty: true, eggsPerUnit: true } })
+    const p = await tx.product.findFirst({ where: { id, deletedAt: null }, select: { stockQty: true, eggsPerUnit: true, complianceHold: true } })
     if (!p) return false
+    if (isActive && p.complianceHold) return "held"
     await tx.product.updateMany({
       where: { id },
       data: {
@@ -144,6 +152,7 @@ export async function quickUpdateProduct(raw: unknown): Promise<ActionResult> {
     if (stockQty !== undefined && p.eggsPerUnit) await moveTo(tx, tenant.id, id, p.stockQty, stockQty)
     return true
   })
+  if (ok === "held") return { ok: false, error: "compliance_held" }
   if (!ok) return { ok: false, error: "product_not_found" }
   return done()
 }
@@ -208,6 +217,8 @@ export async function renameCategory(raw: unknown): Promise<ActionResult> {
   const { id, ...names } = parsed.data
   const r = await db.category.updateMany({ where: { id, deletedAt: null }, data: names })
   if (r.count !== 1) return { ok: false, error: "category_not_found" }
+  const { tenant } = await requireStaff(OWNER_ONLY)
+  await screenSafely(() => screenCategory(tenant.id, id))
   return done()
 }
 

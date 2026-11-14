@@ -9,6 +9,9 @@ import { addOwner, createFarm, resetPassword, updateFarm } from "@/server/platfo
 import { OPENING_MARKS } from "@/domain/brand"
 import { adminActor, audit } from "@/server/audit"
 import { prisma } from "@/lib/prisma"
+import { istDate } from "@/domain/ist"
+import { applicationToApprove, markApproved } from "@/server/applications"
+import { setSubscription } from "@/server/subscriptions"
 
 /** Platform admin actions (FarmForYou, all farms). Every one checks the caller is a platform admin first. */
 
@@ -42,6 +45,8 @@ export async function createFarmAction(raw: unknown): Promise<Result> {
       plan: z.enum(PLANS),
       trialDays: z.number().int().min(0).max(365),
       owner,
+      /** Adding the farm from its application approves it (src/server/applications.ts) */
+      applicationId: z.string().min(1).optional(),
     })
     .safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid_form" }
@@ -50,8 +55,31 @@ export async function createFarmAction(raw: unknown): Promise<Result> {
   if (!phone || ownerPhone === null) return { ok: false, error: "phone_invalid" }
   const admin = await requirePlatformAdmin()
   return attempt(async () => {
-    const r = await createFarm({ ...parsed.data, phone, owner: { ...parsed.data.owner, phone: ownerPhone } })
-    await audit(adminActor(admin), [{ tenantId: r.tenant.id, action: "farm.created", subject: r.tenant.id, after: { nameEn: parsed.data.nameEn, slug: parsed.data.slug, plan: parsed.data.plan, owner: parsed.data.owner.email } }])
+    const { applicationId, ...input } = parsed.data
+    const application = applicationId ? await applicationToApprove(applicationId) : null
+    const r = await createFarm({ ...input, phone, owner: { ...input.owner, phone: ownerPhone } })
+    const actor = adminActor(admin)
+    await audit(actor, [{ tenantId: r.tenant.id, action: "farm.created", subject: r.tenant.id, after: { nameEn: input.nameEn, slug: input.slug, plan: input.plan, owner: input.owner.email, applicationId } }])
+    if (application) {
+      // What the farm told us carries over: its business details and where it is, and the plan it liked
+      await prisma.tenant.update({
+        where: { id: r.tenant.id },
+        data: { gstin: application.gstin, fssaiNo: application.fssai, farmLat: application.lat, farmLng: application.lng },
+      })
+      if (application.planId && (await prisma.platformPlan.findUnique({ where: { id: application.planId }, select: { id: true } }))) {
+        await setSubscription(r.tenant.id, {
+          planId: application.planId,
+          status: input.trialDays > 0 ? "trial" : "active",
+          billingCycle: "monthly",
+          trialEndsOn: r.tenant.trialEndsAt ? istDate(r.tenant.trialEndsAt) : null,
+          addOns: [],
+          moduleOverrides: {},
+          priceOverridePaise: null,
+          notes: null,
+        })
+      }
+      await markApproved(application.id, r.tenant.id, actor)
+    }
     return { ok: true, id: r.tenant.id, password: r.password }
   })
 }

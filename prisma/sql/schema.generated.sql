@@ -172,6 +172,7 @@ CREATE TABLE "products" (
     "onWeb" BOOLEAN NOT NULL DEFAULT true,
     "onWhatsApp" BOOLEAN NOT NULL DEFAULT true,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "complianceHold" TEXT,
     "sortOrder" INTEGER NOT NULL DEFAULT 0,
     "deletedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -666,6 +667,8 @@ CREATE TABLE "expenses" (
     "amountPaise" INTEGER NOT NULL,
     "quantityKg" DOUBLE PRECISION,
     "batchId" TEXT,
+    "placeId" TEXT,
+    "assetId" TEXT,
     "spreadMonths" INTEGER,
     "note" TEXT,
     "byStaffId" TEXT,
@@ -882,6 +885,185 @@ CREATE TABLE "audit_log" (
     CONSTRAINT "audit_log_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "platform_invoices" (
+    "id" TEXT NOT NULL,
+    "number" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "periodStart" TEXT,
+    "periodEnd" TEXT,
+    "lines" JSONB NOT NULL,
+    "subtotalPaise" INTEGER NOT NULL,
+    "gstRatePct" INTEGER NOT NULL DEFAULT 0,
+    "gstKind" TEXT NOT NULL DEFAULT 'none',
+    "gstPaise" INTEGER NOT NULL DEFAULT 0,
+    "totalPaise" INTEGER NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'due',
+    "issuedOn" TEXT NOT NULL,
+    "dueOn" TEXT NOT NULL,
+    "seller" JSONB NOT NULL,
+    "buyer" JSONB NOT NULL,
+    "notes" TEXT,
+    "voidReason" TEXT,
+    "createdBy" TEXT,
+    "paidAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "platform_invoices_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "platform_payments" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "invoiceId" TEXT NOT NULL,
+    "amountPaise" INTEGER NOT NULL,
+    "method" TEXT NOT NULL,
+    "reference" TEXT,
+    "paidOn" TEXT NOT NULL,
+    "notes" TEXT,
+    "recordedBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "platform_payments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "announcements" (
+    "id" TEXT NOT NULL,
+    "titleTa" TEXT NOT NULL,
+    "titleEn" TEXT NOT NULL,
+    "bodyTa" TEXT,
+    "bodyEn" TEXT,
+    "tone" TEXT NOT NULL DEFAULT 'info',
+    "audience" TEXT NOT NULL DEFAULT 'owners',
+    "onlyFarms" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "startsOn" TEXT NOT NULL,
+    "endsOn" TEXT,
+    "createdBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "announcements_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "farm_applications" (
+    "id" TEXT NOT NULL,
+    "number" INTEGER NOT NULL,
+    "ownerName" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "nameTa" TEXT NOT NULL,
+    "nameEn" TEXT,
+    "modules" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "district" TEXT NOT NULL,
+    "address" TEXT NOT NULL,
+    "pincode" TEXT NOT NULL,
+    "lat" DOUBLE PRECISION,
+    "lng" DOUBLE PRECISION,
+    "fssai" TEXT,
+    "gstin" TEXT,
+    "pan" TEXT,
+    "planId" TEXT,
+    "message" TEXT,
+    "language" TEXT NOT NULL DEFAULT 'ta',
+    "agreementVersion" TEXT NOT NULL,
+    "agreedAt" TIMESTAMP(3) NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'applied',
+    "checklist" JSONB NOT NULL DEFAULT '{}',
+    "notes" TEXT,
+    "reply" TEXT,
+    "reviewedBy" TEXT,
+    "decidedAt" TIMESTAMP(3),
+    "tenantId" TEXT,
+    "sourceHash" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "farm_applications_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "restricted_items" (
+    "id" TEXT NOT NULL,
+    "labelTa" TEXT NOT NULL,
+    "labelEn" TEXT NOT NULL,
+    "wordsTa" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "wordsEn" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "action" TEXT NOT NULL,
+    "reasonTa" TEXT NOT NULL,
+    "reasonEn" TEXT NOT NULL,
+    "active" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "restricted_items_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "compliance_cases" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "kind" TEXT NOT NULL,
+    "subjectId" TEXT NOT NULL,
+    "subjectName" TEXT NOT NULL,
+    "matched" TEXT NOT NULL,
+    "itemId" TEXT,
+    "action" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'open',
+    "wasActive" BOOLEAN NOT NULL DEFAULT false,
+    "note" TEXT,
+    "decidedBy" TEXT,
+    "decidedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "compliance_cases_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "farm_places" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "kind" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "parentId" TEXT,
+    "area" DOUBLE PRECISION,
+    "areaUnit" TEXT NOT NULL DEFAULT 'acre',
+    "surveyNo" TEXT,
+    "soil" TEXT,
+    "depthFt" DOUBLE PRECISION,
+    "notes" TEXT,
+    "retiredAt" TIMESTAMP(3),
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "farm_places_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "farm_assets" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "kind" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "placeId" TEXT,
+    "boughtOn" TEXT,
+    "costPaise" INTEGER,
+    "serviceEveryDays" INTEGER,
+    "lastServiceOn" TEXT,
+    "notes" TEXT,
+    "retiredAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "farm_assets_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -1033,6 +1215,12 @@ CREATE INDEX "expenses_tenantId_date_idx" ON "expenses"("tenantId", "date");
 CREATE INDEX "expenses_batchId_idx" ON "expenses"("batchId");
 
 -- CreateIndex
+CREATE INDEX "expenses_placeId_idx" ON "expenses"("placeId");
+
+-- CreateIndex
+CREATE INDEX "expenses_assetId_idx" ON "expenses"("assetId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "production_entries_tenantId_date_productId_key" ON "production_entries"("tenantId", "date", "productId");
 
 -- CreateIndex
@@ -1085,6 +1273,51 @@ CREATE INDEX "audit_log_tenantId_createdAt_idx" ON "audit_log"("tenantId", "crea
 
 -- CreateIndex
 CREATE INDEX "audit_log_action_createdAt_idx" ON "audit_log"("action", "createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "platform_invoices_number_key" ON "platform_invoices"("number");
+
+-- CreateIndex
+CREATE INDEX "platform_invoices_tenantId_issuedOn_idx" ON "platform_invoices"("tenantId", "issuedOn");
+
+-- CreateIndex
+CREATE INDEX "platform_invoices_status_dueOn_idx" ON "platform_invoices"("status", "dueOn");
+
+-- CreateIndex
+CREATE INDEX "platform_payments_invoiceId_idx" ON "platform_payments"("invoiceId");
+
+-- CreateIndex
+CREATE INDEX "platform_payments_tenantId_paidOn_idx" ON "platform_payments"("tenantId", "paidOn");
+
+-- CreateIndex
+CREATE INDEX "announcements_startsOn_idx" ON "announcements"("startsOn");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "farm_applications_number_key" ON "farm_applications"("number");
+
+-- CreateIndex
+CREATE INDEX "farm_applications_status_createdAt_idx" ON "farm_applications"("status", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "farm_applications_phone_idx" ON "farm_applications"("phone");
+
+-- CreateIndex
+CREATE INDEX "farm_applications_sourceHash_createdAt_idx" ON "farm_applications"("sourceHash", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "compliance_cases_status_createdAt_idx" ON "compliance_cases"("status", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "compliance_cases_tenantId_status_idx" ON "compliance_cases"("tenantId", "status");
+
+-- CreateIndex
+CREATE INDEX "compliance_cases_subjectId_idx" ON "compliance_cases"("subjectId");
+
+-- CreateIndex
+CREATE INDEX "farm_places_tenantId_idx" ON "farm_places"("tenantId");
+
+-- CreateIndex
+CREATE INDEX "farm_assets_tenantId_idx" ON "farm_assets"("tenantId");
 
 -- AddForeignKey
 ALTER TABLE "staff_members" ADD CONSTRAINT "staff_members_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1187,4 +1420,13 @@ ALTER TABLE "farm_subscriptions" ADD CONSTRAINT "farm_subscriptions_planId_fkey"
 
 -- AddForeignKey
 ALTER TABLE "farm_requests" ADD CONSTRAINT "farm_requests_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "platform_invoices" ADD CONSTRAINT "platform_invoices_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "platform_payments" ADD CONSTRAINT "platform_payments_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "platform_payments" ADD CONSTRAINT "platform_payments_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "platform_invoices"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

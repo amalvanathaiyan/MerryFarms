@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr"
 import { isLocale } from "./i18n/routing"
 import { DEMO_AUTH_PREFIX, DEMO_COOKIE, isDemoLoginEnabled } from "./lib/demo-auth"
 import { authCookieOptions } from "./lib/supabase/cookie-options"
-import { appBase, belongsElsewhere, hostConfigFromEnv, openingApp, readHost } from "./domain/app-hosts"
+import { appBase, belongsElsewhere, HOME_PATH, hostConfigFromEnv, openingApp, readHost } from "./domain/app-hosts"
 
 /**
  * Multi-tenant proxy (Next.js 16 — renamed from middleware)
@@ -59,8 +59,8 @@ export async function proxy(request: NextRequest) {
 
   // A page of another app: off to that app's address, for the same farm
   const away = belongsElsewhere(here.app, pathname, request.nextUrl.search, !!request.cookies.get(SUPPORT_COOKIE))
-  if (away === "farm-home" || away === "admin-home") return NextResponse.redirect(new URL(away === "farm-home" ? "/farm" : "/admin", request.url))
-  if (away) {
+  if (away === "farm-home") return NextResponse.redirect(new URL("/farm", request.url))
+  if (away && away !== "home") {
     const base = appBase(away, slug || null, hosts)
     if (base) return NextResponse.redirect(new URL(`${base}${pathname}${request.nextUrl.search}`))
   }
@@ -72,6 +72,9 @@ export async function proxy(request: NextRequest) {
   if (!fromSubdomain) requestHeaders.set("x-tenant-fallback", process.env.DEFAULT_TENANT_SLUG ?? "")
   const cookieLocale = request.cookies.get("NEXT_LOCALE")?.value
   requestHeaders.set("x-locale", isLocale(cookieLocale) ? cookieLocale : "ta")
+
+  // The portal's "/" is Farm For You's home page; its address stays "/"
+  if (away === "home") return NextResponse.rewrite(new URL(HOME_PATH, request.url), { request: { headers: requestHeaders } })
 
   const next = () => NextResponse.next({ request: { headers: requestHeaders } })
   let response = next()
