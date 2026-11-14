@@ -25,9 +25,12 @@ function fakePage(stored: Record<string, string> = {}) {
   const attrs = new Map<string, string>()
   const listeners: Record<string, ((e: { target: unknown }) => void)[]> = {}
   const tones: { f: number; at: number }[] = []
+  const param = () => ({ value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} })
+  const node = () => ({ connect() {}, gain: param(), frequency: param(), Q: param(), type: "", buffer: null, start() {}, stop() {} })
   const ctx = {
     state: "running",
     currentTime: 0,
+    sampleRate: 8000,
     destination: {},
     resume() {
       ctx.state = "running"
@@ -36,11 +39,14 @@ function fakePage(stored: Record<string, string> = {}) {
       ctx.state = "suspended"
     },
     close() {},
-    createGain: () => ({ gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} }),
-    createOscillator: () => {
-      const o = { type: "", frequency: { setValueAtTime: (f: number, at: number) => tones.push({ f, at }), exponentialRampToValueAtTime() {} }, connect() {}, start() {}, stop() {} }
-      return o
-    },
+    createGain: node,
+    createDynamicsCompressor: node,
+    createConvolver: node,
+    createBiquadFilter: node,
+    createBufferSource: node,
+    createBuffer: (channels: number, length: number) => ({ getChannelData: () => new Float32Array(length) }),
+    // Every sound starts an oscillator; counting them counts the sounds
+    createOscillator: () => ({ ...node(), start: (at: number) => tones.push({ f: 0, at }) }),
   }
   const store = { ...stored }
   vi.stubGlobal("window", { matchMedia: (q: string) => ({ matches: q.includes("standalone") }), AudioContext: function () { return ctx } })
@@ -92,6 +98,46 @@ describe("opening script on a page", () => {
     expect(page.attrs.has("data-opening-stage")).toBe(false) // the sound button doesn't skip the opening
     vi.advanceTimersByTime(3200)
     expect(page.tones.length).toBe(first) // the farm's part plays silently
+  })
+
+  it("plays the next sound set each opening", () => {
+    vi.useFakeTimers()
+    const page = fakePage({ "ffy-sound-set": "2" })
+    new Function(openingScript("shop", openingParts("shop", { hasMark: true })))()
+    expect(page.store["ffy-sound-set"]).toBe("0")
+    const again = fakePage({ "ffy-sound-set": "0" })
+    new Function(openingScript("shop", openingParts("shop", { hasMark: true })))()
+    expect(again.store["ffy-sound-set"]).toBe("1")
+    const first = fakePage()
+    new Function(openingScript("shop", openingParts("shop", { hasMark: true })))()
+    expect(first.store["ffy-sound-set"]).toBe("1")
+  })
+
+  it("every set makes sounds in every part", () => {
+    vi.useFakeTimers()
+    for (const start of ["2", "0", "1"]) {
+      for (const hasMark of [true, false]) {
+        const page = fakePage({ "ffy-sound-set": start })
+        new Function(openingScript("farm", openingParts("farm", { hasMark })))()
+        page.animationStarts()
+        const intro = page.tones.length
+        expect(intro).toBeGreaterThan(0)
+        vi.advanceTimersByTime(3200)
+        expect(page.tones.length).toBeGreaterThan(intro)
+      }
+    }
+  })
+
+  it("keeps the opening going when the phone's audio fails", () => {
+    vi.useFakeTimers()
+    const page = fakePage()
+    page.ctx.createGain = () => {
+      throw new Error("no audio")
+    }
+    new Function(openingScript("shop", openingParts("shop", { hasMark: true })))()
+    page.animationStarts()
+    vi.advanceTimersByTime(7000)
+    expect(page.attrs.has("data-opening")).toBe(false)
   })
 
   it("stays silent when sound was turned off", () => {
