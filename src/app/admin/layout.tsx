@@ -6,7 +6,6 @@ import { LogOut, UserRound } from "lucide-react"
 import { requirePlatformAdmin } from "@/lib/auth"
 import { LanguageToggle } from "@/components/language-toggle"
 import { FfyMark } from "@/components/art/brand-mark"
-import { PlatformOpening } from "@/components/openings"
 import { prisma } from "@/lib/prisma"
 import { AdminNav } from "./admin-nav"
 import { signOutAdmin } from "@/app/actions/auth"
@@ -29,7 +28,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const pending = await prisma.farmRequest.count({ where: { status: "pending" } })
   return (
     <div className="ffy-chrome flex min-h-dvh flex-col bg-background">
-      <PlatformOpening />
       <header className="sticky top-0 z-20 border-b bg-header/95 text-header-foreground backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5 sm:px-6">
           <Link href="/admin" className="flex min-w-[10rem] flex-1 items-center gap-3">

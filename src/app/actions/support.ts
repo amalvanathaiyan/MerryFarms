@@ -4,7 +4,7 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 import { requirePlatformAdmin } from "@/lib/auth"
-import { adminUrl, farmUrl } from "@/lib/farm-url"
+import { adminUrl, supportFarmUrl } from "@/lib/farm-url"
 import { prisma } from "@/lib/prisma"
 import { clearSupportCookie, endVisit, setSupportCookie, startVisit, SUPPORT_COOKIE, visitIdFrom } from "@/server/support"
 import { OrderError } from "@/server/orders"
@@ -26,7 +26,7 @@ export async function startSupportAction(raw: unknown): Promise<{ error: string 
     if (e instanceof OrderError) return { error: e.code }
     throw e
   }
-  redirect(farmUrl(farm.slug, "/farm") ?? "/farm")
+  redirect(supportFarmUrl(farm.slug))
 }
 
 /** Leave support mode: the visit ends now, and the super admin goes back to admin. */

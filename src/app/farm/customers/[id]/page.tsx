@@ -18,7 +18,7 @@ import { featuresOf } from "@/lib/features"
 import { templateOverrides } from "@/server/messages"
 import { fillTemplate, templateText } from "@/domain/templates"
 import { ensureToken } from "@/server/customers"
-import { absoluteUrl } from "@/lib/urls"
+import { shopUrl } from "@/lib/urls"
 import { PersonalLink } from "@/components/farm/personal-link"
 import { BackLink } from "@/components/farm/section-header"
 
@@ -53,7 +53,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
     upi: tenant.upiId ?? "",
   })
   const canLink = features.customerAccounts && (staff.roles.includes("owner") || staff.roles.includes("order_desk"))
-  const personalLink = canLink ? await absoluteUrl(`/my/${await ensureToken(tenant.id, customer.id)}`) : null
+  const personalLink = canLink ? await shopUrl(`/my/${await ensureToken(tenant.id, customer.id)}`) : null
   const linkText = personalLink
     ? fillTemplate(templateText("personal_link", customer.language, await templateOverrides(tenant.id)), { name: customer.name, farm: farmName, link: personalLink })
     : ""

@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react"
 import { useTranslations } from "next-intl"
-import { Copy, Download, Share, SquarePlus, X } from "lucide-react"
+import { Copy, Download, ExternalLink, Share, SquarePlus, X } from "lucide-react"
+import { needsChromeToInstall, openInChromeLink } from "@/domain/install-browser"
 
 /** Chrome and Edge's "this can be installed" event (not in TypeScript's DOM types). */
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> }
@@ -43,7 +44,7 @@ export function InstallCatcher() {
   return null
 }
 
-type Mode = "hidden" | "button" | "ios" | "menu"
+type Mode = "hidden" | "button" | "ios" | "chrome" | "menu"
 
 /** Re-read when the browser offers or finishes installing, or the card is closed (here or in another tab). */
 const subscribe = (onChange: () => void) => {
@@ -67,6 +68,8 @@ function wasDismissed(): boolean {
 function currentMode(): Mode {
   const standalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true
   if (standalone || holder().installed) return "hidden"
+  // Before the install button: Samsung Internet offers one too, but Play Protect blocks what it installs.
+  if (needsChromeToInstall(navigator.userAgent, "brave" in navigator)) return "chrome"
   if (holder().event) return "button"
   // iPhone and iPad (also iPadOS, which reports itself as a Mac with touch): Safari has no install button.
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
@@ -76,6 +79,7 @@ function currentMode(): Mode {
 /**
  * "Install the app": puts the farm app on the phone's home screen or the computer's desktop, so nobody needs the
  * link again. One tap where the browser allows it; picture steps on iPhone. Hidden once installed.
+ * Other Android browsers are sent to Chrome first: what they install, Play Protect blocks.
  *   banner: a card on Today, until installed or closed;
  *   panel:  always on More (with a hint for browsers that install from their own menu).
  */
@@ -134,6 +138,8 @@ export function InstallApp({ variant }: { variant: "banner" | "panel" }) {
       )}
 
       {mode === "ios" && <IosSteps />}
+
+      {mode === "chrome" && <OpenInChrome />}
 
       {mode === "menu" && <p className="text-sm">{t("menuHint")}</p>}
     </section>
@@ -201,3 +207,20 @@ function IosSteps() {
   )
 }
 
+/**
+ * Android browsers other than Chrome: one button that opens this farm app in Chrome, where installing is safe.
+ * The menu steps follow, for after Chrome opens.
+ */
+function OpenInChrome() {
+  const t = useTranslations("farm.install")
+  const link = typeof window === "undefined" ? "" : openInChromeLink(window.location.host, "/farm")
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-base leading-snug">{t("chromeWhy")}</p>
+      <a href={link} className="flex h-13 items-center justify-center gap-2 rounded-xl bg-primary text-lg font-bold text-primary-foreground">
+        <ExternalLink className="size-5" aria-hidden /> {t("chromeButton")}
+      </a>
+      <p className="text-sm text-muted-foreground">{t("chromeThen")}</p>
+    </div>
+  )
+}

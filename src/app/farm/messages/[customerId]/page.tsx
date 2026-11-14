@@ -5,7 +5,7 @@ import { MessageCircle, Phone } from "lucide-react"
 import { requireStaff } from "@/lib/auth"
 import { featuresOf } from "@/lib/features"
 import { requireFeature } from "@/lib/require-feature"
-import { absoluteUrl } from "@/lib/urls"
+import { shopUrl } from "@/lib/urls"
 import { chatTime, hoursSince } from "@/lib/chat-time"
 import { markSeen, thread } from "@/server/chat"
 import { ensureToken } from "@/server/customers"
@@ -39,7 +39,7 @@ export default async function FarmThreadPage({ params }: { params: Promise<{ cus
   const nudge = lastFarm && !lastFarm.seenAt
   let waNudge: string | null = null
   if (nudge && features.whatsappLite) {
-    const link = await absoluteUrl(`/my/${await ensureToken(tenant.id, customer.id)}`)
+    const link = await shopUrl(`/my/${await ensureToken(tenant.id, customer.id)}`)
     const farm = customer.language === "ta" ? tenant.nameTa : tenant.nameEn
     const preview = lastFarm.body.length > 80 ? `${lastFarm.body.slice(0, 80)}…` : lastFarm.body
     waNudge = waMeLink(customer.phone, fillTemplate(templateText("new_message", customer.language, await templateOverrides(tenant.id)), { name: customer.name, farm, preview, link }))
