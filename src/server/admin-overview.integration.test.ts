@@ -97,10 +97,19 @@ describe("audit log", () => {
   })
 })
 
+describe("job engine", () => {
+  it("reads the tick's health and the day's jobs", async () => {
+    const j = await overview.jobEngine(NOW)
+    expect(["running", "late", "never"]).toContain(j.tick)
+    expect(typeof j.waiting).toBe("number")
+    expect(Array.isArray(j.failures)).toBe(true)
+  })
+})
+
 describe("tech monitor", () => {
   it("reads the database size and tables, survives no Supabase storage, and never shows a key's value", async () => {
     process.env.CRON_SECRET = "secret-value-123"
-    const m = await overview.techMonitor(NOW)
+    const m = await overview.techMonitor()
     expect(m.database?.bytes).toBeGreaterThan(0)
     expect(m.tables.some((r) => r.name === "tenants")).toBe(true)
     expect(m.storage).toBeNull()
