@@ -151,7 +151,8 @@
       "label": "Main menu",
       "poultry": "Poultry",
       "money": "Money",
-      "more": "More"
+      "more": "More",
+      "fish": "Fish"
     },
     "today": {
       "toConfirm": "To confirm by call",
@@ -598,7 +599,11 @@
         "title": "Videos from your phone",
         "hint": "Send short clips from your phone: a silent banner on your shop's home page, or in “Watch our farm”. Comes with the Starter plan."
       },
-      "inPlan": "Always on in your plan"
+      "inPlan": "Always on in your plan",
+      "fishCare": {
+        "title": "Fish ponds",
+        "hint": "A cycle per pond from stocking to harvest: daily feed from the store, fish lost, water checks with warnings, net samples for size, and fish in the pond by weight."
+      }
     },
     "orderForm": {
       "newTitle": "New order",
@@ -1221,6 +1226,10 @@
       "land": {
         "title": "My farm",
         "hint": "Land, machines, workers, store and jobs"
+      },
+      "fish": {
+        "title": "Fish ponds",
+        "hint": "Fish, feed, water"
       }
     },
     "tabs": {
@@ -1252,6 +1261,10 @@
         "workers": "Workers",
         "store": "Store",
         "tasks": "Jobs"
+      },
+      "fish": {
+        "ponds": "Ponds",
+        "entry": "Entry"
       }
     },
     "more": {
@@ -1829,6 +1842,101 @@
       "group_soon": "This week",
       "group_later": "Later",
       "doneTitle": "Done lately ({count})"
+    },
+    "fish": {
+      "ponds": "Ponds",
+      "pond": "Pond",
+      "noPonds": "Add your ponds under My farm → Places first (kind: Pond).",
+      "addPond": "Add a pond →",
+      "noCycles": "No fish in any pond now.",
+      "startCycle": "Put fish in a pond",
+      "cycleN": "Cycle {n}",
+      "dayN": "Day {n}",
+      "fishLeft": "Fish left",
+      "size": "Size",
+      "inPond": "In the pond",
+      "feedSoFar": "Feed so far",
+      "grams": "{g} g",
+      "kg": "{kg} kg",
+      "enterToday": "Enter today",
+      "enteredToday": "Today entered ✓ · change",
+      "pastCycles": "{count, plural, one {# past cycle} other {# past cycles}}",
+      "runningSince": "Since {date} · day {days}",
+      "closedOn": "{from} – {to}",
+      "stocked": "Put in",
+      "dead": "Fish found dead",
+      "survival": "Alive",
+      "fcr": "Feed per kg grown",
+      "fcrHint": "Feed per kg grown: kg of feed for each kg the fish put on. Lower is better; carps usually 1.5–2.",
+      "stockings": "Fish put in",
+      "addStocking": "Put in more fish",
+      "species": "Fish",
+      "speciesOwn": "Other (type the name)",
+      "speciesName": "Name of the fish",
+      "allKinds": "All kinds",
+      "species_rohu": "Rohu",
+      "species_catla": "Catla",
+      "species_mrigal": "Mrigal",
+      "species_common_carp": "Common carp",
+      "species_grass_carp": "Grass carp",
+      "species_silver_carp": "Silver carp",
+      "species_tilapia": "Tilapia (GIFT)",
+      "species_pangasius": "Pangasius",
+      "species_murrel": "Murrel",
+      "species_vannamei": "Vannamei shrimp",
+      "species_scampi": "Freshwater prawn (scampi)",
+      "count": "How many",
+      "sizeGrams": "Size of one (g, optional)",
+      "cost": "Cost (₹)",
+      "supplier": "From (optional)",
+      "date": "Date",
+      "cancel": "Cancel",
+      "samples": "Size checks (net samples)",
+      "noSamples": "No size check yet. Net a few fish and weigh them together.",
+      "addSample": "Add a size check",
+      "sampleHint": "Catch a few fish in a net, weigh them together, then let them go.",
+      "sampleCount": "Fish weighed",
+      "sampleKg": "Their weight (kg)",
+      "eachAbout": "About {grams} g each",
+      "sampleLine": "{count} fish, {kg} kg",
+      "days": "Days entered",
+      "noDays": "Nothing entered yet.",
+      "feedLine": "Feed {kg} kg",
+      "deadLine": "{count} dead",
+      "remove": "Remove",
+      "removeSure": "Tap again to remove",
+      "close": "Close the cycle",
+      "closeHint": "Close it when the pond is empty: all harvested, or given up. The pond is then free for new fish.",
+      "closeOn": "Pond empty on",
+      "reopen": "Open the cycle again",
+      "dayBefore": "Day before",
+      "dayAfter": "Next day",
+      "feedTitle": "Feed given",
+      "feedKg": "Feed (kg)",
+      "feedFrom": "From the store",
+      "feedNotStore": "Not from the store",
+      "feedNoItems": "Add your fish feed in My farm → Store (kind Feed, in kg) to take it out of the store here.",
+      "waterTitle": "Water checks (optional)",
+      "waterHint": "Fill in what you checked today.",
+      "water_ph": "pH",
+      "water_oxygen": "Oxygen (mg/L)",
+      "water_tempC": "Water heat (°C)",
+      "water_ammonia": "Ammonia (mg/L)",
+      "warn_ph_low": "pH low (sour water).",
+      "warn_ph_high": "pH high.",
+      "warn_oxygen_low": "Oxygen low.",
+      "warn_tempC_low": "Water cold.",
+      "warn_tempC_high": "Water hot.",
+      "warn_ammonia_high": "Ammonia high.",
+      "do_ph_low": "Spread lime as your fisheries officer advises.",
+      "do_ph_high": "Add fresh water; hold back on lime and manure.",
+      "do_oxygen_low": "Run the aerator or add fresh water; feed less until it's back up. Check at dawn.",
+      "do_tempC_low": "Feed less; fish eat little in cold water.",
+      "do_tempC_high": "Raise the water level or add cool water; feed in the cool hours.",
+      "do_ammonia_high": "Stop or cut feeding, add fresh water, and remove waste from the bottom.",
+      "note": "Note (optional)",
+      "saveDay": "Save the day",
+      "saved": "Saved ✓"
     }
   },
   "login": {
@@ -2033,7 +2141,13 @@
     "application_not_checked": "Check the phone and location first.",
     "words_needed": "Add at least one word.",
     "case_closed": "This has already been decided.",
-    "compliance_held": "Farm For You has hidden this product, so it can't be shown."
+    "compliance_held": "Farm For You has hidden this product, so it can't be shown.",
+    "pond_busy": "This pond already has fish in it. Close its cycle first.",
+    "cycle_closed": "This cycle is closed. Open it again to change it.",
+    "before_start": "That day is before the fish were put in.",
+    "last_stocking": "This is the only stocking. Close the cycle instead.",
+    "too_many_dead": "That's more fish than are left in the pond.",
+    "busy": "Too many changes at once. Please try again."
   },
   "my": {
     "connectTitle": "Connect with the farm",

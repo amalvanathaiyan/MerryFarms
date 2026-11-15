@@ -387,7 +387,7 @@ model Customer {
   addedByStaffId   String?
   createdAt        DateTime  @default(now())
 
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   consents      CustomerConsent[]
   addresses     Address[]
   messages      Message[]
@@ -396,7 +396,7 @@ model Customer {
   payments      Payment[]
   invoices      Invoice[]
   subscriptions Subscription[]
-  updatedAt     DateTime       @default(now()) @updatedAt
+  updatedAt     DateTime          @default(now()) @updatedAt
 
   @@unique([tenantId, phone])
   @@index([personId])
@@ -1690,4 +1690,100 @@ model FarmTask {
 
   @@index([tenantId, dueOn])
   @@map("farm_tasks")
+}
+
+// ─────────────────────────────────────────────────
+// FISHERY (docs/platform-plan.md §3.1): a pond's cycle from stocking to harvest
+// ─────────────────────────────────────────────────
+
+/// One crop of fish in one pond (a FarmPlace of kind "pond"), from the first stocking to the last harvest. Its feed is
+/// taken from the farm store on the pond; spending on the pond during the cycle counts as its cost (src/server/fish.ts).
+model FishCycle {
+  id         String   @id @default(uuid())
+  tenantId   String
+  number     Int // Cycle 1, 2, 3… per farm
+  placeId    String // the pond
+  startDate  String // IST: first stocking
+  closedDate String? // IST: harvested out (or given up)
+  note       String?
+  byStaffId  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  stockings FishStocking[]
+  days      FishDay[]
+  samples   FishSample[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, closedDate])
+  @@index([tenantId, placeId])
+  @@map("fish_cycles")
+}
+
+/// Fingerlings (or seed shrimp) put into the pond. A cost makes a "seeds" expense on the pond (expenseId).
+model FishStocking {
+  id        String   @id @default(uuid())
+  tenantId  String
+  cycleId   String
+  date      String // IST
+  species   String // FISH_SPECIES key, or the farm's own name
+  count     Int
+  sizeGrams Float? // average weight of one when put in
+  costPaise Int      @default(0)
+  supplier  String?
+  expenseId String?
+  byStaffId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  cycle FishCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, cycleId])
+  @@map("fish_stockings")
+}
+
+/// One day of one pond: feed given (taken from the store item feedInputId, as the store use feedUseId), fish found
+/// dead, and water checks. Any of them may be empty.
+model FishDay {
+  id          String   @id @default(uuid())
+  tenantId    String
+  cycleId     String
+  date        String // IST
+  feedKg      Float?
+  feedInputId String?
+  feedUseId   String?
+  dead        Int      @default(0)
+  ph          Float?
+  oxygen      Float? // dissolved oxygen, mg/L
+  tempC       Float?
+  ammonia     Float? // mg/L
+  note        String?
+  byStaffId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  cycle FishCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@unique([cycleId, date])
+  @@index([tenantId, date])
+  @@map("fish_days")
+}
+
+/// A net sample: so many fish caught and weighed together, for their average weight.
+model FishSample {
+  id         String   @id @default(uuid())
+  tenantId   String
+  cycleId    String
+  date       String // IST
+  species    String? // null: all kinds together
+  count      Int
+  totalGrams Float
+  byStaffId  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  cycle FishCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, cycleId, date])
+  @@map("fish_samples")
 }

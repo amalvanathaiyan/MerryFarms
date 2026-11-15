@@ -86,7 +86,7 @@ export default async function SettingsPlanPage() {
           const s = settings.find((x) => x.key === m)!
           return {
             key: m,
-            has: has ? has.includes(m) : m === "selling" || (m === "poultry" && featuresOf(tenant).poultryCare),
+            has: has ? has.includes(m) : m === "selling" || (m === "poultry" && featuresOf(tenant).poultryCare) || (m === "fishery" && featuresOf(tenant).fishCare),
             available: MODULES[m].available && s.enabled,
             requestable: s.requestable && !!sub,
             price: price(s.addOnMonthlyPaise),
