@@ -1277,6 +1277,24 @@ CREATE TABLE "fish_samples" (
     CONSTRAINT "fish_samples_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "fish_harvests" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "cycleId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "species" TEXT,
+    "kg" DOUBLE PRECISION NOT NULL,
+    "count" INTEGER,
+    "soldPaise" INTEGER NOT NULL DEFAULT 0,
+    "buyer" TEXT,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "fish_harvests_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -1586,6 +1604,9 @@ CREATE UNIQUE INDEX "fish_days_cycleId_date_key" ON "fish_days"("cycleId", "date
 -- CreateIndex
 CREATE INDEX "fish_samples_tenantId_cycleId_date_idx" ON "fish_samples"("tenantId", "cycleId", "date");
 
+-- CreateIndex
+CREATE INDEX "fish_harvests_tenantId_cycleId_date_idx" ON "fish_harvests"("tenantId", "cycleId", "date");
+
 -- AddForeignKey
 ALTER TABLE "staff_members" ADD CONSTRAINT "staff_members_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -1708,4 +1729,7 @@ ALTER TABLE "fish_days" ADD CONSTRAINT "fish_days_cycleId_fkey" FOREIGN KEY ("cy
 
 -- AddForeignKey
 ALTER TABLE "fish_samples" ADD CONSTRAINT "fish_samples_cycleId_fkey" FOREIGN KEY ("cycleId") REFERENCES "fish_cycles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "fish_harvests" ADD CONSTRAINT "fish_harvests_cycleId_fkey" FOREIGN KEY ("cycleId") REFERENCES "fish_cycles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

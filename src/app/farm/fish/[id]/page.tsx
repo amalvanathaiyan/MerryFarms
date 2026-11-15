@@ -8,9 +8,9 @@ import { dayLabel } from "@/lib/i18n-helpers"
 import { daysBetween, istDate } from "@/domain/ist"
 import { formatRupees } from "@/domain/money"
 import { isFishSpecies, waterWarnings } from "@/domain/fish"
-import { cycleDetail } from "@/server/fish"
+import { cycleDetail, cycleMoneyFor } from "@/server/fish"
 import { SectionHeader } from "@/components/farm/section-header"
-import { AddSample, AddStocking, CycleClose, RemoveRow } from "@/components/farm/fish-forms"
+import { AddHarvest, AddSample, AddStocking, CycleClose, RemoveRow } from "@/components/farm/fish-forms"
 import { cn } from "@/lib/utils"
 
 const n = (x: number) => x.toLocaleString("en-IN")
@@ -29,6 +29,7 @@ export default async function FishCyclePage({ params }: { params: Promise<{ id: 
   if (!d) notFound()
   const { cycle } = d
   const boss = staff.roles.includes("owner")
+  const money = boss ? await cycleMoneyFor(db, cycle, cycle.harvests, today) : null
   const open = !cycle.closedDate
   const kind = (s: string | null) => (s == null ? t("allKinds") : isFishSpecies(s) ? t(`species_${s}`) : s)
   const day = (date: string) => dayLabel(date, locale, labels)
@@ -52,6 +53,7 @@ export default async function FishCyclePage({ params }: { params: Promise<{ id: 
           [t("inPond"), d.weight ? t("kg", { kg: n(d.weight.kg) }) : "—"],
           [t("feedSoFar"), t("kg", { kg: n(d.feedKg) })],
           [t("fcr"), d.weight?.fcr ?? "—"],
+          ...(d.harvestKg > 0 ? [[t("takenOut"), t("kg", { kg: n(d.harvestKg) })]] : []),
         ].map(([label, value]) => (
           <div key={String(label)} className="rounded-xl border bg-card p-3">
             <div className="text-xs text-muted-foreground">{label}</div>
@@ -108,6 +110,51 @@ export default async function FishCyclePage({ params }: { params: Promise<{ id: 
         )}
         {open && <AddSample cycleId={cycle.id} today={today} kinds={d.mix.map((m) => m.species)} />}
       </section>
+
+      <section className="flex flex-col gap-3 rounded-2xl border bg-card p-4">
+        <h2 className="text-lg font-semibold">{t("harvests")}</h2>
+        {cycle.harvests.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("noHarvests")}</p>
+        ) : (
+          <ul className="divide-y">
+            {cycle.harvests.map((h) => (
+              <li key={h.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span>
+                  {day(h.date)} · {h.species ? kind(h.species) : t("mixed")} · <b className="tabular-nums">{t("kg", { kg: n(h.kg) })}</b>
+                  {h.count ? ` · ${n(h.count)}` : ""}
+                  {h.buyer && <span className="text-muted-foreground"> · {h.buyer}</span>}
+                </span>
+                <span className="flex items-center gap-2">
+                  {boss && <span className="tabular-nums">{h.soldPaise > 0 ? formatRupees(h.soldPaise) : t("kept")}</span>}
+                  {boss && open && <RemoveRow id={h.id} what="harvest" />}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {boss && open && <AddHarvest cycleId={cycle.id} today={today} kinds={d.mix.map((m) => m.species)} />}
+      </section>
+
+      {money && (
+        <section className="flex flex-col gap-2 rounded-2xl border bg-card p-4">
+          <h2 className="text-lg font-semibold">{t("money")}</h2>
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm tabular-nums">
+            <dt className="text-muted-foreground">{t("moneySold")}</dt>
+            <dd className="text-right font-semibold">{formatRupees(money.income)}</dd>
+            <dt className="text-muted-foreground">{t("moneySpent")}</dt>
+            <dd className="text-right font-semibold">{formatRupees(money.costs)}</dd>
+            <dt className="font-semibold">{money.profit >= 0 ? t("moneyProfit") : t("moneyLoss")}</dt>
+            <dd className={cn("text-right text-lg font-bold", money.profit < 0 && "text-destructive")}>{formatRupees(Math.abs(money.profit))}</dd>
+            {money.costPerKgPaise != null && (
+              <>
+                <dt className="text-muted-foreground">{t("costPerKg")}</dt>
+                <dd className="text-right font-semibold">{formatRupees(money.costPerKgPaise)}</dd>
+              </>
+            )}
+          </dl>
+          <p className="text-sm text-muted-foreground">{t("moneyHint")}</p>
+        </section>
+      )}
 
       <section className="flex flex-col gap-2 rounded-2xl border bg-card p-4">
         <h2 className="text-lg font-semibold">{t("days")}</h2>

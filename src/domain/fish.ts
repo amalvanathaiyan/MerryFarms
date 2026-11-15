@@ -3,6 +3,7 @@
  * how big they are from net samples, how well feed turns into fish, and when the water needs attention. Tested;
  * src/server/fish.ts loads and saves.
  */
+import { daysBetween } from "./ist"
 
 /** Fish (and shrimp) farmed in South India. A farm can also type its own. Banned kinds (African catfish, Thai magur)
  *  are never offered; the restricted-items list catches them on products. */
@@ -88,3 +89,47 @@ export function waterWarnings(day: Partial<Record<WaterCheck, number | null>>): 
 /** Plausible readings only (a typo like pH 75 is refused, not warned about). */
 export const WATER_BOUNDS: Record<WaterCheck, [number, number]> = { ph: [0, 14], oxygen: [0, 30], tempC: [0, 50], ammonia: [0, 20] }
 export const waterReadingOk = (check: WaterCheck, v: number) => Number.isFinite(v) && v >= WATER_BOUNDS[check][0] && v <= WATER_BOUNDS[check][1]
+
+// ── Harvest and profit ─────────────────────────────────────────────────────────────────────────────────────────
+
+/** Fish taken out: counted, or worked out from the kg and the latest size (none without a size). */
+export function harvestedCount(harvests: { kg: number; count: number | null }[], average: { grams: number } | null) {
+  return harvests.reduce((a, h) => a + (h.count ?? (average && average.grams > 0 ? Math.round((h.kg * 1000) / average.grams) : 0)), 0)
+}
+
+/**
+ * A cycle's money: what the harvests sold for, against everything spent on its pond while it ran (fingerlings and
+ * other spending, store items used there, workers' days there). Fish kept for the shop or home earn nothing here
+ * (the shop's sales show in Money), so their kg still bring the cost of each kg down.
+ */
+export function cycleMoney(p: { soldPaise: number; spentPaise: number; storePaise: number; labourPaise: number; harvestKg: number }) {
+  const costs = p.spentPaise + p.storePaise + p.labourPaise
+  return { income: p.soldPaise, costs, profit: p.soldPaise - costs, costPerKgPaise: p.harvestKg > 0 ? Math.round(costs / p.harvestKg) : null }
+}
+
+// ── Reminders ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+/** A size check is due when the last one (or the stocking) is this many days old. */
+export const SAMPLE_EVERY_DAYS = 30
+/** Water readings older than this aren't warned about any more (a newer check is what counts). */
+export const WATER_FRESH_DAYS = 2
+
+export type PondReminder =
+  | { kind: "water"; cycleId: string; pond: string; date: string; warnings: WaterWarning[]; danger: boolean }
+  | { kind: "sample"; cycleId: string; pond: string; since: string }
+
+/** What each running pond needs: its latest water checks out of range (recent ones only), and a size check due. */
+export function pondReminders(
+  cycles: { id: string; pond: string; startDate: string; lastWater: { date: string; warnings: WaterWarning[] } | null; lastSampleDate: string | null }[],
+  today: string
+): PondReminder[] {
+  const out: PondReminder[] = []
+  for (const c of cycles) {
+    if (c.lastWater && c.lastWater.warnings.length && daysBetween(c.lastWater.date, today) <= WATER_FRESH_DAYS) {
+      out.push({ kind: "water", cycleId: c.id, pond: c.pond, date: c.lastWater.date, warnings: c.lastWater.warnings, danger: c.lastWater.warnings.some((w) => w.danger) })
+    }
+    const since = c.lastSampleDate ?? c.startDate
+    if (daysBetween(since, today) >= SAMPLE_EVERY_DAYS) out.push({ kind: "sample", cycleId: c.id, pond: c.pond, since })
+  }
+  return out.sort((a, b) => Number(b.kind === "water" && b.danger) - Number(a.kind === "water" && a.danger))
+}

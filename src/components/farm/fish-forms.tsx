@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl"
 import { AlertTriangle, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { addSampleAction, addStockingAction, closeCycleAction, removeSampleAction, removeStockingAction, reopenCycleAction, saveFishDayAction, startCycleAction } from "@/app/actions/fish"
+import { addHarvestAction, addSampleAction, addStockingAction, closeCycleAction, removeHarvestAction, removeSampleAction, removeStockingAction, reopenCycleAction, saveFishDayAction, startCycleAction } from "@/app/actions/fish"
 import { FISH_SPECIES, isFishSpecies, WATER_CHECKS, waterWarnings, type WaterCheck } from "@/domain/fish"
 import { cn } from "@/lib/utils"
 import { useCheer } from "@/components/cheer"
@@ -389,7 +389,7 @@ export function AddSample({ cycleId, today, kinds }: { cycleId: string; today: s
 }
 
 /** Remove a stocking or a sample entered by mistake (tap twice). */
-export function RemoveRow({ id, what }: { id: string; what: "stocking" | "sample" }) {
+export function RemoveRow({ id, what }: { id: string; what: "stocking" | "sample" | "harvest" }) {
   const t = useTranslations("farm.fish")
   const [armed, setArmed] = useState(false)
   const { pending, error, run } = useRun()
@@ -398,7 +398,7 @@ export function RemoveRow({ id, what }: { id: string; what: "stocking" | "sample
       <button
         type="button"
         disabled={pending}
-        onClick={() => (armed ? run(() => (what === "stocking" ? removeStockingAction(id) : removeSampleAction(id))) : setArmed(true))}
+        onClick={() => (armed ? run(() => (what === "stocking" ? removeStockingAction(id) : what === "harvest" ? removeHarvestAction(id) : removeSampleAction(id))) : setArmed(true))}
         className={cn("rounded-lg px-2 py-1 text-sm font-medium", armed ? "bg-destructive text-white" : "text-muted-foreground hover:bg-accent")}
       >
         {armed ? t("removeSure") : t("remove")}
@@ -446,5 +446,102 @@ export function CycleClose({ cycleId, closed, today }: { cycleId: string; closed
         </Button>
       </div>
     </div>
+  )
+}
+
+/**
+ * Fish taken out: how many kg (and, if counted, how many), sold for how much (0 = kept for the shop or home), to whom.
+ * "That was all the fish" closes the cycle.
+ */
+export function AddHarvest({ cycleId, today, kinds }: { cycleId: string; today: string; kinds: string[] }) {
+  const t = useTranslations("farm.fish")
+  const name = useSpeciesName()
+  const [open, setOpen] = useState(false)
+  const blank = { date: today, species: "", kg: "", count: "", soldRupees: "", buyer: "", lastOne: false }
+  const [h, setH] = useState(blank)
+  const { pending, error, run } = useRun()
+  if (!open)
+    return (
+      <Button type="button" className="h-12 self-start bg-sec-fish text-sec-on hover:bg-sec-fish/90" onClick={() => setOpen(true)}>
+        <Plus aria-hidden /> {t("addHarvest")}
+      </Button>
+    )
+  return (
+    <form
+      className="flex flex-col gap-3 rounded-xl border p-3"
+      onSubmit={(e) => {
+        e.preventDefault()
+        run(
+          () =>
+            addHarvestAction({
+              cycleId,
+              date: h.date,
+              species: h.species || null,
+              kg: Number(h.kg),
+              count: num(h.count) == null ? null : Math.round(Number(h.count)),
+              soldRupees: num(h.soldRupees) ?? 0,
+              buyer: h.buyer.trim() || null,
+              lastOne: h.lastOne,
+            }),
+          () => (setOpen(false), setH(blank))
+        )
+      }}
+    >
+      <div className="grid grid-cols-2 gap-3">
+        <label className={field}>
+          {t("date")}
+          <Input required type="date" value={h.date} onChange={(e) => setH({ ...h, date: e.target.value })} className="h-12 font-normal" />
+        </label>
+        {kinds.length > 1 ? (
+          <label className={field}>
+            {t("species")}
+            <select value={h.species} onChange={(e) => setH({ ...h, species: e.target.value })} className={select}>
+              <option value="">{t("mixed")}</option>
+              {kinds.map((k) => (
+                <option key={k} value={k}>
+                  {name(k)}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <span />
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <label className={field}>
+          {t("harvestKg")}
+          <Input required type="number" min={0} step="any" inputMode="decimal" value={h.kg} onChange={(e) => setH({ ...h, kg: e.target.value })} className="h-12 font-normal tabular-nums" />
+        </label>
+        <label className={field}>
+          {t("harvestCount")}
+          <Input type="number" min={1} step={1} inputMode="numeric" value={h.count} onChange={(e) => setH({ ...h, count: e.target.value })} className="h-12 font-normal tabular-nums" />
+        </label>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <label className={field}>
+          {t("soldFor")}
+          <Input type="number" min={0} step="any" inputMode="decimal" value={h.soldRupees} onChange={(e) => setH({ ...h, soldRupees: e.target.value })} placeholder="0" className="h-12 font-normal tabular-nums" />
+        </label>
+        <label className={field}>
+          {t("buyer")}
+          <Input maxLength={80} value={h.buyer} onChange={(e) => setH({ ...h, buyer: e.target.value })} className="h-12 font-normal" />
+        </label>
+      </div>
+      <p className="-mt-1 text-sm text-muted-foreground">{t("soldHint")}</p>
+      <label className="flex items-start gap-3 text-sm font-semibold">
+        <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-[hsl(var(--primary))]" checked={h.lastOne} onChange={(e) => setH({ ...h, lastOne: e.target.checked })} />
+        <span>{t("lastOne")}</span>
+      </label>
+      <ErrorLine text={error} />
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" className="h-11" disabled={pending}>
+          {t("addHarvest")}
+        </Button>
+        <Button type="button" variant="ghost" className="h-11" onClick={() => setOpen(false)}>
+          {t("cancel")}
+        </Button>
+      </div>
+    </form>
   )
 }

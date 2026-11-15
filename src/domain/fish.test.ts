@@ -49,3 +49,35 @@ describe("fishery", () => {
     expect(waterReadingOk("oxygen", 5.2)).toBe(true)
   })
 })
+
+describe("fish harvest, money and reminders", () => {
+  it("counts fish taken out, from the kg when they weren't counted", async () => {
+    const { harvestedCount, cycleMoney } = await import("./fish")
+    expect(harvestedCount([{ kg: 100, count: 300 }, { kg: 50, count: null }], { grams: 500 })).toBe(400)
+    expect(harvestedCount([{ kg: 50, count: null }], null)).toBe(0)
+    expect(cycleMoney({ soldPaise: 18_000_000, spentPaise: 4_000_000, storePaise: 7_000_000, labourPaise: 1_000_000, harvestKg: 1200 })).toEqual({
+      income: 18_000_000,
+      costs: 12_000_000,
+      profit: 6_000_000,
+      costPerKgPaise: 10_000,
+    })
+    expect(cycleMoney({ soldPaise: 0, spentPaise: 100, storePaise: 0, labourPaise: 0, harvestKg: 0 }).costPerKgPaise).toBeNull()
+  })
+  it("reminds of bad water (recent only, worst first) and a size check due", async () => {
+    const { pondReminders, waterWarnings } = await import("./fish")
+    const today = "2026-11-15"
+    const r = pondReminders(
+      [
+        { id: "a", pond: "East", startDate: "2026-11-01", lastWater: { date: "2026-11-14", warnings: waterWarnings({ ph: 8.8 }) }, lastSampleDate: null },
+        { id: "b", pond: "West", startDate: "2026-08-01", lastWater: { date: "2026-11-15", warnings: waterWarnings({ oxygen: 2 }) }, lastSampleDate: "2026-10-10" },
+        { id: "c", pond: "Old", startDate: "2026-11-01", lastWater: { date: "2026-11-10", warnings: waterWarnings({ oxygen: 2 }) }, lastSampleDate: null },
+      ],
+      today
+    )
+    expect(r.map((x) => [x.kind, x.pond])).toEqual([
+      ["water", "West"],
+      ["water", "East"],
+      ["sample", "West"],
+    ])
+  })
+})

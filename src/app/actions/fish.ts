@@ -5,7 +5,7 @@ import { z } from "zod"
 import { requireStaff } from "@/lib/auth"
 import { featuresOf } from "@/lib/features"
 import { rupeesToPaise } from "@/domain/money"
-import { addSample, addStocking, closeCycle, removeSample, removeStocking, reopenCycle, saveFishDay, startCycle } from "@/server/fish"
+import { addHarvest, addSample, addStocking, removeHarvest, closeCycle, removeSample, removeStocking, reopenCycle, saveFishDay, startCycle } from "@/server/fish"
 import { OrderError } from "@/server/orders"
 
 type Result = { ok: true; id?: string } | { ok: false; error: string }
@@ -125,5 +125,35 @@ export async function reopenCycleAction(cycleId: string): Promise<Result> {
   return run(async () => {
     const { db } = await farm(BOSSES)
     await reopenCycle(db, cycleId)
+  })
+}
+
+/** Fish taken out (sold or kept): the owner and a manager, since it carries money. */
+export async function addHarvestAction(raw: unknown): Promise<Result> {
+  const p = z
+    .object({
+      cycleId: id,
+      date: ymd,
+      species: z.string().trim().max(40).nullable(),
+      kg: z.number().positive().max(1_000_000),
+      count: z.number().int().min(1).max(10_000_000).nullable(),
+      soldRupees: z.number().min(0).max(100_000_000),
+      buyer: z.string().trim().max(80).nullable(),
+      lastOne: z.boolean(),
+    })
+    .safeParse(raw)
+  if (!p.success) return { ok: false, error: "invalid_form" }
+  const { cycleId, soldRupees, lastOne, ...h } = p.data
+  return run(async () => {
+    const { db, tenant, staff } = await farm(BOSSES)
+    await addHarvest(db, tenant.id, cycleId, { ...h, species: h.species || null, soldPaise: rupeesToPaise(soldRupees) }, staff.id, lastOne)
+  })
+}
+
+export async function removeHarvestAction(harvestId: string): Promise<Result> {
+  if (!id.safeParse(harvestId).success) return { ok: false, error: "invalid_form" }
+  return run(async () => {
+    const { db } = await farm(BOSSES)
+    await removeHarvest(db, harvestId)
   })
 }

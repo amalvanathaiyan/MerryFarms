@@ -1,7 +1,9 @@
 import "server-only"
 import type { TenantDb } from "@/lib/tenant-db"
 import { istDate } from "@/domain/ist"
-import { latestAverage, pondStock, pondWeight, speciesMix, WATER_CHECKS, waterReadingOk, waterWarnings, type WaterCheck } from "@/domain/fish"
+import { cycleMoney, harvestedCount, latestAverage, pondReminders, pondStock, pondWeight, speciesMix, WATER_CHECKS, waterReadingOk, waterWarnings, type WaterCheck } from "@/domain/fish"
+import { inputStock, worth } from "@/domain/inputs"
+import { labourByPlace } from "@/domain/workers"
 import { OrderError } from "./orders"
 
 /**
@@ -113,12 +115,14 @@ export async function saveFishDay(db: TenantDb, tenantId: string, cycleId: strin
   for (const k of WATER_CHECKS) if (f[k] != null && !waterReadingOk(k, f[k]!)) throw new OrderError("invalid_form")
   const c = await openCycle(db, cycleId)
   if (f.date < c.startDate) throw new OrderError("before_start")
-  const [stockings, days, existing] = await Promise.all([
+  const [stockings, days, existing, harvests, samples] = await Promise.all([
     db.fishStocking.findMany({ where: { cycleId }, select: { species: true, count: true, sizeGrams: true } }),
     db.fishDay.findMany({ where: { cycleId, NOT: { date: f.date } }, select: { dead: true } }),
     db.fishDay.findFirst({ where: { cycleId, date: f.date } }),
+    db.fishHarvest.findMany({ where: { cycleId }, select: { kg: true, count: true } }),
+    db.fishSample.findMany({ where: { cycleId }, select: { date: true, species: true, count: true, totalGrams: true } }),
   ])
-  if (f.dead > pondStock(stockings, days).left) throw new OrderError("too_many_dead")
+  if (f.dead > pondStock(stockings, days, harvestedCount(harvests, latestAverage(samples))).left) throw new OrderError("too_many_dead")
   const feedKg = f.feedKg && f.feedKg > 0 ? Math.round(f.feedKg * 100) / 100 : null
   const feedInputId = feedKg ? f.feedInputId : null
   if (feedInputId && !(await db.farmInput.findFirst({ where: { id: feedInputId, kind: "feed", unit: "kg", batchFeed: false }, select: { id: true } }))) throw new OrderError("not_found")
@@ -184,16 +188,22 @@ async function load(db: TenantDb, where: { id?: string; closedDate?: null }) {
   return db.fishCycle.findMany({
     where,
     orderBy: { number: "desc" },
-    include: { stockings: { orderBy: { date: "asc" } }, days: { orderBy: { date: "desc" } }, samples: { orderBy: [{ date: "desc" }, { createdAt: "desc" }] } },
+    include: {
+      stockings: { orderBy: { date: "asc" } },
+      days: { orderBy: { date: "desc" } },
+      samples: { orderBy: [{ date: "desc" }, { createdAt: "desc" }] },
+      harvests: { orderBy: [{ date: "desc" }, { createdAt: "desc" }] },
+    },
   })
 }
 
 type Loaded = Awaited<ReturnType<typeof load>>[number]
 
 function summary(c: Loaded, today: string) {
-  const stock = pondStock(c.stockings, c.days)
-  const feedKg = Math.round(c.days.reduce((a, d) => a + (d.feedKg ?? 0), 0) * 10) / 10
   const average = latestAverage(c.samples)
+  const stock = pondStock(c.stockings, c.days, harvestedCount(c.harvests, average))
+  const feedKg = Math.round(c.days.reduce((a, d) => a + (d.feedKg ?? 0), 0) * 10) / 10
+  const harvestKg = Math.round(c.harvests.reduce((a, h) => a + h.kg, 0) * 10) / 10
   const lastWater = c.days.find((d) => WATER_CHECKS.some((k) => d[k] != null)) ?? null
   return {
     ...stock,
@@ -201,6 +211,8 @@ function summary(c: Loaded, today: string) {
     feedKg,
     average,
     weight: pondWeight(stock.left, average, c.stockings, feedKg),
+    harvestKg,
+    lastSampleDate: c.samples[0]?.date ?? null,
     enteredToday: c.days.some((d) => d.date === today),
     lastWater: lastWater ? { date: lastWater.date, warnings: waterWarnings(lastWater) } : null,
   }
@@ -231,3 +243,72 @@ export async function cycleDetail(db: TenantDb, id: string, today: string) {
 }
 
 export type WaterReadings = Partial<Record<WaterCheck, number | null>>
+
+export interface HarvestForm {
+  date: string
+  species: string | null
+  kg: number
+  count: number | null
+  soldPaise: number
+  buyer: string | null
+}
+
+/** Fish taken out, sold or kept. "That was all of them" closes the cycle on the same day, freeing the pond. */
+export async function addHarvest(db: TenantDb, tenantId: string, cycleId: string, h: HarvestForm, byStaffId: string, lastOne: boolean) {
+  if (!(h.kg > 0) || h.soldPaise < 0 || (h.count != null && (!Number.isInteger(h.count) || h.count <= 0))) throw new OrderError("invalid_form")
+  if (h.date > istDate(new Date())) throw new OrderError("record_future")
+  const c = await openCycle(db, cycleId)
+  if (h.date < c.startDate) throw new OrderError("before_start")
+  if (h.count != null) {
+    const [loaded] = await load(db, { id: cycleId })
+    if (h.count > summary(loaded, h.date).left) throw new OrderError("too_many_fish")
+  }
+  await db.fishHarvest.create({
+    data: { tenantId, cycleId, date: h.date, species: h.species ? cleanSpecies(h.species) : null, kg: h.kg, count: h.count, soldPaise: h.soldPaise, buyer: h.buyer?.trim() || null, byStaffId },
+  })
+  if (lastOne) await db.fishCycle.updateMany({ where: { id: cycleId }, data: { closedDate: h.date } })
+}
+
+export async function removeHarvest(db: TenantDb, id: string) {
+  const h = await db.fishHarvest.findFirst({ where: { id } })
+  if (!h) throw new OrderError("not_found")
+  await openCycle(db, h.cycleId)
+  await db.fishHarvest.deleteMany({ where: { id } })
+}
+
+/**
+ * A cycle's money: harvests sold, against what was spent on its pond while it ran (spending booked to the pond, the
+ * store's items used there at their average price, and workers' days there).
+ */
+export async function cycleMoneyFor(db: TenantDb, c: { id: string; placeId: string; startDate: string; closedDate: string | null }, harvests: { soldPaise: number; kg: number }[], today: string) {
+  const range = { gte: c.startDate, lte: c.closedDate ?? today }
+  const [spent, allUses, days, othersFeed] = await Promise.all([
+    db.expense.aggregate({ where: { placeId: c.placeId, date: range }, _sum: { amountPaise: true } }),
+    db.inputUse.findMany({ where: { kind: "used", placeId: c.placeId, date: range }, select: { id: true, inputId: true, quantity: true } }),
+    db.workerDay.findMany({ where: { placeId: c.placeId, date: range }, select: { workerId: true, state: true, placeId: true } }),
+    // The day one cycle ends and the next starts: feed entered for the other cycle stays with it.
+    db.fishDay.findMany({ where: { cycleId: { not: c.id }, cycle: { placeId: c.placeId }, date: range, feedUseId: { not: null } }, select: { feedUseId: true } }),
+  ])
+  const notOurs = new Set(othersFeed.map((d) => d.feedUseId))
+  const uses = allUses.filter((u) => !notOurs.has(u.id))
+  const ids = [...new Set(uses.map((u) => u.inputId))]
+  const [buys, workers] = await Promise.all([
+    ids.length ? db.expense.findMany({ where: { inputId: { in: ids } }, select: { inputId: true, quantity: true, amountPaise: true } }) : Promise.resolve([]),
+    days.length ? db.worker.findMany({ where: { id: { in: [...new Set(days.map((d) => d.workerId))] } }, select: { id: true, payType: true, ratePaise: true } }) : Promise.resolve([]),
+  ])
+  const price = new Map(ids.map((id) => [id, inputStock(buys.filter((b) => b.inputId === id), []).pricePaise]))
+  const storePaise = uses.reduce((a, u) => a + (worth(u.quantity, price.get(u.inputId) ?? null) ?? 0), 0)
+  return cycleMoney({
+    soldPaise: harvests.reduce((a, h) => a + h.soldPaise, 0),
+    spentPaise: spent._sum.amountPaise ?? 0,
+    storePaise,
+    labourPaise: labourByPlace(workers, days).get(c.placeId) ?? 0,
+    harvestKg: harvests.reduce((a, h) => a + h.kg, 0),
+  })
+}
+
+/** Today's pond reminders: water out of range lately, and size checks due. */
+export async function fishRemindersFor(db: TenantDb, today: string) {
+  const book = await fishBook(db, today)
+  return pondReminders(book.open, today)
+}

@@ -137,10 +137,35 @@ describe("fishery", () => {
     await expect(fish.removeStocking(db, first.id)).rejects.toThrow("last_stocking")
   })
 
+  it("takes fish out, works out the cycle's money from what was spent on the pond, and closes on the last harvest", async () => {
+    const db = tenantDb("f1")
+    // Fish feed bought at ₹50 a kg; 10 kg given to the new cycle today. The old cycle's 25 kg today stays with it.
+    await prisma.expense.create({ data: { tenantId: "f1", date: "2026-11-01", kind: "feed", amountPaise: 500_000, inputId: FEED, quantity: 100 } })
+    await fish.saveFishDay(db, "f1", next, day({ feedKg: 10, oxygen: 2 }), "packer")
+    // A worker at the pond today (₹500 a day).
+    const w = await prisma.worker.create({ data: { tenantId: "f1", name: "Raju", payType: "daily", ratePaise: 50_000 } })
+    await prisma.workerDay.create({ data: { tenantId: "f1", workerId: w.id, date: TODAY, state: "present", placeId: POND } })
+    await expect(fish.addHarvest(db, "f1", next, { date: TODAY, species: null, kg: 10, count: 5000, soldPaise: 0, buyer: null }, "owner", false)).rejects.toThrow("too_many_fish")
+    await fish.addHarvest(db, "f1", next, { date: TODAY, species: "rohu", kg: 300, count: 1000, soldPaise: 4_500_000, buyer: "Market" }, "owner", false)
+    const c = await prisma.fishCycle.findUniqueOrThrow({ where: { id: next }, include: { harvests: true } })
+    expect(await fish.cycleMoneyFor(db, c, c.harvests, TODAY)).toEqual({ income: 4_500_000, costs: 400_000 + 50_000 + 50_000, profit: 4_000_000, costPerKgPaise: 1667 })
+    const d = await fish.cycleDetail(db, next, TODAY)
+    expect(d).toMatchObject({ stocked: 2000, harvested: 1000, left: 1000, harvestKg: 300 })
+    // The water is bad today: a reminder (no size check due yet, the cycle is a day old).
+    expect((await fish.fishRemindersFor(db, TODAY)).map((r) => [r.kind, r.pond])).toEqual([["water", "Big pond"]])
+    // The last of them: the cycle closes on that day.
+    await fish.addHarvest(db, "f1", next, { date: TODAY, species: null, kg: 280, count: null, soldPaise: 0, buyer: null }, "owner", true)
+    expect((await prisma.fishCycle.findUniqueOrThrow({ where: { id: next } })).closedDate).toBe(TODAY)
+    expect(await fish.fishRemindersFor(db, TODAY)).toEqual([])
+    const h = await prisma.fishHarvest.findFirstOrThrow({ where: { cycleId: next, soldPaise: 0 } })
+    await expect(fish.removeHarvest(db, h.id)).rejects.toThrow("cycle_closed")
+  })
+
   it("runs the migration safely twice", async () => {
     const migration = readFileSync(path.join(__dirname, "../../prisma/sql/2026-11-15-fishery.sql"), "utf8")
     await pg.exec(migration)
     await pg.exec(migration)
     expect(await prisma.fishCycle.count()).toBe(2)
+    expect(await prisma.fishHarvest.count()).toBe(2)
   })
 })

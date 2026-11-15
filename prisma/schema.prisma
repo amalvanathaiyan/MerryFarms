@@ -1713,6 +1713,7 @@ model FishCycle {
   stockings FishStocking[]
   days      FishDay[]
   samples   FishSample[]
+  harvests  FishHarvest[]
 
   @@unique([tenantId, number])
   @@index([tenantId, closedDate])
@@ -1786,4 +1787,26 @@ model FishSample {
 
   @@index([tenantId, cycleId, date])
   @@map("fish_samples")
+}
+
+/// Fish taken out: sold (soldPaise, to whom) or kept (soldPaise 0: for the farm's own shop, home, or given). count is
+/// what was counted; when it wasn't, the fish taken are worked out from the kg and the latest size (src/domain/fish.ts).
+model FishHarvest {
+  id        String   @id @default(uuid())
+  tenantId  String
+  cycleId   String
+  date      String // IST
+  species   String? // null: mixed
+  kg        Float
+  count     Int?
+  soldPaise Int      @default(0)
+  buyer     String?
+  byStaffId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  cycle FishCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, cycleId, date])
+  @@map("fish_harvests")
 }

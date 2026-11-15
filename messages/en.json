@@ -1936,7 +1936,30 @@
       "do_ammonia_high": "Stop or cut feeding, add fresh water, and remove waste from the bottom.",
       "note": "Note (optional)",
       "saveDay": "Save the day",
-      "saved": "Saved ✓"
+      "saved": "Saved ✓",
+      "harvests": "Fish taken out",
+      "noHarvests": "None taken out yet.",
+      "addHarvest": "Take out fish (harvest)",
+      "mixed": "Mixed",
+      "harvestKg": "Weight (kg)",
+      "harvestCount": "How many (if counted)",
+      "soldFor": "Sold for (₹)",
+      "buyer": "Sold to (optional)",
+      "soldHint": "Kept for your shop or home? Leave the price empty. Shop sales show in Money.",
+      "lastOne": "That was all the fish: the pond is empty (closes the cycle)",
+      "kept": "Kept",
+      "takenOut": "Taken out",
+      "money": "Money for this cycle",
+      "moneySold": "Fish sold",
+      "moneySpent": "Spent on the pond",
+      "moneyProfit": "Profit",
+      "moneyLoss": "Loss",
+      "costPerKg": "Cost of each kg taken out",
+      "moneyHint": "Spent on the pond: fish seed and other spending on it, store items used there (feed, lime, medicine) and workers' days there, while the cycle ran.",
+      "jobWater": "{pond}: water needs attention",
+      "jobEnter": "{count, plural, one {Enter today's pond record} other {Enter today's records for # ponds}}",
+      "jobSample": "{pond}: check the fish size",
+      "jobSampleHint": "Net a few fish and weigh them, to know their size and the pond's weight."
     }
   },
   "login": {
@@ -2147,7 +2170,8 @@
     "before_start": "That day is before the fish were put in.",
     "last_stocking": "This is the only stocking. Close the cycle instead.",
     "too_many_dead": "That's more fish than are left in the pond.",
-    "busy": "Too many changes at once. Please try again."
+    "busy": "Too many changes at once. Please try again.",
+    "too_many_fish": "That's more fish than are left in the pond."
   },
   "my": {
     "connectTitle": "Connect with the farm",

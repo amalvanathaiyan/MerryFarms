@@ -1,4 +1,4 @@
--- Fishery (2026-11-15): ponds' cycles from stocking to harvest, daily feed/losses/water checks, net samples.
+-- Fishery (2026-11-15): ponds' cycles from stocking to harvest, daily feed/losses/water checks, net samples, harvests.
 -- Additive only: safe for the running app. Run in the Supabase SQL editor, then: npm run db:rls (locks the new
 -- tables). Safe to run twice.
 
@@ -99,5 +99,30 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fish_samples_cycleId_fkey') THEN
     ALTER TABLE "fish_samples" ADD CONSTRAINT "fish_samples_cycleId_fkey" FOREIGN KEY ("cycleId") REFERENCES "fish_cycles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
+
+-- Harvests (sold or kept)
+CREATE TABLE IF NOT EXISTS "fish_harvests" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "cycleId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "species" TEXT,
+    "kg" DOUBLE PRECISION NOT NULL,
+    "count" INTEGER,
+    "soldPaise" INTEGER NOT NULL DEFAULT 0,
+    "buyer" TEXT,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "fish_harvests_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "fish_harvests_tenantId_cycleId_date_idx" ON "fish_harvests"("tenantId", "cycleId", "date");
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fish_harvests_cycleId_fkey') THEN
+    ALTER TABLE "fish_harvests" ADD CONSTRAINT "fish_harvests_cycleId_fkey" FOREIGN KEY ("cycleId") REFERENCES "fish_cycles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
   END IF;
 END $$;
