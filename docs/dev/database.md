@@ -44,7 +44,7 @@ without consent; see decisions.md). Since then, every change has gone through a 
 | `2026-11-15-whatsapp-sign-in.sql` | `whatsapp_sign_ins`. **NOT live yet**: run it as the first step of the Meta setup (`docs/todo.md`). The code never touches the table until the WhatsApp settings are set |
 | `2026-11-15-email-sign-in.sql` | `customers.email`, `customers.emailVerifiedAt` (unique per farm); `otp_codes.email`. Applied live 2026-11-15 |
 | `2026-11-15-farm-story.sql` | `tenants.storyTa`, `tenants.storyEn`. Applied live 2026-11-15 |
-| `2026-11-15-product-kinds.sql` | Table `product_kinds`; `categories.productKindId`, `packs`, `details`; `products.details`. **NOT live yet**: run before product kinds go to main |
+| `2026-11-15-product-kinds.sql` | Table `product_kinds`; `categories.productKindId`, `packs`, `details`; `products.details`. Applied live 2026-11-15 |
 | `rls.sql` | Not a migration: run after every new table (`npm run db:rls`) |
 
 **Columns added by `db push` before the SQL files** (2026-11-08 to 2026-11-12):
@@ -92,7 +92,7 @@ without consent; see decisions.md). Since then, every change has gone through a 
 ### Product kinds (platform)
 | Table | Model | Holds | Since |
 |---|---|---|---|
-| `product_kinds` | ProductKind | Admin's product kinds: module, names, drawing, measure, usual packs, details asked (JSON), weighed on delivery, shelf life, HSN, GST, retired | 2026-11-15, **not live** |
+| `product_kinds` | ProductKind | Admin's product kinds: module, names, drawing, measure, usual packs, details asked (JSON), weighed on delivery, shelf life, HSN, GST, retired | 2026-11-15 |
 
 ### Farm: staff, catalogue, selling
 | Table | Model | Holds | Since |
