@@ -1,5 +1,8 @@
 # Farm For You's WhatsApp number (free customer sign-in)
 
+> **Status (2026-11-15):** the sign-in is built; this setup is **postponed** and listed in [todo.md](todo.md). Until
+> it's done the shop keeps its current sign-in.
+
 Customers prove their phone number by **sending** us a short code on WhatsApp. Messages people send to a business
 cost nothing, and WhatsApp itself vouches for the sender's number, so this sign-in is free. It needs one WhatsApp
 Cloud API number for Farm For You, set up once by the platform owner. Every farm uses the same number.
