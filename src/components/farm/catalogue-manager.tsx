@@ -30,6 +30,7 @@ import { pick } from "@/lib/i18n-helpers"
 import { cn } from "@/lib/utils"
 import { COMMON_EGG_PACKS } from "@/domain/eggs"
 import { useCheer } from "@/components/cheer"
+import { groupSizes, sizeFamily } from "@/domain/sizes"
 import type { CheerKind } from "@/domain/cheers"
 
 type Category = { id: string; nameTa: string; nameEn: string; kind: string | null }
@@ -59,7 +60,7 @@ type Product = {
   /** Hidden by Farm For You (src/server/compliance.ts): why, in the farm's language; null = free */
   held: { reason: string | null; checking: boolean } | null
 }
-type Draft = Omit<Product, "id" | "imageUrl" | "offerLive" | "held"> & { id?: string }
+type Draft = Omit<Product, "id" | "imageUrl" | "offerLive" | "held"> & { id?: string; sizeOf?: string }
 
 const UNITS = ["packs", "kg", "grams", "litres", "ml", "bottles", "jars", "pieces", "dozen", "bunches", "trays", "boxes", "bags", "birds"]
 
@@ -135,10 +136,12 @@ export function CatalogueManager({
         className="flex flex-col gap-4 rounded-2xl border bg-card p-4"
         onSubmit={(e) => {
           e.preventDefault()
+          // sizeOf is only for this form's heading; the server ignores fields it doesn't know.
           run(() => saveProduct({ ...draft, noteTa: draft.noteTa || undefined, noteEn: draft.noteEn || undefined, hsn: draft.hsn || undefined, offerRupees: draft.offerRupees || null }), () => setDraft(null), "product")
         }}
       >
-        <h2 className="text-lg font-semibold">{draft.id ? t("editTitle") : t("addTitle")}</h2>
+        <h2 className="text-lg font-semibold">{draft.id ? t("editTitle") : draft.sizeOf ? t("addSizeTitle", { name: draft.sizeOf }) : t("addTitle")}</h2>
+        <p className="-mt-2 text-sm text-muted-foreground">{draft.sizeOf ? t("addSizeHint") : t("sizesHint")}</p>
         {errorBox}
         <Labelled label={t("category")}>
           <select className="h-11 rounded-md border border-input bg-transparent px-3" value={draft.categoryId} onChange={(e) => set("categoryId", e.target.value)}>
@@ -408,127 +411,160 @@ export function CatalogueManager({
             )}
             {list.length === 0 && <p className="pt-2 text-sm text-muted-foreground">{t("noProducts")}</p>}
             <ul className="divide-y">
-              {list.map((p, pi) => (
-                <li key={p.id} className="flex flex-col gap-2 py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex flex-col items-center gap-1">
-                      <ProductPicture src={p.imageUrl} kind={artFor(c.kind, p.nameEn, p.nameTa, c.nameEn, c.nameTa)} alt={pick(locale, p.nameTa, p.nameEn)} className="size-16" />
+              {groupSizes(list, sizeFamily).map(({ key, sizes }, fi, families) => {
+                const first = sizes[0]
+                // The product's photo: whichever size has one (the shop shows it for every size).
+                const photo = sizes.find((x) => x.imageUrl) ?? first
+                const name = pick(locale, first.nameTa, first.nameEn)
+                return (
+                  <li key={key} className="flex flex-col gap-2 py-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex flex-col items-center gap-1">
+                        <ProductPicture src={photo.imageUrl} kind={artFor(c.kind, first.nameEn, first.nameTa, c.nameEn, c.nameTa)} alt={name} className="size-16" />
+                        {canEdit && (
+                          <label className={cn("flex cursor-pointer items-center gap-1 text-xs font-medium text-primary", pending && "pointer-events-none opacity-50")}>
+                            <Camera className="size-3.5" /> {photo.imageUrl ? t("changePhoto") : t("addPhoto")}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="sr-only"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                e.target.value = ""
+                                if (!file) return
+                                run(async () => {
+                                  try {
+                                    return await setProductPhoto({ id: photo.id, dataUrl: await shrinkPhoto(file) })
+                                  } catch {
+                                    return { ok: false, error: "photo_type" }
+                                  }
+                                }, undefined, "product")
+                              }}
+                            />
+                          </label>
+                        )}
+                        {canEdit && photo.imageUrl && (
+                          <button type="button" className="text-xs text-muted-foreground underline-offset-2 hover:underline" disabled={pending} onClick={() => run(() => removeProductPhoto(photo.id), undefined, "product")}>
+                            {t("removePhoto")}
+                          </button>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold">{name}</div>
+                        {sizes.length > 1 && <div className="text-sm text-muted-foreground">{t("sizesCount", { count: sizes.length })}</div>}
+                      </div>
                       {canEdit && (
-                        <label className={cn("flex cursor-pointer items-center gap-1 text-xs font-medium text-primary", pending && "pointer-events-none opacity-50")}>
-                          <Camera className="size-3.5" /> {p.imageUrl ? t("changePhoto") : t("addPhoto")}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="sr-only"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0]
-                              e.target.value = ""
-                              if (!file) return
-                              run(async () => {
-                                try {
-                                  return await setProductPhoto({ id: p.id, dataUrl: await shrinkPhoto(file) })
-                                } catch {
-                                  return { ok: false, error: "photo_type" }
-                                }
-                              }, undefined, "product")
-                            }}
-                          />
-                        </label>
-                      )}
-                      {canEdit && p.imageUrl && (
-                        <button type="button" className="text-xs text-muted-foreground underline-offset-2 hover:underline" disabled={pending} onClick={() => run(() => removeProductPhoto(p.id), undefined, "product")}>
-                          {t("removePhoto")}
-                        </button>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold">{pick(locale, p.nameTa, p.nameEn)}</div>
-                      {p.offerRupees != null && (
-                        <div className={cn("mt-0.5 flex flex-wrap items-center gap-1.5 text-sm", !p.offerLive && "text-muted-foreground")}>
-                          <span className={cn("rounded-full px-2 text-xs font-semibold", p.offerLive ? "bg-yolk text-yolk-foreground" : "bg-muted")}>
-                            <Tag className="mr-0.5 inline size-3" />
-                            {p.offerLive ? t("offerOn") : t("offerEnded")}
-                          </span>
-                          <span className="tabular-nums">
-                            {formatRupees(Math.round(p.offerRupees * 100))}
-                            {p.offerEndsOn && ` · ${t("until", { day: dayText(p.offerEndsOn) })}`}
-                          </span>
-                          {canEdit && (
-                            <button type="button" className="text-xs underline underline-offset-2" disabled={pending} onClick={() => run(() => endOffer(p.id), undefined, "product")}>
-                              {t("endOffer")}
-                            </button>
-                          )}
+                        <div className="flex shrink-0 items-center gap-1">
+                          <button type="button" className="grid size-9 place-items-center rounded-lg text-muted-foreground disabled:opacity-30" disabled={pending || fi === 0} aria-label={t("moveUp")} onClick={() => run(() => moveProduct(first.id, "up"))}>
+                            <ArrowUp className="size-4" />
+                          </button>
+                          <button type="button" className="grid size-9 place-items-center rounded-lg text-muted-foreground disabled:opacity-30" disabled={pending || fi === families.length - 1} aria-label={t("moveDown")} onClick={() => run(() => moveProduct(first.id, "down"))}>
+                            <ArrowDown className="size-4" />
+                          </button>
                         </div>
                       )}
-                      <div className={cn("text-sm text-muted-foreground", tracksStock && p.stockQty <= 5 && "font-semibold text-destructive")}>
-                        {pick(locale, p.packTa, p.packEn)}
-                        {tracksStock && ` · ${t("left", { count: p.stockQty, unit: unitName(p.stockUnit) })}`}
-                        {tracksStock && p.eggsPerUnit != null && ` · ${t("fromEggStore")}`}
-                      </div>
-                      {p.held && (
-                        <p className="mt-1 flex items-start gap-1.5 rounded-lg bg-yolk px-2 py-1 text-sm text-yolk-foreground">
-                          <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
-                          <span>
-                            <span className="font-semibold">{p.held.checking ? t("heldChecking") : t("heldKept")}</span>
-                            {p.held.reason && <span> {p.held.reason}</span>}
-                          </span>
-                        </p>
-                      )}
                     </div>
-                    <label className="flex shrink-0 flex-col items-center gap-0.5 text-xs text-muted-foreground">
-                      <input
-                        type="checkbox"
-                        className="size-6 accent-[hsl(var(--primary))]"
-                        checked={p.isActive}
-                        disabled={!canEdit || pending || !!p.held}
-                        aria-label={t("showInShop")}
-                        onChange={(e) => run(() => quickUpdateProduct({ id: p.id, isActive: e.target.checked }), undefined, "product")}
-                      />
-                      {p.isActive ? t("inShop") : t("hidden")}
-                    </label>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm text-muted-foreground">₹</span>
-                    <Input
-                      key={`${p.id}-${p.priceRupees}`}
-                      type="number"
-                      min={1}
-                      step="0.5"
-                      inputMode="decimal"
-                      defaultValue={p.priceRupees}
-                      disabled={!canEdit || pending}
-                      aria-label={`${t("price")} ${p.nameEn}`}
-                      className="h-10 w-24 tabular-nums"
-                      onBlur={(e) => {
-                        const v = Number(e.target.value)
-                        if (v > 0 && v !== p.priceRupees) run(() => quickUpdateProduct({ id: p.id, priceRupees: v }), undefined, "product")
-                      }}
-                    />
-                    {tracksStock && <div className="flex items-center overflow-hidden rounded-lg border">
-                      <button type="button" className="grid size-10 place-items-center" disabled={pending || p.stockQty === 0} aria-label="−1" onClick={() => run(() => quickUpdateProduct({ id: p.id, stockQty: p.stockQty - 1 }))}>
-                        <Minus className="size-4" />
-                      </button>
-                      <span className="min-w-10 text-center font-semibold tabular-nums">{p.stockQty}</span>
-                      <button type="button" className="grid size-10 place-items-center" disabled={pending} aria-label="+1" onClick={() => run(() => quickUpdateProduct({ id: p.id, stockQty: p.stockQty + 1 }))}>
-                        <Plus className="size-4" />
-                      </button>
-                    </div>}
+                    <ul className="flex flex-col gap-2">
+                      {sizes.map((p) => (
+                        <li key={p.id} className="flex flex-col gap-2 rounded-xl border p-2.5">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <div className={cn("text-sm font-semibold", tracksStock && p.stockQty <= 5 && "text-destructive")}>
+                                {pick(locale, p.packTa, p.packEn)}
+                                <span className="font-normal text-muted-foreground">
+                                  {tracksStock && ` · ${t("left", { count: p.stockQty, unit: unitName(p.stockUnit) })}`}
+                                  {tracksStock && p.eggsPerUnit != null && ` · ${t("fromEggStore")}`}
+                                </span>
+                              </div>
+                              {p.offerRupees != null && (
+                                <div className={cn("mt-0.5 flex flex-wrap items-center gap-1.5 text-sm", !p.offerLive && "text-muted-foreground")}>
+                                  <span className={cn("rounded-full px-2 text-xs font-semibold", p.offerLive ? "bg-yolk text-yolk-foreground" : "bg-muted")}>
+                                    <Tag className="mr-0.5 inline size-3" />
+                                    {p.offerLive ? t("offerOn") : t("offerEnded")}
+                                  </span>
+                                  <span className="tabular-nums">
+                                    {formatRupees(Math.round(p.offerRupees * 100))}
+                                    {p.offerEndsOn && ` · ${t("until", { day: dayText(p.offerEndsOn) })}`}
+                                  </span>
+                                  {canEdit && (
+                                    <button type="button" className="text-xs underline underline-offset-2" disabled={pending} onClick={() => run(() => endOffer(p.id), undefined, "product")}>
+                                      {t("endOffer")}
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                              {p.held && (
+                                <p className="mt-1 flex items-start gap-1.5 rounded-lg bg-yolk px-2 py-1 text-sm text-yolk-foreground">
+                                  <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+                                  <span>
+                                    <span className="font-semibold">{p.held.checking ? t("heldChecking") : t("heldKept")}</span>
+                                    {p.held.reason && <span> {p.held.reason}</span>}
+                                  </span>
+                                </p>
+                              )}
+                            </div>
+                            <label className="flex shrink-0 flex-col items-center gap-0.5 text-xs text-muted-foreground">
+                              <input
+                                type="checkbox"
+                                className="size-6 accent-[hsl(var(--primary))]"
+                                checked={p.isActive}
+                                disabled={!canEdit || pending || !!p.held}
+                                aria-label={t("showInShop")}
+                                onChange={(e) => run(() => quickUpdateProduct({ id: p.id, isActive: e.target.checked }), undefined, "product")}
+                              />
+                              {p.isActive ? t("inShop") : t("hidden")}
+                            </label>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm text-muted-foreground">₹</span>
+                            <Input
+                              key={`${p.id}-${p.priceRupees}`}
+                              type="number"
+                              min={1}
+                              step="0.5"
+                              inputMode="decimal"
+                              defaultValue={p.priceRupees}
+                              disabled={!canEdit || pending}
+                              aria-label={`${t("price")} ${p.nameEn} ${p.packEn}`}
+                              className="h-10 w-24 tabular-nums"
+                              onBlur={(e) => {
+                                const v = Number(e.target.value)
+                                if (v > 0 && v !== p.priceRupees) run(() => quickUpdateProduct({ id: p.id, priceRupees: v }), undefined, "product")
+                              }}
+                            />
+                            {tracksStock && (
+                              <div className="flex items-center overflow-hidden rounded-lg border">
+                                <button type="button" className="grid size-10 place-items-center" disabled={pending || p.stockQty === 0} aria-label="−1" onClick={() => run(() => quickUpdateProduct({ id: p.id, stockQty: p.stockQty - 1 }))}>
+                                  <Minus className="size-4" />
+                                </button>
+                                <span className="min-w-10 text-center font-semibold tabular-nums">{p.stockQty}</span>
+                                <button type="button" className="grid size-10 place-items-center" disabled={pending} aria-label="+1" onClick={() => run(() => quickUpdateProduct({ id: p.id, stockQty: p.stockQty + 1 }))}>
+                                  <Plus className="size-4" />
+                                </button>
+                              </div>
+                            )}
+                            {canEdit && (
+                              <Button variant="link" className="ml-auto" onClick={() => setDraft(p)}>
+                                {tc("edit")}
+                              </Button>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
                     {canEdit && (
-                      <div className="ml-auto flex items-center gap-1">
-                        <button type="button" className="grid size-9 place-items-center rounded-lg text-muted-foreground disabled:opacity-30" disabled={pending || pi === 0} aria-label={t("moveUp")} onClick={() => run(() => moveProduct(p.id, "up"))}>
-                          <ArrowUp className="size-4" />
-                        </button>
-                        <button type="button" className="grid size-9 place-items-center rounded-lg text-muted-foreground disabled:opacity-30" disabled={pending || pi === list.length - 1} aria-label={t("moveDown")} onClick={() => run(() => moveProduct(p.id, "down"))}>
-                          <ArrowDown className="size-4" />
-                        </button>
-                        <Button variant="link" onClick={() => setDraft(p)}>
-                          {tc("edit")}
-                        </Button>
-                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="self-start"
+                        onClick={() => setDraft({ ...first, id: undefined, packTa: "", packEn: "", priceRupees: 0, stockQty: 0, eggsPerUnit: null, offerRupees: null, offerEndsOn: "", isActive: true, sizeOf: name })}
+                      >
+                        <Plus aria-hidden /> {t("addSize")}
+                      </Button>
                     )}
-                  </div>
-                </li>
-              ))}
+                  </li>
+                )
+              })}
             </ul>
           </section>
         )
