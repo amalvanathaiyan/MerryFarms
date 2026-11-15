@@ -6,7 +6,7 @@
 
 | Branch | State |
 |---|---|
-| `main` | **Live**: everything through Phase 3 part 5 (farm directory at /farms; counter sale; free WhatsApp sign-in, off until the Meta setup; email codes, off until Brevo is set up), Fishery, developer docs. |
+| `main` | **Live**: everything through Phase 4 part 1 (sizes; farm directory at /farms; counter sale; free WhatsApp sign-in, off until the Meta setup; email codes, off until Brevo is set up), Fishery, developer docs. |
 | `develop` | Same as main. |
 | `feature/*` | All merged; kept locally as history. |
 
@@ -25,6 +25,7 @@ is the first step of the Meta setup in `docs/todo.md`. RLS is on for every table
 | 1b. Home page and compliance | Home page, Register your farm, application review; restricted items, screening, Compliance inbox; legal pages |
 | 2. Farm Core | Places and machines, workers and wages, farm store, jobs and reminders |
 | 3. Customers (part) | Part 1: PlatformPerson, customer source and kind, staff-added customers, consent log. Part 2: free WhatsApp sign-in (off until the Meta setup), 90-day sign-in. Part 3: email codes through Brevo (off until set up). Part 4: counter sale. Part 5: farm directory and farm pages |
+| 4. Selling v2 (part) | Part 1: sizes / price per quantity, no database change |
 | 7. Fishery | Ponds, cycles, stocking, day entry, water checks, samples, harvests, cycle money, reminders |
 
 ## Next

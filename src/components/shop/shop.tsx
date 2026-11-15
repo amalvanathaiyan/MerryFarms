@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState, useTransition } from "react"
+import { firstSize, groupSizes } from "@/domain/sizes"
 import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
 import { ArrowLeft, BadgeCheck, CalendarOff, MessageCircle, Minus, PackageSearch, Phone, Plus, ShoppingBasket } from "lucide-react"
@@ -73,6 +74,8 @@ export interface ShopData {
     id: string
     categoryId: string
     name: string
+    /** Sizes of one product share this (src/domain/sizes.ts): one card, a button per size. */
+    family: string
     pack: string
     note: string | null
     /** Today's price (the offer price while an offer runs). */
@@ -104,6 +107,8 @@ export function Shop({ data }: { data: ShopData }) {
   const locale = useLocale()
   const [view, setView] = useState<View>(data.initialCart && Object.keys(data.initialCart).length ? "cart" : "shop")
   const [cart, setCart] = useState<Record<string, number>>(data.initialCart ?? {})
+  // The size picked on each product's card (by family); the first in stock until the customer picks.
+  const [picked, setPicked] = useState<Record<string, string>>({})
   const [form, setForm] = useState({
     name: data.me?.name ?? "",
     phone: data.me ? formatIndianMobile(data.me.phone) : "",
@@ -475,15 +480,16 @@ export function Shop({ data }: { data: ShopData }) {
               {c.name}
             </h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {data.products
-              .filter((p) => p.categoryId === c.id)
-              .map((p) => {
+            {groupSizes(data.products.filter((p) => p.categoryId === c.id), (p) => p.family)
+              .map(({ key, sizes }) => {
+                const p = sizes.find((s) => s.id === picked[key]) ?? firstSize(sizes, data.farm.tracksStock)
                 const qty = cart[p.id] ?? 0
                 const soldOut = data.farm.tracksStock && p.stockQty <= 0
+                const allOut = data.farm.tracksStock && sizes.every((s) => s.stockQty <= 0)
                 return (
-                  <article key={p.id} className={cn("flex gap-3 rounded-2xl border bg-card p-3", soldOut && "opacity-60")}>
+                  <article key={key} className={cn("flex gap-3 rounded-2xl border bg-card p-3", allOut && "opacity-60")}>
                     <div className="relative shrink-0">
-                      <ProductPicture src={p.imageUrl} kind={p.art} alt={p.name} className="size-24" />
+                      <ProductPicture src={p.imageUrl ?? sizes.find((s) => s.imageUrl)?.imageUrl ?? null} kind={p.art} alt={p.name} className="size-24" />
                       {p.offerPct > 0 && (
                         <span className="absolute -top-1.5 -left-1.5 rounded-full bg-brand-accent px-2 py-0.5 text-xs font-bold text-brand-accent-foreground shadow-sm tabular-nums">
                           {t("percentOff", { pct: p.offerPct })}
@@ -492,10 +498,32 @@ export function Shop({ data }: { data: ShopData }) {
                     </div>
                     <div className="flex min-w-0 flex-1 flex-col">
                       <h3 className="font-semibold leading-snug">{p.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {p.pack}
-                        {p.note && ` · ${p.note}`}
-                      </p>
+                      {sizes.length > 1 ? (
+                        <div role="group" aria-label={t("sizes")} className="mt-1 flex flex-wrap gap-1.5">
+                          {sizes.map((s) => {
+                            const inCart = cart[s.id] ?? 0
+                            return (
+                              <button
+                                key={s.id}
+                                type="button"
+                                aria-pressed={s.id === p.id}
+                                onClick={() => setPicked((x) => ({ ...x, [key]: s.id }))}
+                                className={cn(
+                                  "min-h-9 rounded-full border px-3 text-sm",
+                                  s.id === p.id ? "border-primary bg-accent font-semibold" : "bg-card",
+                                  data.farm.tracksStock && s.stockQty <= 0 && "text-muted-foreground line-through"
+                                )}
+                              >
+                                {s.pack}
+                                {inCart > 0 && <span className="ml-1.5 rounded-full bg-primary px-1.5 text-xs font-bold text-primary-foreground tabular-nums">{inCart}</span>}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">{p.pack}</p>
+                      )}
+                      {p.note && <p className="text-sm text-muted-foreground">{p.note}</p>}
                       <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-2">
                         <div className="flex flex-col">
                           <p className="flex items-baseline gap-1.5 tabular-nums">

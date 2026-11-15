@@ -6,6 +6,7 @@ import { istDate } from "@/domain/ist"
 import { currentPrice } from "@/domain/offers"
 import { artFor } from "@/domain/product-art"
 import { matchesProduct, rankFarms, reachOf, type Reach } from "@/domain/directory"
+import { sizeFamily } from "@/domain/sizes"
 import { isPincode, type LatLng } from "@/domain/delivery-area"
 import { areaOf } from "./orders"
 import { loadSettings } from "./settings"
@@ -66,6 +67,7 @@ async function shopProducts(tenantIds: string[]) {
     tenantId: p.tenantId,
     nameTa: p.nameTa,
     nameEn: p.nameEn,
+    family: sizeFamily(p),
     packTa: p.packTa,
     packEn: p.packEn,
     pricePaise: currentPrice(p, today),
