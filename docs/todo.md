@@ -3,11 +3,6 @@
 Things that are built or planned but need someone to do a step outside the code. Newest first. Remove a line once
 it's done.
 
-## Run the email sign-in SQL (before the email sign-in code goes to main)
-
-- [ ] Run `prisma/sql/2026-11-15-email-sign-in.sql` in the Supabase SQL editor, then `npm run db:rls`.
-      **Must be done before merging it to main:** every customer screen reads the new columns.
-
 ## Set up Brevo for email sign-in codes
 
 Email codes are built and stay off until this is done (the demo shows codes on screen).

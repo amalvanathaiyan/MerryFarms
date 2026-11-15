@@ -8,7 +8,7 @@
 |---|---|
 | `main` | **Live**: everything through Phase 3 part 2 (free WhatsApp sign-in, switched off until the Meta setup), Fishery, developer docs. |
 | `develop` | Same as main. |
-| `feature/phase3-email-signin` | **Not merged.** Email sign-in codes (Brevo). Its SQL (`2026-11-15-email-sign-in.sql`) must run on live before it reaches main. |
+| `feature/phase3-email-signin` | **Not merged.** Email sign-in codes (Brevo). Its SQL is applied live (2026-11-15), so it can go to main. |
 | Other `feature/*` | All merged; kept locally as history. |
 
 **Live database:** every table matches the schema except `whatsapp_sign_ins`, which isn't created yet (checked
