@@ -1,4 +1,4 @@
-import { appBase, hostConfigFromEnv } from "@/domain/app-hosts"
+import { appBase, hostConfigFromEnv, isFarmPath } from "@/domain/app-hosts"
 
 /**
  * A farm's own web address, from its slug: its shop, or its farm app for a /farm path (src/domain/app-hosts.ts).
@@ -8,10 +8,16 @@ import { appBase, hostConfigFromEnv } from "@/domain/app-hosts"
  *   otherwise (one address):    /f/<farm><path>, which picks the farm for the browser and goes on to <path>.
  */
 export function farmUrl(slug: string, path = ""): string {
-  const base = appBase(path.startsWith("/farm") ? "farm" : "shop", slug, hostConfigFromEnv(process.env))
+  const base = appBase(isFarmPath(path) ? "farm" : "shop", slug, hostConfigFromEnv(process.env))
   if (base) return `${base}${path}`
   if (process.env.NODE_ENV !== "production") return `http://${slug}.localhost:${process.env.PORT ?? "3000"}${path}`
   return `/f/${slug}${path}`
+}
+
+/** Farm For You's farm directory (on the portal's address), or one farm's page in it. */
+export function directoryUrl(slug?: string): string {
+  const base = appBase("portal", null, hostConfigFromEnv(process.env)) ?? ""
+  return `${base}/farms${slug ? `/${slug}` : ""}`
 }
 
 /** FarmForYou admin's address: /admin on the portal's address (farmforyou.in), else /admin here. */
