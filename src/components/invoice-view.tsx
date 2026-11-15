@@ -1,6 +1,7 @@
 import type { InvoiceSnapshot } from "@/domain/invoices"
 import { formatRupees } from "@/domain/money"
 import { formatIndianMobile } from "@/domain/phone"
+import { COUNTER_PHONE } from "@/domain/customers"
 
 /**
  * The invoice as printed. Labels are always bilingual (Tamil / English) because an
@@ -35,7 +36,7 @@ export function InvoiceView({ s }: { s: InvoiceSnapshot }) {
       <section>
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">வாடிக்கையாளர் · Customer</p>
         <p className="font-semibold">{s.customer.name}</p>
-        <p className="text-sm tabular-nums">{formatIndianMobile(s.customer.phone)}</p>
+        {s.customer.phone !== COUNTER_PHONE && <p className="text-sm tabular-nums">{formatIndianMobile(s.customer.phone)}</p>}
         {s.customer.address && <p className="text-sm">{s.customer.address}</p>}
       </section>
 

@@ -184,7 +184,7 @@ Fish, Money, More.
 | Section | Pages | What it covers |
 |---|---|---|
 | **Today** (`/farm`) | | The day's jobs, announcements, alerts and the farm picture |
-| **Orders** | `/farm/orders` (new, edit, return), `/farm/invoices/[id]`, `/farm/slots`, `/farm/plans` | Orders, invoices, delivery slots, recurring plans |
+| **Orders** | `/farm/orders` (new, counter, edit, return), `/farm/invoices/[id]`, `/farm/slots`, `/farm/plans` | Orders, counter sales (no name: one stand-in customer per farm, phone `counter`, `src/server/counter.ts`; left out of customer lists, search and counts), invoices, delivery slots, recurring plans |
 | **Customers** | `/farm/customers` (+ `[id]`), `/farm/messages` | Customers and messages |
 | **Catalogue** | `/farm/catalogue` | Products and categories |
 | **Poultry** | `/farm/poultry/*` | entry, today, batches, feed, vaccines (+ plan), growth, costs, profit |

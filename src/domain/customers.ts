@@ -36,3 +36,10 @@ export function consentChanges(
 ): { channel: ConsentChannel; given: boolean }[] {
   return CONSENT_CHANNELS.filter((c) => before[c] !== after[c]).map((c) => ({ channel: c, given: after[c] }))
 }
+
+/**
+ * Counter sales (at the farm gate or a market stall) need no name: they go to one stand-in customer per farm, marked
+ * by this phone value (never a real number, so nobody can sign in as it). Lists, search and counts leave it out.
+ */
+export const COUNTER_PHONE = "counter"
+export const isCounter = (c: { phone: string }) => c.phone === COUNTER_PHONE

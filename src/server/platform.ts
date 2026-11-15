@@ -1,5 +1,6 @@
 import "server-only"
 import { usedVideoBytes } from "./videos"
+import { COUNTER_PHONE } from "@/domain/customers"
 import { prisma } from "@/lib/prisma"
 import { checkSlug, isInvoicePrefix, trialEnd, type FarmStatus } from "@/domain/tenants"
 import { adminUrl, farmUrl } from "@/lib/farm-url"
@@ -24,7 +25,7 @@ export async function listFarms(now = new Date()) {
     }),
     prisma.order.groupBy({ by: ["tenantId"], where: { createdAt: { gte: since }, status: { not: "cancelled" } }, _count: { _all: true }, _sum: { totalPaise: true } }),
     prisma.order.groupBy({ by: ["tenantId"], _max: { createdAt: true } }),
-    prisma.customer.groupBy({ by: ["tenantId"], _count: { _all: true } }),
+    prisma.customer.groupBy({ by: ["tenantId"], where: { NOT: { phone: COUNTER_PHONE } }, _count: { _all: true } }),
     prisma.staffMember.groupBy({ by: ["tenantId"], where: { isActive: true }, _count: { _all: true } }),
   ])
   return farms.map((f) => ({
@@ -43,7 +44,7 @@ export async function farmDetail(id: string) {
   const staff = await prisma.staffMember.findMany({ where: { tenantId: id }, orderBy: [{ isActive: "desc" }, { createdAt: "asc" }] })
   const [products, customers, orders, videoBytes] = await Promise.all([
     prisma.product.count({ where: { tenantId: id, deletedAt: null } }),
-    prisma.customer.count({ where: { tenantId: id } }),
+    prisma.customer.count({ where: { tenantId: id, NOT: { phone: COUNTER_PHONE } } }),
     prisma.order.count({ where: { tenantId: id } }),
     usedVideoBytes(id),
   ])
