@@ -4,6 +4,8 @@ A Tamil-first, multi-tenant platform for small farms that sell direct to custome
 
 - Product & tech plan: https://claude.ai/code/artifact/f8a2eb07-5b60-4226-bfb6-7fc7bef59c26
 - Clickable prototype: `prototype/index.html`
+- **Developer docs (architecture, every table, decisions, status):** [CLAUDE.md](CLAUDE.md) and [docs/dev/](docs/dev/)
+- **To do (steps waiting on a person):** [docs/todo.md](docs/todo.md), e.g. the WhatsApp number setup for free sign-in
 
 ## What's built (phase 1, first slice)
 

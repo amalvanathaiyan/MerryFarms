@@ -366,6 +366,7 @@ develop → you apply the schema on Supabase → main.
 
 **Still open:**
 
+- Steps waiting on a person (Meta WhatsApp setup for the free sign-in, settings, legal check): [todo.md](todo.md).
 - Whether to use paid add-ons (WhatsApp Cloud API, AI assistant) and when.
 - The restricted items list needs checking by someone who knows the law before it's switched on.
 - Until the domain is bought, more than one farm on the current address needs **path-based farm addresses**

@@ -551,6 +551,23 @@ CREATE TABLE "otp_codes" (
 );
 
 -- CreateTable
+CREATE TABLE "whatsapp_sign_ins" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "language" "Language" NOT NULL DEFAULT 'ta',
+    "codeHash" TEXT NOT NULL,
+    "browserHash" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "provenAt" TIMESTAMP(3),
+    "usedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "whatsapp_sign_ins_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "closed_days" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
@@ -1408,6 +1425,12 @@ CREATE INDEX "product_images_tenantId_idx" ON "product_images"("tenantId");
 
 -- CreateIndex
 CREATE INDEX "otp_codes_tenantId_phone_createdAt_idx" ON "otp_codes"("tenantId", "phone", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "whatsapp_sign_ins_phone_createdAt_idx" ON "whatsapp_sign_ins"("phone", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "whatsapp_sign_ins_tenantId_phone_createdAt_idx" ON "whatsapp_sign_ins"("tenantId", "phone", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "closed_days_tenantId_date_idx" ON "closed_days"("tenantId", "date");
