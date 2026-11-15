@@ -36,7 +36,7 @@ https://developers.facebook.com/documentation/business-messaging/whatsapp/get-st
    |---|---|
    | `WHATSAPP_NUMBER` | The number, with country code, digits only (e.g. 919876543210) |
    | `WHATSAPP_PHONE_NUMBER_ID` | *WhatsApp* → *API Setup*: "Phone number ID" (not the number itself) |
-   | `WHATSAPP_ACCESS_TOKEN` | Step 5 |
+   | `WHATSAPP_API_TOKEN` | Step 5 |
    | `WHATSAPP_APP_SECRET` | Step 6 |
    | `WHATSAPP_VERIFY_TOKEN` | Any long random word you make up; also typed in step 8 |
 
