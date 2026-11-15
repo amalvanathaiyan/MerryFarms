@@ -40,13 +40,26 @@ export function SubscriptionForm({ tenantId, plans, initial, modulesNow }: { ten
   const plan = plans.find((p) => p.id === s.planId)
   const optional = MODULE_KEYS.filter((m) => !MODULES[m].alwaysOn && MODULES[m].available)
 
-  const override = (m: ModuleKey): "plan" | "add" | "remove" => (s.moduleOverrides[m] === true ? "add" : s.moduleOverrides[m] === false ? "remove" : "plan")
-  const setOverride = (m: ModuleKey, v: "plan" | "add" | "remove") =>
+  /**
+   * One choice per module, from what the plan says: in the plan → on (the plan's) or off for this farm; not in the
+   * plan → off, on as a paid add-on, or on free for this farm. Each sets the add-on and the override together, so
+   * they can never contradict each other.
+   */
+  type Choice = "plan" | "off" | "addon" | "free"
+  const choiceOf = (m: ModuleKey, inPlan: boolean): Choice => {
+    if (s.moduleOverrides[m] === false) return "off"
+    if (inPlan) return "plan"
+    if (s.moduleOverrides[m] === true) return "free"
+    return s.addOns.includes(m) ? "addon" : "off"
+  }
+  const choose = (m: ModuleKey, c: Choice) =>
     setS((x) => {
       const o = { ...x.moduleOverrides }
-      if (v === "plan") delete o[m]
-      else o[m] = v === "add"
-      return { ...x, moduleOverrides: o }
+      delete o[m]
+      const addOns = x.addOns.filter((y) => y !== m)
+      if (c === "off" && plan?.modules.includes(m)) o[m] = false
+      if (c === "free") o[m] = true
+      return { ...x, moduleOverrides: o, addOns: c === "addon" ? [...addOns, m] : addOns }
     })
 
   const save = () =>
@@ -122,7 +135,8 @@ export function SubscriptionForm({ tenantId, plans, initial, modulesNow }: { ten
         <ul className="flex flex-col divide-y rounded-2xl border">
           {optional.map((m) => {
             const inPlan = !!plan?.modules.includes(m)
-            const addOn = s.addOns.includes(m)
+            const options: Choice[] = inPlan ? ["plan", "off"] : ["off", "addon", "free"]
+            const current = choiceOf(m, inPlan)
             return (
               <li key={m} className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
                 <span>
@@ -132,15 +146,10 @@ export function SubscriptionForm({ tenantId, plans, initial, modulesNow }: { ten
                     {modulesNow.includes(m) ? ` · ${t("onNow")}` : ""}
                   </span>
                 </span>
-                <span className="flex flex-wrap gap-1.5">
-                  {!inPlan && (
-                    <button type="button" aria-pressed={addOn} className={chip(addOn)} onClick={() => setS((x) => ({ ...x, addOns: addOn ? x.addOns.filter((y) => y !== m) : [...x.addOns, m] }))}>
-                      {t("addOn")}
-                    </button>
-                  )}
-                  {(["plan", "add", "remove"] as const).map((v) => (
-                    <button key={v} type="button" aria-pressed={override(m) === v} className={chip(override(m) === v)} onClick={() => setOverride(m, v)}>
-                      {t(`override_${v}`)}
+                <span role="radiogroup" aria-label={tm(m)} className="flex flex-wrap gap-1.5">
+                  {options.map((c) => (
+                    <button key={c} type="button" role="radio" aria-checked={current === c} className={chip(current === c)} onClick={() => choose(m, c)}>
+                      {t(`choice_${c}`)}
                     </button>
                   ))}
                 </span>
