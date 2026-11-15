@@ -36,15 +36,51 @@ export async function saveKind(id: string | null, k: KindInput) {
   return prisma.productKind.create({ data: { ...data, key, sortOrder: count } })
 }
 
-/** Loads the starter list: kinds not there yet (by key) are added; ones admin already has are left as they are. */
+/** Starter kinds from earlier lists that were split or renamed (dressed_poultry, paneer + butter, meat). */
+const OLD_STARTER_KEYS = ["dressed_chicken", "paneer_butter", "mutton"]
+
+const untouched = (k: { createdAt: Date; updatedAt: Date }) => k.updatedAt.getTime() === k.createdAt.getTime()
+const starterData = (k: KindDef) => ({ module: k.module, nameTa: k.nameTa, nameEn: k.nameEn, art: k.art, measure: k.measure, packs: k.packs, details: k.details, weighedOnDelivery: k.weighedOnDelivery, shelfLifeDays: k.shelfLifeDays, hsn: k.hsn, gstRate: k.gstRate })
+/** Same value, whatever the order of keys (Postgres JSONB stores object keys in its own order). */
+const stable = (v: unknown): unknown =>
+  Array.isArray(v) ? v.map(stable) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)).map(([k, x]) => [k, stable(x)])) : v
+const same = (a: unknown, b: unknown) => JSON.stringify(stable(a ?? null)) === JSON.stringify(stable(b ?? null))
+
+/**
+ * What loading the starter list would do now: kinds to add, kinds admin never edited that the latest list changes,
+ * and old starter kinds (renamed since) that are unedited and unused, to remove. Admin's own edits are never touched.
+ */
+export async function starterChanges() {
+  const [rows, used] = await Promise.all([
+    prisma.productKind.findMany(),
+    prisma.category.findMany({ where: { productKindId: { not: null } }, select: { productKindId: true }, distinct: ["productKindId"] }),
+  ])
+  const usedIds = new Set(used.map((u) => u.productKindId))
+  const byKey = new Map(rows.map((r) => [r.key, r]))
+  const add = STARTER_KINDS.filter((k) => !byKey.has(k.key))
+  const update = STARTER_KINDS.filter((k) => {
+    const r = byKey.get(k.key)
+    if (!r || !untouched(r)) return false
+    return Object.entries(starterData(k)).some(([field, value]) => !same(value, (r as Record<string, unknown>)[field]))
+  })
+  const remove = rows.filter((r) => OLD_STARTER_KEYS.includes(r.key) && untouched(r) && !usedIds.has(r.id))
+  return { add, update, remove, count: add.length + update.length + remove.length }
+}
+
+/** Loads (or brings up to date) the starter list, as starterChanges says. Returns how many kinds changed. */
 export async function addStarterKinds() {
-  const have = new Set((await prisma.productKind.findMany({ select: { key: true } })).map((r) => r.key))
-  const missing = STARTER_KINDS.filter((k) => !have.has(k.key))
-  if (missing.length)
-    await prisma.productKind.createMany({
-      data: missing.map((k, i) => ({ ...k, packs: k.packs, details: k.details, sortOrder: have.size + i })),
-    })
-  return missing.length
+  const { add, update, remove } = await starterChanges()
+  const count = await prisma.productKind.count()
+  await prisma.$transaction(async (tx) => {
+    if (add.length) await tx.productKind.createMany({ data: add.map((k, i) => ({ key: k.key, ...starterData(k), sortOrder: count + i })) })
+    for (const k of update) {
+      const r = await tx.productKind.findUniqueOrThrow({ where: { key: k.key }, select: { createdAt: true } })
+      // Still "never edited by admin" afterwards, so a later list can update it again.
+      await tx.productKind.update({ where: { key: k.key }, data: { ...starterData(k), updatedAt: r.createdAt } })
+    }
+    if (remove.length) await tx.productKind.deleteMany({ where: { id: { in: remove.map((r) => r.id) } } })
+  })
+  return add.length + update.length + remove.length
 }
 
 export async function retireKind(id: string, retired: boolean) {

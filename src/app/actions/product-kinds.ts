@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { requirePlatformAdmin } from "@/lib/auth"
-import { ART_KINDS } from "@/domain/product-art"
+import { isPicture } from "@/components/art/drawing-library"
 import { MODULE_KEYS } from "@/domain/modules"
 import { detailsSchema, MEASURES, packsSchema } from "@/domain/product-kinds"
 import { adminActor, audit } from "@/server/audit"
@@ -15,7 +15,7 @@ const kindSchema = z.object({
   module: z.enum(MODULE_KEYS),
   nameTa: z.string().trim().min(1).max(60),
   nameEn: z.string().trim().min(1).max(60),
-  art: z.enum(ART_KINDS),
+  art: z.string().refine(isPicture),
   measure: z.enum(MEASURES),
   packs: packsSchema,
   details: detailsSchema,

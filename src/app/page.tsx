@@ -1,5 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server"
 import { listVideos } from "@/server/videos"
+import { pictureFor, typeOf } from "@/components/art/drawing-library"
 import { detailLine, mergeDetails, readDetails, type DetailValues } from "@/domain/product-kinds"
 import { prisma } from "@/lib/prisma"
 import { sizeFamily } from "@/domain/sizes"
@@ -14,7 +15,6 @@ import { openSlotOptions } from "@/server/orders"
 import { Shop, type ShopData } from "@/components/shop/shop"
 import { featuresOf } from "@/lib/features"
 import { getSessionCustomer } from "@/lib/customer-session"
-import { artFor } from "@/domain/product-art"
 import { shopArt } from "@/components/art/drawing-library"
 import { otpOn } from "@/server/otp"
 import { SignInGate } from "@/components/shop/sign-in-gate"
@@ -134,11 +134,11 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       : null,
     art: shopArt(
       tenant.shopArt,
-      categories.map((c) => artFor(c.kind, c.nameEn, c.nameTa))
+      categories.map((c) => typeOf(c.kind, c.nameEn, c.nameTa))
     ).map(({ id, vb, d }) => ({ id, vb, d })),
     categories: categories
       .filter((c) => products.some((p) => p.categoryId === c.id))
-      .map((c) => ({ id: c.id, name: pick(locale, c.nameTa, c.nameEn), kind: artFor(c.kind, c.nameEn, c.nameTa) })),
+      .map((c) => ({ id: c.id, name: pick(locale, c.nameTa, c.nameEn), kind: pictureFor(c.kind, c.nameEn, c.nameTa) })),
     products: products.map((p) => ({
       id: p.id,
       categoryId: p.categoryId,
@@ -155,7 +155,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       imageUrl: p.imageUrl,
       art: (() => {
         const c = categories.find((x) => x.id === p.categoryId)
-        return artFor(c?.kind, p.nameEn, p.nameTa, c?.nameEn, c?.nameTa)
+        return pictureFor(c?.kind, p.nameEn, p.nameTa, c?.nameEn, c?.nameTa)
       })(),
     })),
     slots: options.map((o) => ({

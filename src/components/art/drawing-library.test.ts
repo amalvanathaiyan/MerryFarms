@@ -7,7 +7,7 @@ describe("drawings library", () => {
     expect(DRAWING_GROUPS.map((g) => g.key).sort()).toEqual(["village", ...ART_KINDS].sort())
     const ids = DRAWING_GROUPS.flatMap((g) => g.items.map((i) => i.id))
     expect(new Set(ids).size).toBe(ids.length)
-    expect(DRAWINGS.size).toBe(137)
+    expect(DRAWINGS.size).toBe(170)
   })
 
   it("defaults to the village basics and two drawings per product type the farm sells", () => {

@@ -19,7 +19,6 @@ import { cn } from "@/lib/utils"
 import { AreaCheck, type AreaResult, type Spot } from "./area-check"
 import { EnablePush } from "@/components/push/enable-push"
 import { ProductPicture } from "@/components/product-picture"
-import type { ArtKind } from "@/domain/product-art"
 import { FarmBanner } from "@/components/farm-banner"
 import { FarmScene, type SceneProps } from "@/components/art/farm-scene"
 import { FarmVideoBanner, WatchOurFarm, type ShopVideo } from "@/components/shop/farm-videos"
@@ -69,7 +68,7 @@ export interface ShopData {
   /** The drawings the farm chose for its shop (or the default for what it sells). */
   art: { id: string; vb: string; d: string }[]
   /** kind picks the category's small drawing. */
-  categories: { id: string; name: string; kind: ArtKind }[]
+  categories: { id: string; name: string; kind: string }[]
   products: {
     id: string
     categoryId: string
@@ -90,7 +89,7 @@ export interface ShopData {
     stockQty: number
     /** The farm's photo, or null for a drawn placeholder. */
     imageUrl: string | null
-    art: ArtKind
+    art: string
   }[]
   slots: { key: string; label: string; full: boolean; left: number }[]
   /** Whole days with no deliveries in the coming week, e.g. "Thu, 15 Jan (Pongal)". */

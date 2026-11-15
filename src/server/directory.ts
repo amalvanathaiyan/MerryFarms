@@ -4,7 +4,7 @@ import { featuresOf } from "@/lib/features"
 import { farmLogoUrl } from "@/lib/farm-url"
 import { istDate } from "@/domain/ist"
 import { currentPrice } from "@/domain/offers"
-import { artFor } from "@/domain/product-art"
+import { pictureFor } from "@/components/art/drawing-library"
 import { matchesProduct, rankFarms, reachOf, type Reach } from "@/domain/directory"
 import { sizeFamily } from "@/domain/sizes"
 import { isPincode, type LatLng } from "@/domain/delivery-area"
@@ -72,7 +72,7 @@ async function shopProducts(tenantIds: string[]) {
     packEn: p.packEn,
     pricePaise: currentPrice(p, today),
     imageUrl: p.imageUrl ? `${p.imageUrl}${p.imageUrl.includes("?") ? "&" : "?"}farm=${p.tenant.slug}` : null,
-    art: artFor(p.category?.kind, p.nameEn, p.nameTa, p.category?.nameEn, p.category?.nameTa),
+    art: pictureFor(p.category?.kind, p.nameEn, p.nameTa, p.category?.nameEn, p.category?.nameTa),
     words: [p.nameTa, p.nameEn, p.packTa, p.packEn, p.category?.nameTa, p.category?.nameEn],
   }))
 }
