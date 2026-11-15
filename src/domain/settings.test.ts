@@ -99,7 +99,7 @@ describe("shownToFarm", () => {
 
 describe("groupsOf", () => {
   it("groups a module's settings under their headings, in order", () => {
-    expect(groupsOf("selling").map((g) => g.group)).toEqual(["orders", "calls", "stock"])
+    expect(groupsOf("selling").map((g) => g.group)).toEqual(["orders", "calls", "stock", "directory"])
     expect(groupsOf("core").map((g) => g.group)).toEqual(["trial"])
     expect(groupsOf("fishery")).toEqual([])
   })

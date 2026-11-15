@@ -1978,6 +1978,15 @@
       "upiCode": "UPI code to pay",
       "gotIt": "Money received ✓",
       "back": "Back"
+    },
+    "story": {
+      "title": "About your farm",
+      "hint": "A few lines for your page on Farm For You, where customers find farms near them: who you are, how you farm.",
+      "tamil": "In Tamil",
+      "english": "In English",
+      "example": "எ.கா. எங்கள் பண்ணையில் நாட்டுக் கோழிகள் திறந்த வெளியில் வளர்கின்றன…",
+      "save": "Save",
+      "seePage": "See your page"
     }
   },
   "login": {
@@ -3289,6 +3298,10 @@
       },
       "trial": {
         "title": "Free trial"
+      },
+      "directory": {
+        "title": "Farm For You",
+        "hint": "Customers find farms near them at Farm For You."
       }
     },
     "orderWaitingOn": {
@@ -3358,6 +3371,10 @@
       "saved": "Saved.",
       "valueChanged": "value changed",
       "controlChanged": "lock, hiding or farms changed"
+    },
+    "listedOnFfy": {
+      "label": "Show my farm on Farm For You",
+      "hint": "Your farm, what you sell and where you deliver appear in the list of farms customers search by PIN code. Your shop works either way."
     }
   },
   "home": {
@@ -3404,7 +3421,9 @@
     "contactTitle": "Talk to us",
     "contactSoon": "Our phone number will be here soon.",
     "signInTitle": "Farms",
-    "farmSignIn": "Farm sign-in"
+    "farmSignIn": "Farm sign-in",
+    "findFarms": "Find farms near you",
+    "seeFarm": "See the farm"
   },
   "legal": {
     "title": "Policies",
@@ -3455,5 +3474,36 @@
     "yourNumber": "Your number",
     "doneNext": "Keep this number. Tell it to us when you call.",
     "backHome": "Back to the home page"
+  },
+  "directory": {
+    "title": "Farms near you",
+    "hint": "Fresh food straight from farms. Type your PIN code, or use where you are, to see who delivers to you.",
+    "pin": "Your PIN code",
+    "what": "What do you want? (optional)",
+    "whatExample": "e.g. country eggs, milk, vegetables",
+    "find": "Find farms",
+    "nearMe": "Use where I am",
+    "finding": "Finding you…",
+    "noLocation": "Couldn't get where you are. Please type your PIN code instead.",
+    "byLocation": "Showing farms around where you are.",
+    "none": "No farm delivers there yet for that. Try another PIN code, or leave out what you want.",
+    "noneYet": "No farms are listed yet.",
+    "delivers": "Delivers to you",
+    "ask": "Call the farm to check delivery",
+    "km": "{km} km away",
+    "aboutKm": "about {km} km away",
+    "more": "{count, plural, one {and # more} other {and # more}}",
+    "shop": "Open the shop",
+    "seeFarm": "About the farm",
+    "allFarms": "All farms",
+    "call": "Call",
+    "about": "About us",
+    "deliversTo": "Where we deliver",
+    "withinKm": "Within {km} km of the farm.",
+    "pins": "PIN codes",
+    "askArea": "Call {phone} to ask if we deliver to you.",
+    "sells": "What we sell",
+    "orderFrom": "Order from {farm}",
+    "videos": "From the farm"
   }
 }

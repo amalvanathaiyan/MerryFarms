@@ -1,5 +1,6 @@
 import "server-only"
 import { usedVideoBytes } from "./videos"
+import { isFarmPath } from "@/domain/app-hosts"
 import { COUNTER_PHONE } from "@/domain/customers"
 import { prisma } from "@/lib/prisma"
 import { checkSlug, isInvoicePrefix, trialEnd, type FarmStatus } from "@/domain/tenants"
@@ -104,7 +105,7 @@ export async function createFarm(input: NewFarm, now = new Date()) {
  * here a farm is chosen by address, so staff signed in on another farm's address are sent to their own.
  */
 export async function homeAfterSignIn(authUserId: string, hostTenantId: string | undefined, next?: string) {
-  const wanted = next?.startsWith("/farm") || next?.startsWith("/admin") ? next : "/farm"
+  const wanted = (next && isFarmPath(next)) || next?.startsWith("/admin") ? next : "/farm"
   const admin = await prisma.platformAdmin.findUnique({ where: { authUserId }, select: { id: true } })
   if (wanted.startsWith("/admin") && admin) return wanted
   const farms = await prisma.staffMember.findMany({ where: { authUserId, isActive: true }, select: { tenantId: true, tenant: { select: { slug: true } } } })

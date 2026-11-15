@@ -53,6 +53,8 @@ const tenantRow = (id: string, slug: string, features: Record<string, boolean> =
   openingMark: null as string | null,
   themePrimary: null as string | null,
   themeAccent: null as string | null,
+  storyTa: null as string | null,
+  storyEn: null as string | null,
   entitlements: null,
   shopArt: [] as string[],
   videoSpaceMb: null,

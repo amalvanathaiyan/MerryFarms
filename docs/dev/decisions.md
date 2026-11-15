@@ -26,6 +26,10 @@ Dates are when it was decided. Newest decisions win. **Update this file whenever
   assistant, an admin ops bot) come later as opt-in add-ons.
 - **FFY is the face of all farms:** a directory by area and product, with farm profile pages. Each farm owns its
   customers; there's no shared cart.
+- **Farm directory** (Phase 3, built 2026-11-15): farmforyou.in/farms finds farms by PIN code or the phone's spot,
+  and by product. Every farm is listed unless it turns off "Show my farm on Farm For You" (Settings → Choices); its
+  page shows its story (Settings → Look), products, delivery area, videos, and shop / call / WhatsApp. It shows only
+  what the farm's shop already shows publicly; the farm's exact location is never shown.
 - **Catalogue** (2026-11-15): the platform admin defines product kinds (how measured, pack sizes, details). Farm
   owners can add their own categories, details and pack sizes. A full category catalogue per module; products
   priced per quantity.

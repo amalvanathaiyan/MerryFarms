@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { headers } from "next/headers"
+import { isFarmPath } from "@/domain/app-hosts"
 import { getTranslations } from "next-intl/server"
 import { farmKnownFromAddress, getTenant } from "@/lib/tenant"
 import { LoginForm } from "./login-form"
@@ -24,7 +25,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   // Only allow redirects back into the farm app or the platform admin. The portal's address signs in to admin only.
   const portal = (await headers()).get("x-host-app") === "portal"
   const forAdmin = portal || (next?.startsWith("/admin") ?? false)
-  const target = next?.startsWith("/admin") || (!portal && next?.startsWith("/farm")) ? next! : forAdmin ? "/admin" : "/farm"
+  const target = next?.startsWith("/admin") || (!portal && (next ? isFarmPath(next) : false)) ? next! : forAdmin ? "/admin" : "/farm"
   const demoStaff = !isDemoLoginEnabled()
     ? []
     : forAdmin
