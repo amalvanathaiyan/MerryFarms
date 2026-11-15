@@ -71,7 +71,10 @@ Dates are when it was decided. Newest decisions win. **Update this file whenever
 - **Customer sign-in** (2026-11-15): the phone number is the identity. A one-time code at sign-in (or an email code),
   then signed in on that phone until sign-out or 90 days. No passwords. **Free channels first:**
   1. WhatsApp, the customer sends the code to FFY's number (inbound messages are free). **Built.**
-  2. An email code through Supabase. To build.
+  2. An email code, sent through **Brevo** (user, 2026-11-15; free 300 a day; Supabase's own email allows only a
+     few an hour). **Built.** The user chose the safe way: an email code signs in a customer whose email was linked
+     after proving the phone, or registers a number new to the farm with the phone "not checked" (web orders always
+     need a call; a confirming call checks it). A number the farm already knows can't be opened by email alone.
   3. SMS through Firebase, its 10 free a day. To build.
   4. Paid: we send the code on WhatsApp (~₹0.115 + GST) or MSG91 SMS. Off.
 

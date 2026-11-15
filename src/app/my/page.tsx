@@ -19,7 +19,8 @@ import { CartIcon } from "@/components/art/cart-icon"
 import { Button } from "@/components/ui/button"
 import { ConnectForm } from "@/components/shop/connect-form"
 import { SignInFlow } from "@/components/shop/sign-in-flow"
-import { otpOn } from "@/server/otp"
+import { emailCodes, otpOn } from "@/server/otp"
+import { EmailForSignIn } from "@/components/shop/email-for-sign-in"
 import { ForgetMe } from "@/components/shop/forget-me"
 import { OrderSelfService } from "@/components/shop/order-self-service"
 import { EnablePush } from "@/components/push/enable-push"
@@ -191,6 +192,7 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
         )}
 
         {features.pushNotifications && <EnablePush who="customer" />}
+        {otp && me.phoneVerifiedAt && emailCodes() && <EmailForSignIn email={me.emailVerifiedAt ? me.email : null} />}
         <ForgetMe />
       </main>
     </div>

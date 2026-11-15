@@ -46,3 +46,23 @@ describe("customer sends the code on WhatsApp", () => {
     expect(waLink("+91 98765 43210", "code 1")).toBe("https://wa.me/919876543210?text=code%201")
   })
 })
+
+describe("email codes", () => {
+  it("keeps plausible addresses, lowercase", async () => {
+    const { normaliseEmail } = await import("./otp")
+    expect(normaliseEmail("  Priya.K@Gmail.com ")).toBe("priya.k@gmail.com")
+    expect(normaliseEmail("priya@gmail")).toBeNull()
+    expect(normaliseEmail("pri ya@gmail.com")).toBeNull()
+    expect(normaliseEmail("")).toBeNull()
+  })
+  it("lets an email code open only what the email may: never a number the farm knows without it", async () => {
+    const { emailSignInCase } = await import("./otp")
+    const P = "+919000010001"
+    const proven = { email: "a@b.in", emailVerifiedAt: new Date() }
+    expect(emailSignInCase(null, null, P)).toBe("new")
+    expect(emailSignInCase(proven, { phone: P }, P)).toBe("known")
+    expect(emailSignInCase({ email: null, emailVerifiedAt: null }, null, P)).toBe("phone_known")
+    expect(emailSignInCase(null, { phone: "+919000010002" }, P)).toBe("email_in_use")
+    expect(emailSignInCase({ email: null, emailVerifiedAt: null }, { phone: "+919000010002" }, P)).toBe("email_in_use")
+  })
+})

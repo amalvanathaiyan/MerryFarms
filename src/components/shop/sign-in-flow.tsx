@@ -6,15 +6,17 @@ import { useLocale, useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Loader2, MessageCircle } from "lucide-react"
-import { checkCodeAction, checkWhatsAppAction, registerAction, sendCodeAction, startSignInAction } from "@/app/actions/sign-in"
+import { checkCodeAction, checkEmailCodeAction, checkWhatsAppAction, registerAction, sendCodeAction, sendEmailCodeAction, startSignInAction } from "@/app/actions/sign-in"
 import { formatIndianMobile, normaliseIndianMobile } from "@/domain/phone"
 
-type Step = "phone" | "whatsapp" | "code" | "register"
+type Step = "phone" | "whatsapp" | "email" | "code" | "register"
 
 /**
  * Mobile number → proof it's theirs → (new customers only) name and address.
  * The proof, free first: they send us a code on WhatsApp and come back (signed in by itself); otherwise a code we
- * send them, typed in. Nothing to remember: after this the phone keeps them signed in.
+ * send them, typed in; or, for a number without WhatsApp, a code to their email (it proves the email, not the phone:
+ * a number the farm already knows can't be opened that way). Nothing to remember: after this the phone keeps them
+ * signed in.
  */
 export function SignInFlow({ onDone }: { onDone?: () => void }) {
   const t = useTranslations("signIn")
@@ -34,6 +36,10 @@ export function SignInFlow({ onDone }: { onDone?: () => void }) {
   const [pending, start] = useTransition()
   const [wa, setWa] = useState<{ link: string; code: string; number: string; canSendCode: boolean; over: boolean } | null>(null)
   const checking = useRef(false)
+  // Where the typed code came from, the email it went to, and whether email codes can be sent.
+  const [via, setVia] = useState<"phone" | "email">("phone")
+  const [email, setEmail] = useState("")
+  const [canEmail, setCanEmail] = useState(false)
 
   // Countdown for "send again".
   useEffect(() => {
@@ -93,28 +99,49 @@ export function SignInFlow({ onDone }: { onDone?: () => void }) {
       setError(null)
       const r = await startSignInAction({ phone, language: lang })
       if (!r.ok) return fail(r)
+      if (r.way === "email") {
+        setCanEmail(true)
+        setStep("email")
+        return
+      }
+      setCanEmail(r.canEmail)
       if (r.way === "whatsapp") {
         setWa({ link: r.link, code: r.code, number: r.number, canSendCode: r.canSendCode, over: false })
         setStep("whatsapp")
         return
       }
-      setDemoCode(r.demoCode ?? null)
-      setCode("")
-      setStep("code")
-      setNow(Date.now())
-      setWaitUntil(Date.now() + 30_000)
+      codeSent("phone", r.demoCode)
     })
+
+  const codeSent = (from: "phone" | "email", demo?: string) => {
+    setVia(from)
+    setDemoCode(demo ?? null)
+    setCode("")
+    setStep("code")
+    setNow(Date.now())
+    setWaitUntil(Date.now() + 30_000)
+  }
+
+  const sendEmail = () =>
+    start(async () => {
+      setError(null)
+      const r = await sendEmailCodeAction({ phone, email })
+      if (!r.ok) return fail(r)
+      codeSent("email", r.demoCode)
+    })
+
+  const emailInstead = canEmail && (
+    <Button type="button" variant="ghost" disabled={pending} onClick={() => (setError(null), setStep("email"))}>
+      {t("emailInstead")}
+    </Button>
+  )
 
   const send = () =>
     start(async () => {
       setError(null)
       const r = await sendCodeAction({ phone, language: lang })
       if (!r.ok) return fail(r)
-      setDemoCode(r.demoCode ?? null)
-      setCode("")
-      setStep("code")
-      setNow(Date.now())
-      setWaitUntil(Date.now() + 30_000)
+      codeSent("phone", r.demoCode)
     })
 
   const errorBox = error && (
@@ -196,7 +223,37 @@ export function SignInFlow({ onDone }: { onDone?: () => void }) {
             {t("smsInstead")}
           </Button>
         )}
+        {emailInstead}
       </div>
+    )
+  }
+
+  if (step === "email") {
+    const normal = normaliseIndianMobile(phone)
+    return (
+      <form
+        className="flex flex-col gap-4"
+        onSubmit={(e) => {
+          e.preventDefault()
+          sendEmail()
+        }}
+      >
+        <h2 className="text-lg font-semibold">{t("emailTitle")}</h2>
+        <p className="text-sm">
+          {t("emailHint", { phone: normal ? formatIndianMobile(normal) : phone })}{" "}
+          <button type="button" className="font-semibold text-primary underline underline-offset-4" onClick={() => (setStep("phone"), setError(null))}>
+            {t("changeNumber")}
+          </button>
+        </p>
+        <label className={label}>
+          {t("email")}
+          <Input required autoFocus type="email" inputMode="email" autoComplete="email" maxLength={120} value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 font-normal" />
+        </label>
+        {errorBox}
+        <Button type="submit" size="lg" className="h-12 text-base" disabled={pending}>
+          {t("emailSend")}
+        </Button>
+      </form>
     )
   }
 
@@ -209,7 +266,7 @@ export function SignInFlow({ onDone }: { onDone?: () => void }) {
           e.preventDefault()
           start(async () => {
             setError(null)
-            const r = await checkCodeAction({ phone, code })
+            const r = via === "email" ? await checkEmailCodeAction({ phone, email, code }) : await checkCodeAction({ phone, code })
             if (!r.ok) return fail(r)
             if (r.next === "register") {
               fillKnown(r.known)
@@ -220,9 +277,9 @@ export function SignInFlow({ onDone }: { onDone?: () => void }) {
         }}
       >
         <p>
-          {t("codeSent", { phone: normal ? formatIndianMobile(normal) : phone })}{" "}
-          <button type="button" className="font-semibold text-primary underline underline-offset-4" onClick={() => (setStep("phone"), setError(null))}>
-            {t("changeNumber")}
+          {via === "email" ? t("emailCodeSent", { email }) : t("codeSent", { phone: normal ? formatIndianMobile(normal) : phone })}{" "}
+          <button type="button" className="font-semibold text-primary underline underline-offset-4" onClick={() => (setStep(via === "email" ? "email" : "phone"), setError(null))}>
+            {via === "email" ? t("changeEmail") : t("changeNumber")}
           </button>
         </p>
         {demoCode && (
@@ -248,9 +305,10 @@ export function SignInFlow({ onDone }: { onDone?: () => void }) {
         <Button type="submit" size="lg" className="h-12 text-base" disabled={pending || code.length !== 6}>
           {t("verify")}
         </Button>
-        <Button type="button" variant="ghost" disabled={pending || waitLeft > 0} onClick={send}>
+        <Button type="button" variant="ghost" disabled={pending || waitLeft > 0} onClick={via === "email" ? sendEmail : send}>
           {waitLeft > 0 ? t("resendIn", { seconds: waitLeft }) : t("resend")}
         </Button>
+        {via === "phone" && emailInstead}
       </form>
     )
   }

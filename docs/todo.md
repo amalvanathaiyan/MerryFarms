@@ -3,6 +3,23 @@
 Things that are built or planned but need someone to do a step outside the code. Newest first. Remove a line once
 it's done.
 
+## Run the email sign-in SQL (before the email sign-in code goes to main)
+
+- [ ] Run `prisma/sql/2026-11-15-email-sign-in.sql` in the Supabase SQL editor, then `npm run db:rls`.
+      **Must be done before merging it to main:** every customer screen reads the new columns.
+
+## Set up Brevo for email sign-in codes
+
+Email codes are built and stay off until this is done (the demo shows codes on screen).
+
+- [ ] Make a free Brevo account (brevo.com, 300 emails a day, no card).
+- [ ] Brevo → Senders: add and verify the sender address (e.g. a Gmail you own, or noreply@farmforyou.in once the
+      domain is bought; a domain gives better delivery: add Brevo's DKIM/SPF records then).
+- [ ] Brevo → SMTP & API → API keys: create a key.
+- [ ] Vercel settings: `BREVO_API_KEY`, `EMAIL_FROM` (the verified sender), optional `EMAIL_FROM_NAME`
+      (default "Farm For You"); `OTP_SECRET` if not set already. Redeploy.
+- [ ] Check: Admin → Tech shows "Email codes: Brevo"; on the shop, "Use email instead" sends a code.
+
 ## Set up Farm For You's WhatsApp number (Meta), postponed on 2026-11-15
 
 The free customer sign-in (the customer sends us the code on WhatsApp) is **built but switched off** until this is

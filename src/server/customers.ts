@@ -5,6 +5,7 @@ import type { Tenant } from "@/lib/tenant"
 import { consentChanges, isCustomerKind, STAFF_SOURCES, type ConsentHow, type CustomerKind } from "@/domain/customers"
 import { OrderError } from "./orders"
 import { phoneProven } from "./people"
+import { emailSignInCase } from "@/domain/otp"
 
 /** A long random key: 24 bytes, URL-safe. Unguessable, so it can sit in a personal link. */
 const newToken = () => randomBytes(24).toString("base64url")
@@ -55,16 +56,23 @@ export async function connectCustomer(tenant: Tenant, input: { name: string; pho
  * Registers a customer whose number was just proven by a sign-in code. If the number is
  * already a customer (e.g. two tabs), signs that customer in instead of making a duplicate.
  */
+/**
+ * A new customer after a sign-in code. `email` set: they proved that email, not the phone (an email sign-up): the
+ * phone stays not checked (no person link, web orders need a call) and the email is theirs for signing in.
+ */
 export async function registerVerified(
   tenant: Tenant,
-  input: { phone: string; name: string; language: "ta" | "en"; offers?: boolean; address?: { line: string; landmark?: string; pincode?: string } }
+  input: { phone: string; name: string; language: "ta" | "en"; offers?: boolean; address?: { line: string; landmark?: string; pincode?: string }; email?: string }
 ) {
   const db = tenantDb(tenant.id)
   const existing = await db.customer.findFirst({ where: { phone: input.phone }, select: { id: true } })
   if (existing) {
+    // Only a proven phone opens a record the farm already has (an email can't: emailSignInCase refuses it earlier).
+    if (input.email) throw new OrderError("email_phone_known")
     await phoneProven(tenant.id, existing.id)
     return { customerId: existing.id, token: await ensureToken(tenant.id, existing.id) }
   }
+  if (input.email && (await db.customer.findFirst({ where: { email: input.email }, select: { id: true } }))) throw new OrderError("email_in_use")
   const token = newToken()
   const now = new Date()
   const c = await db.customer.create({
@@ -78,14 +86,41 @@ export async function registerVerified(
       source: "online",
       marketingOptIn: !!input.offers,
       optInAt: input.offers ? now : null,
+      email: input.email ?? null,
+      emailVerifiedAt: input.email ? now : null,
     },
   })
   if (input.offers) await db.customerConsent.create({ data: { tenantId: tenant.id, customerId: c.id, channel: "whatsapp", given: true, how: "shop" } })
   if (input.address) {
     await db.address.create({ data: { tenantId: tenant.id, customerId: c.id, line: input.address.line, landmark: input.address.landmark || null, pincode: input.address.pincode || null } })
   }
-  await phoneProven(tenant.id, c.id, now)
+  if (!input.email) await phoneProven(tenant.id, c.id, now)
   return { customerId: c.id, token }
+}
+
+/** What an email code may do for this phone at this farm (src/domain/otp.ts emailSignInCase). */
+export async function emailSignIn(tenantId: string, phone: string, email: string) {
+  const db = tenantDb(tenantId)
+  const [byPhone, byEmail] = await Promise.all([
+    db.customer.findFirst({ where: { phone }, select: { id: true, email: true, emailVerifiedAt: true } }),
+    db.customer.findFirst({ where: { email }, select: { id: true, phone: true } }),
+  ])
+  return { case: emailSignInCase(byPhone, byEmail, phone), customerId: byPhone?.id ?? null }
+}
+
+/** A signed-in customer whose phone is proven adds (or changes) the email they can sign in with, after its code. */
+export async function linkEmail(tenantId: string, customerId: string, email: string, now = new Date()) {
+  const db = tenantDb(tenantId)
+  const me = await db.customer.findFirst({ where: { id: customerId }, select: { phoneVerifiedAt: true } })
+  if (!me) throw new OrderError("customer_not_found")
+  if (!me.phoneVerifiedAt) throw new OrderError("phone_not_proven")
+  const other = await db.customer.findFirst({ where: { email, NOT: { id: customerId } }, select: { id: true } })
+  if (other) throw new OrderError("email_in_use")
+  await db.customer.updateMany({ where: { id: customerId }, data: { email, emailVerifiedAt: now } })
+}
+
+export async function unlinkEmail(tenantId: string, customerId: string) {
+  await tenantDb(tenantId).customer.updateMany({ where: { id: customerId }, data: { email: null, emailVerifiedAt: null } })
 }
 
 export interface StaffCustomerForm {

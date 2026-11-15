@@ -249,6 +249,8 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
                 isTrusted: customer.isTrusted,
                 deliveredOrders: history.length,
                 usualOrderPaise: sorted.length ? sorted[Math.floor(sorted.length / 2)] : null,
+                // Signed up with an email code and the phone never proven: the call checks the number.
+                phoneUnchecked: !customer.phoneVerifiedAt && !!customer.emailVerifiedAt,
               },
             })
         // The address says one PIN and the spot on the map is in another district: someone checks it by phone.
@@ -486,6 +488,8 @@ async function callInTx(
   })
   const result = afterCall(outcome, attempt, maxAttempts)
   if (result.status) await transition(tx, tenantId, orderId, result.status, byStaffId, `call:${outcome}`)
+  // The customer answered on this number and confirmed: the number is checked.
+  if (result.status === "confirmed") await tx.customer.updateMany({ where: { id: order.customerId, phoneVerifiedAt: null }, data: { phoneVerifiedAt: new Date() } })
   return { attempt, ...result }
 }
 

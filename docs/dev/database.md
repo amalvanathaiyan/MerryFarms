@@ -42,6 +42,7 @@ without consent; see decisions.md). Since then, every change has gone through a 
 | `2026-11-15-customers.sql` | `customers`: `personId`, `phoneVerifiedAt`, `source`, `kind`, `smsOptIn`, `addedByStaffId`; tables `platform_people`, `customer_consents`. Filled in how old customers came, and moved earlier offer consents into the log |
 | `2026-11-15-fishery.sql` | `fish_cycles`, `fish_stockings`, `fish_days`, `fish_samples`, `fish_harvests` |
 | `2026-11-15-whatsapp-sign-in.sql` | `whatsapp_sign_ins`. **NOT live yet**: run it as the first step of the Meta setup (`docs/todo.md`). The code never touches the table until the WhatsApp settings are set |
+| `2026-11-15-email-sign-in.sql` | `customers.email`, `customers.emailVerifiedAt` (unique per farm); `otp_codes.email`. **NOT live yet**: run before this code goes to main |
 | `rls.sql` | Not a migration: run after every new table (`npm run db:rls`) |
 
 **Columns added by `db push` before the SQL files** (2026-11-08 to 2026-11-12):
@@ -97,7 +98,7 @@ without consent; see decisions.md). Since then, every change has gone through a 
 | `farm_videos` | FarmVideo | Farm videos (Storage or YouTube) for the shop | 2026-11-10 `24bc22f` |
 | `delivery_slots` | DeliverySlot | Delivery time slots | 2026-10-21 |
 | `closed_days` | ClosedDay | Days or slots with no deliveries | 2026-10-22 `a574dc2` |
-| `customers` | Customer | A farm's customer: phone, name, language, credit limit, accessToken, personId, phoneVerifiedAt, source, kind, offers opt-ins | 2026-10-21 |
+| `customers` | Customer | A farm's customer: phone, name, language, credit limit, accessToken, personId, phoneVerifiedAt (proven by a code or checked by the farm's call), email + emailVerifiedAt (for email sign-in), source, kind, offers opt-ins | 2026-10-21 |
 | `customer_consents` | CustomerConsent | Offers consent log (DPDP): channel, given, how, by whom | 2026-11-15 `23be0dd` |
 | `addresses` | Address | Customers' delivery addresses | 2026-10-21 |
 | `orders` | Order | Orders: channel, status, slot, totals, source | 2026-10-21 |
@@ -113,7 +114,7 @@ without consent; see decisions.md). Since then, every change has gone through a 
 | `subscriptions` | Subscription | Customers' recurring plans (weekly/daily orders) | 2026-10-21 `38b0128` |
 | `messages` | Message | In-app messages customer ↔ farm | 2026-10-22 `7bc995c` |
 | `push_subscriptions` | PushSubscription | Phones that accepted notifications (customer or staff) | 2026-10-22 `b3e4bf1` |
-| `otp_codes` | OtpCode | Sign-in codes we sent (hash only) | 2026-10-22 `315b116` |
+| `otp_codes` | OtpCode | Sign-in codes we sent (hash only); `email` set for a code sent by email | 2026-10-22 `315b116` |
 
 ### Farm: money and records
 | Table | Model | Holds | Since |

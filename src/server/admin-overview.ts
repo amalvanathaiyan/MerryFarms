@@ -122,6 +122,7 @@ export async function techMonitor() {
     services: checkServices((name) => !!env[name]),
     providers: {
       otp: inboundReady() ? "whatsapp_inbound" : otpProvider(),
+      email: env.BREVO_API_KEY && env.EMAIL_FROM ? "brevo" : null,
       whatsapp: env.WHATSAPP_API_TOKEN && env.WHATSAPP_PHONE_NUMBER_ID ? "cloud" : null,
       push: env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY ? "web_push" : null,
     },
