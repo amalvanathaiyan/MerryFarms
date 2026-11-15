@@ -76,3 +76,27 @@ export function codeFromMessage(text: string): string | null {
 export function waLink(number: string, text: string) {
   return `https://wa.me/${number.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`
 }
+
+// ── Email codes ────────────────────────────────────────────────────────────────────────────────────────────────
+
+/** An email address as kept: trimmed and lowercase; null when it isn't a plausible address. */
+export function normaliseEmail(input: string): string | null {
+  const e = input.trim().toLowerCase()
+  return e.length <= 120 && /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/.test(e) ? e : null
+}
+
+/** What an email code may do for this phone at this farm (the phone is the customer's identity; an email code proves
+ *  only the email). `known`: the farm's customer with this phone has proven this email → sign them in. `new`: the
+ *  farm doesn't know this phone → they may register, with the phone not checked. `phone_known`: the farm knows this
+ *  phone, without this email → no (WhatsApp or a call instead). `email_in_use`: another customer has this email. */
+export type EmailSignInCase = "known" | "new" | "phone_known" | "email_in_use"
+
+export function emailSignInCase(
+  byPhone: { email: string | null; emailVerifiedAt: Date | null } | null,
+  byEmail: { phone: string } | null,
+  phone: string
+): EmailSignInCase {
+  if (byEmail && byEmail.phone !== phone) return "email_in_use"
+  if (!byPhone) return "new"
+  return byEmail && byPhone.emailVerifiedAt ? "known" : "phone_known"
+}

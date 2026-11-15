@@ -376,8 +376,13 @@ model Customer {
   tokenIssuedAt    DateTime?
   /// The PlatformPerson this customer is, once they proved the phone online (src/server/people.ts).
   personId         String?
-  /// When the phone was last proven with a sign-in code. Null: typed by staff or by the customer, not proven.
+  /// When the phone was last proven with a sign-in code, or checked by the farm's confirmation call. Null: typed by
+  /// staff or by the customer (an email sign-up), not proven; such web orders always need a call.
   phoneVerifiedAt  DateTime?
+  /// Email for signing in with an email code (lowercase): proven with a code, linked after the phone was proven once
+  /// or at an email sign-up. One customer per email in a farm.
+  email            String?
+  emailVerifiedAt  DateTime?
   /// How they first came (src/domain/customers.ts CUSTOMER_SOURCES); null for customers from before it was kept.
   source           String?
   /// Home, shop, hotel… (CUSTOMER_KINDS); price lists by kind come later.
@@ -399,6 +404,7 @@ model Customer {
   updatedAt     DateTime          @default(now()) @updatedAt
 
   @@unique([tenantId, phone])
+  @@unique([tenantId, email])
   @@index([personId])
   @@map("customers")
 }
@@ -789,11 +795,13 @@ model TenantLogo {
   @@map("tenant_logos")
 }
 
-/// A sign-in code sent to a customer's mobile. Only a keyed hash of the code is kept.
+/// A sign-in code sent to a customer's mobile (or, with email set, to their email). Only a keyed hash of the code is kept.
 model OtpCode {
   id        String    @id @default(uuid())
   tenantId  String
   phone     String
+  /// Set for a code sent by email (to this address, for this phone); null for a code sent to the phone.
+  email     String?
   codeHash  String
   expiresAt DateTime
   attempts  Int       @default(0)

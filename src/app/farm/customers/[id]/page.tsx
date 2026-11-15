@@ -73,7 +73,9 @@ export default async function CustomerPage({ params, searchParams }: { params: P
             <p className="text-sm text-muted-foreground">
               <span className="select-all tabular-nums">{formatIndianMobile(customer.phone)}</span>
               {customer.phoneVerifiedAt && <span className="ms-2 rounded bg-accent px-1.5 text-xs font-medium text-foreground">{t("phoneChecked")}</span>}
+              {!customer.phoneVerifiedAt && customer.emailVerifiedAt && <span className="ms-2 rounded bg-yolk px-1.5 text-xs font-medium text-yolk-foreground">{t("phoneUnchecked")}</span>}
             </p>
+            {customer.email && customer.emailVerifiedAt && <p className="break-all text-sm text-muted-foreground">{customer.email}</p>}
             {customer.source && <p className="text-sm text-muted-foreground">{t("cameBy", { how: t(`source_${customer.source}`) })}</p>}
             {customer.addresses[0] && (
               <p className="text-sm text-muted-foreground">

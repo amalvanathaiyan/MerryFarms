@@ -5,6 +5,7 @@ import { tenantDb } from "@/lib/tenant-db"
 import { featuresOf } from "@/lib/features"
 import type { Tenant } from "@/lib/tenant"
 import { inboundReady, sendTemplate } from "./whatsapp-cloud"
+import { emailReady, sendEmail, signInCodeMail } from "./email"
 import { canSend, checkCode, CODE_TTL_MS, hashCode, newCode, type CheckResult } from "@/domain/otp"
 
 /**
@@ -35,7 +36,13 @@ export function secret() {
 /** Code sign-in is in use for this farm: switched on, and customers can send us a code on WhatsApp (free) or we can
  *  send them one. */
 export function otpOn(tenant: Tenant) {
-  return featuresOf(tenant).otpLogin && (inboundReady() || otpProvider() !== null)
+  return featuresOf(tenant).otpLogin && (inboundReady() || otpProvider() !== null || emailCodes() !== null)
+}
+
+/** Email codes: sent through Brevo when it's set up; the local demo shows them on screen. */
+export function emailCodes(): "brevo" | "screen" | null {
+  if (emailReady()) return "brevo"
+  return process.env.NODE_ENV !== "production" || process.env.DEMO_LOGIN === "1" ? "screen" : null
 }
 
 type Send = (phone: string, code: string, lang: "ta" | "en") => Promise<void>
@@ -66,7 +73,7 @@ export async function requestCode(tenant: Tenant, phone: string, lang: "ta" | "e
   const provider = otpProvider()
   if (!provider) return { ok: false, error: "otp_unavailable" }
   const db = tenantDb(tenant.id)
-  const recent = await db.otpCode.findMany({ where: { phone, createdAt: { gte: new Date(now.getTime() - 24 * 3600_000) } }, select: { createdAt: true } })
+  const recent = await db.otpCode.findMany({ where: { phone, email: null, createdAt: { gte: new Date(now.getTime() - 24 * 3600_000) } }, select: { createdAt: true } })
   const check = canSend(recent.map((r) => r.createdAt), now)
   if (!check.ok) return check.reason === "wait" ? { ok: false, error: "otp_wait", seconds: check.seconds } : { ok: false, error: "otp_too_many" }
 
@@ -86,7 +93,7 @@ export async function requestCode(tenant: Tenant, phone: string, lang: "ta" | "e
 export async function verifyCode(tenantId: string, phone: string, code: string, now = new Date()): Promise<CheckResult> {
   if (!/^\d{6}$/.test(code)) return "wrong"
   const db = tenantDb(tenantId)
-  const latest = await db.otpCode.findFirst({ where: { phone }, orderBy: { createdAt: "desc" } })
+  const latest = await db.otpCode.findFirst({ where: { phone, email: null }, orderBy: { createdAt: "desc" } })
   const result = checkCode(latest, hashCode(secret(), tenantId, phone, code), now)
   if (latest && (result === "ok" || result === "wrong")) {
     await db.otpCode.updateMany({ where: { id: latest.id }, data: result === "ok" ? { usedAt: now } : { attempts: { increment: 1 } } })
@@ -119,4 +126,68 @@ export function readVerified(tenantId: string, value: string | undefined, now = 
 /** Old codes are useless after a day; keeps the table small. */
 export async function pruneCodes(now = new Date()) {
   await prisma.otpCode.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - 2 * 24 * 3600_000) } } })
+}
+
+// ── Codes by email ────────────────────────────────────────────────────────────────────────────────────────────
+
+let emailForTests = false
+export function sendEmailCodesInTests(on: boolean) {
+  emailForTests = on
+}
+
+const emailHash = (tenantId: string, phone: string, email: string, code: string) => hashCode(secret(), tenantId, `${phone}|${email}`, code)
+
+/** Sends a code to this email, for this phone. Limited per email and per phone, like phone codes. */
+export async function requestEmailCode(tenant: Tenant, phone: string, email: string, now = new Date()): Promise<RequestResult> {
+  const way = emailCodes()
+  if (!way) return { ok: false, error: "otp_unavailable" }
+  const db = tenantDb(tenant.id)
+  const since = new Date(now.getTime() - 24 * 3600_000)
+  const [byEmail, byPhone] = await Promise.all([
+    db.otpCode.findMany({ where: { email, createdAt: { gte: since } }, select: { createdAt: true } }),
+    db.otpCode.findMany({ where: { phone, email: { not: null }, createdAt: { gte: since } }, select: { createdAt: true } }),
+  ])
+  for (const rows of [byEmail, byPhone]) {
+    const check = canSend(rows.map((r) => r.createdAt), now)
+    if (!check.ok) return check.reason === "wait" ? { ok: false, error: "otp_wait", seconds: check.seconds } : { ok: false, error: "otp_too_many" }
+  }
+  const code = newCode()
+  await db.otpCode.create({ data: { tenantId: tenant.id, phone, email, codeHash: emailHash(tenant.id, phone, email, code), expiresAt: new Date(now.getTime() + CODE_TTL_MS), createdAt: now } })
+  if (way === "screen" && !emailForTests) return { ok: true, demoCode: code }
+  try {
+    await sendEmail(signInCodeMail(email, code, { ta: tenant.nameTa, en: tenant.nameEn }))
+  } catch (e) {
+    console.error("[otp] email failed:", (e as Error).message)
+    return { ok: false, error: "otp_send_failed" }
+  }
+  return { ok: true }
+}
+
+/** Checks the latest email code for this phone and email; counts the attempt; a right code can't be reused. */
+export async function verifyEmailCode(tenantId: string, phone: string, email: string, code: string, now = new Date()): Promise<CheckResult> {
+  if (!/^\d{6}$/.test(code)) return "wrong"
+  const db = tenantDb(tenantId)
+  const latest = await db.otpCode.findFirst({ where: { phone, email }, orderBy: { createdAt: "desc" } })
+  const result = checkCode(latest, emailHash(tenantId, phone, email, code), now)
+  if (latest && (result === "ok" || result === "wrong")) {
+    await db.otpCode.updateMany({ where: { id: latest.id }, data: result === "ok" ? { usedAt: now } : { attempts: { increment: 1 } } })
+  }
+  return result
+}
+
+/** "This email was just proven, for this phone": the note between the email code and registering. */
+export function signEmailVerified(tenantId: string, phone: string, email: string, now = new Date()) {
+  const body = `email|${tenantId}|${phone}|${email}|${now.getTime() + VERIFIED_TTL_MS}`
+  return `${Buffer.from(body).toString("base64url")}.${createHmac("sha256", secret()).update(body).digest("base64url")}`
+}
+
+export function readEmailVerified(tenantId: string, value: string | undefined, now = new Date()): { phone: string; email: string } | null {
+  if (!value) return null
+  const [b, sig] = value.split(".")
+  if (!b || !sig) return null
+  const body = Buffer.from(b, "base64url").toString()
+  const expected = createHmac("sha256", secret()).update(body).digest("base64url")
+  if (expected.length !== sig.length || !timingSafeEqual(Buffer.from(expected), Buffer.from(sig))) return null
+  const [kind, t, phone, email, exp] = body.split("|")
+  return kind === "email" && t === tenantId && Number(exp) > now.getTime() ? { phone, email } : null
 }
