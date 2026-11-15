@@ -64,6 +64,7 @@ const LOOK: Record<CheerKind, { icon: LucideIcon; section: SectionKey }> = {
   eggStore: { icon: Egg, section: "products" },
   payment: { icon: IndianRupee, section: "money" },
   orderNew: { icon: ClipboardList, section: "orders" },
+  sold: { icon: IndianRupee, section: "orders" },
   orderSaved: { icon: ClipboardList, section: "orders" },
   confirmed: { icon: CheckCheck, section: "orders" },
   packed: { icon: Package, section: "orders" },

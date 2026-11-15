@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { getTranslations } from "next-intl/server"
+import { COUNTER_PHONE } from "@/domain/customers"
 import { requireStaff } from "@/lib/auth"
 import { allBalances } from "@/server/billing"
 import { formatRupees } from "@/domain/money"
@@ -21,9 +22,10 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
 
   const [customers, balances, orderCounts] = await Promise.all([
     db.customer.findMany({
-      where: query
-        ? { OR: [{ name: { contains: query, mode: "insensitive" } }, ...(digits.length >= 3 ? [{ phone: { contains: digits } }] : [])] }
-        : undefined,
+      where: {
+        NOT: { phone: COUNTER_PHONE },
+        ...(query ? { OR: [{ name: { contains: query, mode: "insensitive" as const } }, ...(digits.length >= 3 ? [{ phone: { contains: digits } }] : [])] } : {}),
+      },
       orderBy: { createdAt: "desc" },
       take: 200,
     }),

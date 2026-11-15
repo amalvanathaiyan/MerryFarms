@@ -31,6 +31,7 @@ export const CHEER_KINDS = {
   payment: "happy",
   // Orders
   orderNew: "happy",
+  sold: "happy",
   orderSaved: "calm",
   confirmed: "happy",
   packed: "happy",

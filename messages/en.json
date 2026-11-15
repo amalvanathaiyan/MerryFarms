@@ -255,7 +255,8 @@
       "receiver": "Deliver to {name}",
       "callReceiver": "Call receiver",
       "pinMismatch": "The map spot is in another PIN area than the address — check on the call.",
-      "waited": "{hours, plural, =0 {} other {# h }}{minutes} min waiting"
+      "waited": "{hours, plural, =0 {} other {# h }}{minutes} min waiting",
+      "counterSale": "Counter sale"
     },
     "catalogue": {
       "title": "Products & prices",
@@ -1961,6 +1962,22 @@
       "jobEnter": "{count, plural, one {Enter today's pond record} other {Enter today's records for # ponds}}",
       "jobSample": "{pond}: check the fish size",
       "jobSampleHint": "Net a few fish and weigh them, to know their size and the pond's weight."
+    },
+    "counter": {
+      "title": "Counter sale",
+      "hint": "For a quick sale at the farm or a market stall. No name needed. Selling on credit, or to someone you know? Use New order.",
+      "noProducts": "No products to sell yet.",
+      "addProducts": "Add products",
+      "left": "{count} left",
+      "qty": "How many",
+      "total": "Total",
+      "paidCash": "Paid in cash",
+      "payUpi": "Pay by UPI",
+      "paidUpi": "Paid by UPI",
+      "scanToPay": "Ask the buyer to scan and pay {amount}",
+      "upiCode": "UPI code to pay",
+      "gotIt": "Money received ✓",
+      "back": "Back"
     }
   },
   "login": {
@@ -3016,7 +3033,8 @@
       "settings": "Saved",
       "deleted": "Removed",
       "weight": "Weighed · {batch} · {avg} a bird",
-      "video": "Video added"
+      "video": "Video added",
+      "sold": "Sold · {code} · {amount}"
     },
     "lines": {
       "eggs": [
@@ -3181,6 +3199,11 @@
         "Your farm, on screen. Customers will love it.",
         "Lights, camera, farm!",
         "Real farm, real trust. Nice work."
+      ],
+      "sold": [
+        "Sold! Fresh from the farm, straight into their bag.",
+        "Another happy buyer at the counter.",
+        "Money in, goods out. Next one!"
       ]
     },
     "time": {

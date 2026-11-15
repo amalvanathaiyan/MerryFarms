@@ -5,6 +5,7 @@ import { requireStaff } from "@/lib/auth"
 import { dayLabel, pick } from "@/lib/i18n-helpers"
 import { formatRupees } from "@/domain/money"
 import { isOpen, orderCode } from "@/domain/orders"
+import { isCounter } from "@/domain/customers"
 import { formatIndianMobile } from "@/domain/phone"
 import { liteOrderMessage, waMeLink, type LiteMessageKind } from "@/domain/whatsapp-lite"
 import { OrderActions } from "@/components/farm/order-actions"
@@ -80,6 +81,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           <Button asChild size="lg" className="flex-1">
             <Link href="/farm/orders/new">{t("newOrder")}</Link>
           </Button>
+          <Button asChild size="lg" variant="outline" className="flex-1">
+            <Link href="/farm/orders/counter">{t("counterSale")}</Link>
+          </Button>
           {features.subscriptions && (
             <Button asChild size="lg" variant="outline">
               <Link href="/farm/plans">{t("plans")}</Link>
@@ -92,6 +96,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
 
       {orders.map((o) => {
         const lang = o.customer.language
+        const counter = isCounter(o.customer)
         const code = orderCode(tenant.invoicePrefix, o.number)
         const items = o.items.map((i) => ({
           name: pick(locale, i.product.nameTa, i.product.nameEn),
@@ -137,10 +142,16 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold">{t(`status_${o.status}`)}</span>
             </div>
             <div>
-              <Link href={`/farm/customers/${o.customer.id}`} className="font-semibold underline-offset-4 hover:underline">
-                {o.customer.name}
-              </Link>{" "}
-              <span className="select-all text-sm text-muted-foreground tabular-nums">{formatIndianMobile(o.customer.phone)}</span>
+              {counter ? (
+                <span className="font-semibold">{t("counterSale")}</span>
+              ) : (
+                <>
+                  <Link href={`/farm/customers/${o.customer.id}`} className="font-semibold underline-offset-4 hover:underline">
+                    {o.customer.name}
+                  </Link>{" "}
+                  <span className="select-all text-sm text-muted-foreground tabular-nums">{formatIndianMobile(o.customer.phone)}</span>
+                </>
+              )}
               {o.address && (
                 <div className="text-sm text-muted-foreground">
                   {o.address.line}
@@ -201,7 +212,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               status={o.status}
               phone={o.customer.phone}
               callScript={`${items.map((i) => `${i.qty} × ${i.name} (${i.pack})`).join(", ")} · ${slotText} · ${formatRupees(o.totalPaise)}`}
-              waLink={features.whatsappLite && waText ? waMeLink(o.customer.phone, waText) : null}
+              waLink={features.whatsappLite && waText && !counter ? waMeLink(o.customer.phone, waText) : null}
               invoiceId={o.invoices[0]?.id ?? null}
               allowCredit={features.creditAccounts}
               canEdit={isDesk && o.channel !== "walk_in"}
