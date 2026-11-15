@@ -6,13 +6,13 @@
 
 | Branch | State |
 |---|---|
-| `main` | **Live** (b32b2c1, 2026-11-15): everything through Phase 3 part 1 and Fishery parts 1–2. Pushed. |
-| `develop` | Same as main (a509849) plus nothing new. Pushed. |
-| `feature/phase3-signin` | **Not merged.** Free WhatsApp sign-in (ba61325), to-do list (460b9af), developer docs. Needs `2026-11-15-whatsapp-sign-in.sql` live before its code goes to main. |
-| Older `feature/*` | All merged; kept locally as history. |
+| `main` | **Live**: everything through Phase 3 part 2 (free WhatsApp sign-in, switched off until the Meta setup), Fishery, developer docs. |
+| `develop` | Same as main. |
+| `feature/*` | All merged; kept locally as history. |
 
 **Live database:** every table matches the schema except `whatsapp_sign_ins`, which isn't created yet (checked
-2026-11-15). RLS is on for every table.
+2026-11-15). That's safe: nothing touches it until `WHATSAPP_NUMBER` and `WHATSAPP_APP_SECRET` are set, and its SQL
+is the first step of the Meta setup in `docs/todo.md`. RLS is on for every table.
 
 ## Done (plan phases, see `docs/platform-plan.md` §6)
 
@@ -24,7 +24,7 @@
 | 1. Platform engine | Modules and admin-made plans; automation engine and tick; settings registry and audit log; admin v2 (dashboard, audit, tech monitor, billing, GST switch, announcements, requests) |
 | 1b. Home page and compliance | Home page, Register your farm, application review; restricted items, screening, Compliance inbox; legal pages |
 | 2. Farm Core | Places and machines, workers and wages, farm store, jobs and reminders |
-| 3. Customers (part) | Part 1: PlatformPerson, customer source and kind, staff-added customers, consent log. Part 2 (on branch): free WhatsApp sign-in, 90-day sign-in |
+| 3. Customers (part) | Part 1: PlatformPerson, customer source and kind, staff-added customers, consent log. Part 2: free WhatsApp sign-in (off until the Meta setup), 90-day sign-in |
 | 7. Fishery | Ponds, cycles, stocking, day entry, water checks, samples, harvests, cycle money, reminders |
 
 ## Next

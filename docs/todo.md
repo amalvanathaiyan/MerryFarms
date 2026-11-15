@@ -9,7 +9,7 @@ The free customer sign-in (the customer sends us the code on WhatsApp) is **buil
 done. Until then the shop keeps its current sign-in, so nothing is broken.
 
 - [ ] Run `prisma/sql/2026-11-15-whatsapp-sign-in.sql` in the Supabase SQL editor, then `npm run db:rls`.
-      (Needed before the sign-in code goes live.)
+      (The code leaves this table alone until the settings below are set: run this first.)
 - [ ] Get a phone number that isn't on WhatsApp (a new prepaid SIM is simplest).
 - [ ] Meta setup, steps 1–7 of [whatsapp-setup.md](whatsapp-setup.md): developer account, business portfolio,
       app, phone number, permanent key, app secret.

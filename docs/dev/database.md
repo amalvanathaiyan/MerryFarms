@@ -41,7 +41,7 @@ without consent; see decisions.md). Since then, every change has gone through a 
 | `2026-11-15-farm-tasks.sql` | `farm_tasks` |
 | `2026-11-15-customers.sql` | `customers`: `personId`, `phoneVerifiedAt`, `source`, `kind`, `smsOptIn`, `addedByStaffId`; tables `platform_people`, `customer_consents`. Filled in how old customers came, and moved earlier offer consents into the log |
 | `2026-11-15-fishery.sql` | `fish_cycles`, `fish_stockings`, `fish_days`, `fish_samples`, `fish_harvests` |
-| `2026-11-15-whatsapp-sign-in.sql` | `whatsapp_sign_ins`. **NOT live yet** (branch `feature/phase3-signin`; see `docs/todo.md`) |
+| `2026-11-15-whatsapp-sign-in.sql` | `whatsapp_sign_ins`. **NOT live yet**: run it as the first step of the Meta setup (`docs/todo.md`). The code never touches the table until the WhatsApp settings are set |
 | `rls.sql` | Not a migration: run after every new table (`npm run db:rls`) |
 
 **Columns added by `db push` before the SQL files** (2026-11-08 to 2026-11-12):
