@@ -82,6 +82,11 @@ Dates are when it was decided. Newest decisions win. **Update this file whenever
 - **Customers** (Phase 3): one PlatformPerson per proven phone. Each farm keeps its own Customer record, and farms
   never see each other's. Staff-added (offline) customers join up when the person later signs in. Record how each
   customer came and their kind. A consent log for offers (DPDP).
+- **Counter sale** (Phase 3, 2026-11-15): a quick sale at the farm gate or a market stall with no name. It's an
+  order delivered and paid at once (cash or UPI; with the farm's UPI ID a QR with the amount is shown), on one
+  stand-in customer per farm (phone value `counter`, never a real number). Credit or known buyers use New order
+  (walk-in). Chosen over making an order's customer optional, which would have touched invoices, payments and the
+  credit book.
 - **Orders** come mainly through WhatsApp and the web shop. Every order can be confirmed by a phone call (the farm
   decides who must be called). The farm controls its WhatsApp wording.
 

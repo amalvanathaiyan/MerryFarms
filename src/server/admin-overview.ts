@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { statusLabel } from "@/domain/tenants"
 import { checkServices, FREE_LIMITS, monthlyFeePaise, tickHealth, fillLevel } from "@/domain/admin-overview"
 import { otpProvider } from "./otp"
+import { COUNTER_PHONE } from "@/domain/customers"
 import { inboundReady } from "./whatsapp-cloud"
 import { listFarms } from "./platform"
 
@@ -18,7 +19,7 @@ export async function adminDashboard(now = new Date()) {
   const [farms, subs, newCustomers, newFarms, requests, pendingRequests, lastTick, failedJobs, alerts, recent] = await Promise.all([
     listFarms(now),
     prisma.farmSubscription.findMany({ include: { plan: { select: { nameTa: true, nameEn: true, monthlyPaise: true, yearlyPaise: true } }, tenant: { select: { id: true, nameTa: true, nameEn: true } } } }),
-    prisma.customer.count({ where: { createdAt: { gte: since30 } } }),
+    prisma.customer.count({ where: { createdAt: { gte: since30 }, NOT: { phone: COUNTER_PHONE } } }),
     prisma.tenant.count({ where: { createdAt: { gte: since30 } } }),
     prisma.farmRequest.findMany({ where: { status: "pending" }, orderBy: { createdAt: "desc" }, take: 5, include: { tenant: { select: { nameTa: true, nameEn: true } } } }),
     prisma.farmRequest.count({ where: { status: "pending" } }),

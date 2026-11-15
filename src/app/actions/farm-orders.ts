@@ -5,6 +5,9 @@ import { z } from "zod"
 import { ORDER_DESK, requireStaff } from "@/lib/auth"
 import { editOrder, OrderError, placeOrder, recordCall, setOrderStatus } from "@/server/orders"
 import { deliverOrder } from "@/server/billing"
+import { sellAtCounter } from "@/server/counter"
+import { orderCode } from "@/domain/orders"
+import { COUNTER_PHONE } from "@/domain/customers"
 import { notifyOrderStatus } from "@/server/notify"
 import { normaliseIndianMobile } from "@/domain/phone"
 
@@ -62,7 +65,7 @@ export async function searchCustomers(q: string) {
   if (query.length < 2) return []
   const digits = query.replace(/\D/g, "")
   const rows = await db.customer.findMany({
-    where: { OR: [{ name: { contains: query, mode: "insensitive" } }, ...(digits.length >= 3 ? [{ phone: { contains: digits } }] : [])] },
+    where: { NOT: { phone: COUNTER_PHONE }, OR: [{ name: { contains: query, mode: "insensitive" } }, ...(digits.length >= 3 ? [{ phone: { contains: digits } }] : [])] },
     include: { addresses: { orderBy: { createdAt: "desc" }, take: 3 } },
     take: 8,
   })
@@ -161,4 +164,21 @@ export async function updateFarmOrder(raw: unknown): Promise<{ ok: boolean; erro
   }
   revalidatePath("/farm", "layout")
   return { ok: true }
+}
+
+const counterSchema = z.object({ items: itemsSchema, paid: z.enum(["cash", "upi"]), prices: pricesSchema })
+
+/** A quick sale at the farm gate or a market stall: no name needed; delivered and paid at once. */
+export async function sellAtCounterAction(raw: unknown): Promise<{ ok: true; orderId: string; code: string; totalPaise: number } | { ok: false; error: string }> {
+  const parsed = counterSchema.safeParse(raw)
+  if (!parsed.success) return { ok: false, error: "invalid" }
+  const { tenant, staff } = await requireStaff(ORDER_DESK)
+  try {
+    const r = await sellAtCounter(tenant, staff.id, parsed.data)
+    revalidatePath("/farm", "layout")
+    return { ok: true, orderId: r.orderId, code: orderCode(tenant.invoicePrefix, r.number), totalPaise: r.totalPaise }
+  } catch (e) {
+    if (e instanceof OrderError) return { ok: false, error: e.code }
+    throw e
+  }
 }

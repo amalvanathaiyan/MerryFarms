@@ -1193,3 +1193,28 @@ describe("platform admin: farms", () => {
     expect(farms.find((f) => f.slug === "merryfarms")!.customers).toBeGreaterThan(0)
   })
 })
+
+describe("counter sale", () => {
+  it("sells with no name: delivered and paid at once, stock down, one stand-in customer for every counter sale", async () => {
+    const counter = await import("./counter")
+    const { COUNTER_PHONE } = await import("@/domain/customers")
+    const { normaliseIndianMobile } = await import("@/domain/phone")
+    const db = tenantDb(merry.id)
+    await db.product.updateMany({ where: { id: "p-eggs" }, data: { stockQty: 5 } })
+
+    const a = await counter.sellAtCounter(merry, "staff-1", { items: [{ productId: "p-eggs", qty: 2 }], paid: "cash" }, NOW)
+    const b = await counter.sellAtCounter(merry, "staff-1", { items: [{ productId: "p-eggs", qty: 1 }], paid: "upi" }, NOW)
+    expect(a.totalPaise).toBe(78_000)
+
+    const orders = await db.order.findMany({ where: { id: { in: [a.orderId, b.orderId] } }, include: { customer: true, payments: true } })
+    expect(orders.map((o) => o.status)).toEqual(["delivered", "delivered"])
+    expect(new Set(orders.map((o) => o.customerId)).size).toBe(1)
+    expect(orders[0].customer.phone).toBe(COUNTER_PHONE)
+    expect(orders.flatMap((o) => o.payments.map((p) => p.method)).sort()).toEqual(["cash_on_delivery", "upi_on_delivery"])
+    expect((await db.product.findFirst({ where: { id: "p-eggs" } }))!.stockQty).toBe(2)
+    // Its balance stays at nothing, and nobody can sign in as it.
+    expect(await billing.customerBalance(merry.id, orders[0].customerId)).toBe(0)
+    expect(normaliseIndianMobile(COUNTER_PHONE)).toBeNull()
+    await expect(counter.sellAtCounter(merry, "staff-1", { items: [{ productId: "p-eggs", qty: 9 }], paid: "cash" }, NOW)).rejects.toThrow("out_of_stock")
+  })
+})
