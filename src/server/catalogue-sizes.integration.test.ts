@@ -88,3 +88,35 @@ describe("sizes in the catalogue", () => {
     expect(tray.pricePaise).toBe(39_000)
   })
 })
+
+describe("product kinds", () => {
+  it("loads the starter list once, makes a category from a kind, and asks its details for each product", async () => {
+    const kinds = await import("./product-kinds")
+    const added = await kinds.addStarterKinds()
+    expect(added).toBeGreaterThan(10)
+    expect(await kinds.addStarterKinds()).toBe(0)
+    const milk = (await kinds.listKinds()).find((k) => k.key === "milk")!
+
+    // The farm's milk category, with its own extra detail.
+    const own = { key: "breed", ta: "இனம்", en: "Breed", type: "text" as const, choices: [], required: false, shown: true }
+    expect(await cat.addCategory({ nameTa: "பால்", nameEn: "Milk", productKindId: milk.id, packs: [{ ta: "5 லி கேன்", en: "5 litre can" }], details: [own] })).toEqual({ ok: true })
+    const c = await prisma.category.findFirstOrThrow({ where: { tenantId: "f1", productKindId: milk.id } })
+    const p = { categoryId: c.id, nameTa: "பசும் பால்", nameEn: "Cow milk", packTa: "1 லி", packEn: "1 litre", priceRupees: 60, stockQty: 0, stockUnit: "litres", gstRate: 0, isActive: true }
+    // "Animal" must be filled in.
+    expect(await cat.saveProduct({ ...p, details: { fat: 4 } })).toEqual({ ok: false, error: "details_required" })
+    expect(await cat.saveProduct({ ...p, details: { animal: "Cow", fat: 4.2, a2: true, breed: "Kangayam", nonsense: "x" } })).toEqual({ ok: true })
+    expect((await prisma.product.findFirstOrThrow({ where: { nameEn: "Cow milk" } })).details).toEqual({ animal: "Cow", fat: 4.2, a2: true, breed: "Kangayam" })
+
+    // A retired kind can't start a new category, but categories made from it keep working.
+    await kinds.retireKind(milk.id, true)
+    expect(await cat.addCategory({ nameTa: "பால் 2", nameEn: "Milk 2", productKindId: milk.id })).toEqual({ ok: false, error: "not_found" })
+    expect(await cat.renameCategory({ id: c.id, nameTa: "பால்", nameEn: "Fresh milk", productKindId: milk.id })).toEqual({ ok: true })
+  })
+
+  it("runs the migration safely twice", async () => {
+    const migration = readFileSync(path.join(__dirname, "../../prisma/sql/2026-11-15-product-kinds.sql"), "utf8")
+    await pg.exec(migration)
+    await pg.exec(migration)
+    expect(await prisma.productKind.count()).toBeGreaterThan(10)
+  })
+})

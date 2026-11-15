@@ -8,14 +8,21 @@ import { EggStoreCard } from "@/components/farm/egg-store-card"
 import { getLocale } from "next-intl/server"
 import { pick } from "@/lib/i18n-helpers"
 import { farmHolds } from "@/server/compliance"
+import { listKinds } from "@/server/product-kinds"
+import { readDetails, readPacks, type DetailValues } from "@/domain/product-kinds"
+import { isArtKind } from "@/domain/product-art"
 
 export default async function CataloguePage() {
   const { db, staff, tenant } = await requireStaff()
-  const [categories, products, holds] = await Promise.all([
+  const [categories, products, holds, kinds] = await Promise.all([
     db.category.findMany({ where: { deletedAt: null }, orderBy: { sortOrder: "asc" } }),
     db.product.findMany({ where: { deletedAt: null }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
     farmHolds(tenant.id),
+    listKinds(true),
   ])
+  // Kinds offered for new categories (not retired), plus any retired one a category already uses.
+  const usedKinds = new Set(categories.map((c) => c.productKindId).filter(Boolean))
+  const offered = kinds.filter((k) => !k.retired || usedKinds.has(k.id))
 
   const today = istDate(new Date())
   const features = featuresOf(tenant)
@@ -37,7 +44,8 @@ export default async function CataloguePage() {
         canEdit={staff.roles.includes("owner")}
         tracksStock={features.stockTracking}
         today={today}
-        categories={categories.map(({ id, nameTa, nameEn, kind }) => ({ id, nameTa, nameEn, kind }))}
+        kinds={offered.map((k) => ({ id: k.id, nameTa: k.nameTa, nameEn: k.nameEn, art: isArtKind(k.art) ? k.art : "basket", packs: k.packs, details: k.details, hsn: k.hsn, gstRate: k.gstRate, retired: k.retired }))}
+        categories={categories.map(({ id, nameTa, nameEn, kind, productKindId, packs, details }) => ({ id, nameTa, nameEn, kind, productKindId, packs: readPacks(packs), details: readDetails(details) }))}
         products={products.map((p) => ({
           id: p.id,
           categoryId: p.categoryId,
@@ -58,6 +66,7 @@ export default async function CataloguePage() {
           offerRupees: p.offerPricePaise != null ? p.offerPricePaise / 100 : null,
           offerEndsOn: p.offerEndsOn ?? "",
           offerLive: offerActive(p, today),
+          details: p.details && typeof p.details === "object" && !Array.isArray(p.details) ? (p.details as DetailValues) : {},
           held: holds[p.id] ? { reason: pick(locale, holds[p.id].note ?? holds[p.id].reasonTa, holds[p.id].note ?? holds[p.id].reasonEn), checking: holds[p.id].status === "open" } : null,
         }))}
       />

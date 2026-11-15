@@ -1,5 +1,7 @@
 import { getLocale, getTranslations } from "next-intl/server"
 import { listVideos } from "@/server/videos"
+import { detailLine, mergeDetails, readDetails, type DetailValues } from "@/domain/product-kinds"
+import { prisma } from "@/lib/prisma"
 import { sizeFamily } from "@/domain/sizes"
 import { shopVideos } from "@/domain/videos"
 import { sceneProps } from "@/lib/scene"
@@ -60,6 +62,11 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
 
   const labels = { today: t("today"), tomorrow: t("tomorrow") }
   const features = featuresOf(tenant)
+  // Each product's details shown to customers ("Country hen · Large"), from what its category asks.
+  const kindIds = [...new Set(categories.map((c) => c.productKindId).filter((x): x is string => !!x))]
+  const kinds = kindIds.length ? await prisma.productKind.findMany({ where: { id: { in: kindIds } }, select: { id: true, details: true } }) : []
+  const asked = new Map(categories.map((c) => [c.id, mergeDetails(readDetails(kinds.find((k) => k.id === c.productKindId)?.details), readDetails(c.details))]))
+  const yesNo = { yes: t("yes"), no: t("no") }
   // A returning customer on this phone: pre-fill checkout, and "Order again" from My orders.
   const me = await getSessionCustomer()
   // "Change my order" starts from that order's items; it's only offered while still changeable.
@@ -137,6 +144,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       categoryId: p.categoryId,
       name: pick(locale, p.nameTa, p.nameEn),
       family: sizeFamily(p),
+      details: detailLine(asked.get(p.categoryId) ?? [], p.details && typeof p.details === "object" && !Array.isArray(p.details) ? (p.details as DetailValues) : {}, locale === "en" ? "en" : "ta", yesNo) || null,
       pack: pick(locale, p.packTa, p.packEn),
       note: pick(locale, p.noteTa, p.noteEn),
       pricePaise: currentPrice(p, istDate(new Date())),

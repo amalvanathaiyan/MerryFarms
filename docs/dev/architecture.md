@@ -194,7 +194,7 @@ Fish, Money, More.
 | **Today** (`/farm`) | | The day's jobs, announcements, alerts and the farm picture |
 | **Orders** | `/farm/orders` (new, counter, edit, return), `/farm/invoices/[id]`, `/farm/slots`, `/farm/plans` | Orders, counter sales (no name: one stand-in customer per farm, phone `counter`, `src/server/counter.ts`; left out of customer lists, search and counts), invoices, delivery slots, recurring plans |
 | **Customers** | `/farm/customers` (+ `[id]`), `/farm/messages` | Customers and messages |
-| **Catalogue** | `/farm/catalogue` | Products and categories; sizes of one product (same category and names, `src/domain/sizes.ts`) shown together with "Add a size" |
+| **Catalogue** | `/farm/catalogue` (categories from Admin's product kinds, the farm's own sizes and details; each product's details) | Products and categories; sizes of one product (same category and names, `src/domain/sizes.ts`) shown together with "Add a size" |
 | **Poultry** | `/farm/poultry/*` | entry, today, batches, feed, vaccines (+ plan), growth, costs, profit |
 | **Fish** | `/farm/fish`, `/farm/fish/entry`, `/farm/fish/[id]` | Ponds |
 | **My farm** | `/farm/land` (+ assets, store, tasks, workers) | Farm Core |
@@ -209,6 +209,7 @@ Fish, Money, More.
 | **Dashboard** | `/admin` | Leads with what needs the super admin |
 | **Farms** | `/admin/farms` (+ new, `[id]`, applications) | Farms and sign-up reviews |
 | **Plans** | `/admin/plans`, `/admin/modules`, `/admin/requests` | Plans, modules, farms' requests |
+| **Products** | `/admin/products` | Product kinds (`src/domain/product-kinds.ts`, `src/server/product-kinds.ts`): measure, usual packs, details asked, defaults; a starter list loads in one tap |
 | **Billing** | `/admin/billing` | FFY's invoices and payments; the GST switch is off |
 | **Compliance** | `/admin/compliance` (+ items) | Restricted items list and Compliance inbox |
 | **Other** | `/admin/announcements`, `/admin/settings`, `/admin/automation`, `/admin/audit`, `/admin/tech`, `/admin/account` | `tech` is the tech monitor: version, services, sign-in way, database and storage use against free limits, the tick |
