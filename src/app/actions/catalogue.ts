@@ -13,6 +13,8 @@ import { planLimits } from "@/lib/features"
 import { atLimit } from "@/domain/entitlements"
 import { screenCategory, screenProduct, screenSafely } from "@/server/compliance"
 import { groupSizes, sizeFamily } from "@/domain/sizes"
+import { cleanDetailValues, detailsSchema, mergeDetails, packsSchema, readDetails } from "@/domain/product-kinds"
+import { prisma } from "@/lib/prisma"
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
 
@@ -26,14 +28,27 @@ const categorySchema = z.object({
   nameTa: z.string().trim().min(1).max(60),
   nameEn: z.string().trim().min(1).max(60),
   kind: z.enum(ART_KINDS).optional(),
+  /** The Farm For You product kind it is (Admin → Products); null = the farm's own. */
+  productKindId: z.string().min(1).nullable().optional(),
+  /** The farm's own pack sizes and details, on top of the kind's. */
+  packs: packsSchema.optional(),
+  details: detailsSchema.optional(),
 })
+
+/** A category's kind must be one Farm For You offers (a retired one stays on categories already made from it). */
+async function kindOk(productKindId: string | null | undefined, current?: string | null) {
+  if (!productKindId) return true
+  const k = await prisma.productKind.findUnique({ where: { id: productKindId }, select: { retired: true } })
+  return !!k && (!k.retired || productKindId === current)
+}
 
 export async function addCategory(raw: unknown): Promise<ActionResult> {
   const parsed = categorySchema.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "category_names_required" }
   const { db, tenant } = await requireStaff(OWNER_ONLY)
+  if (!(await kindOk(parsed.data.productKindId))) return { ok: false, error: "not_found" }
   const count = await db.category.count({ where: { deletedAt: null } })
-  const made = await db.category.create({ data: { ...parsed.data, sortOrder: count, tenantId: tenant.id } })
+  const made = await db.category.create({ data: { ...parsed.data, productKindId: parsed.data.productKindId ?? null, sortOrder: count, tenantId: tenant.id } })
   await screenSafely(() => screenCategory(tenant.id, made.id))
   return done()
 }
@@ -57,6 +72,8 @@ const productSchema = z.object({
   isActive: z.boolean(),
   /** Offer price in rupees; null or missing = no offer. */
   offerRupees: z.number().positive().max(1_000_000).nullable().optional(),
+  /** Answers to the details its category asks (by detail key); checked against them below. */
+  details: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
   offerEndsOn: z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]).optional(),
 })
 
@@ -65,12 +82,15 @@ export async function saveProduct(raw: unknown): Promise<ActionResult> {
   const parsed = productSchema.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "product_invalid" }
   const { db, tenant } = await requireStaff(OWNER_ONLY)
-  const { id, priceRupees, offerRupees, offerEndsOn, stockQty, eggsPerUnit = null, ...rest } = parsed.data
+  const { id, priceRupees, offerRupees, offerEndsOn, stockQty, eggsPerUnit = null, details: answers, ...rest } = parsed.data
   const offerPricePaise = offerRupees ? rupeesToPaise(offerRupees) : null
   if (offerPricePaise != null && offerPricePaise >= rupeesToPaise(priceRupees)) return { ok: false, error: "offer_not_lower" }
 
   const category = await db.category.findFirst({ where: { id: rest.categoryId, deletedAt: null } })
   if (!category) return { ok: false, error: "category_not_found" }
+  const kind = category.productKindId ? await prisma.productKind.findUnique({ where: { id: category.productKindId }, select: { details: true } }) : null
+  const { values: details, missing } = cleanDetailValues(mergeDetails(readDetails(kind?.details), readDetails(category.details)), answers ?? {})
+  if (missing.length) return { ok: false, error: "details_required" }
   if (!id && atLimit(planLimits(tenant), "products", await db.product.count({ where: { deletedAt: null } }))) return { ok: false, error: "product_limit" }
 
   const data = {
@@ -79,6 +99,7 @@ export async function saveProduct(raw: unknown): Promise<ActionResult> {
     noteEn: rest.noteEn || null,
     hsn: rest.hsn || null,
     pricePaise: rupeesToPaise(priceRupees),
+    details,
     offerPricePaise,
     offerEndsOn: offerPricePaise != null && offerEndsOn ? offerEndsOn : null,
   }
@@ -224,6 +245,8 @@ export async function renameCategory(raw: unknown): Promise<ActionResult> {
   if (!parsed.success) return { ok: false, error: "category_names_required" }
   const { db } = await requireStaff(OWNER_ONLY)
   const { id, ...names } = parsed.data
+  const before = await db.category.findFirst({ where: { id, deletedAt: null }, select: { productKindId: true } })
+  if (!before || !(await kindOk(names.productKindId, before.productKindId))) return { ok: false, error: "category_not_found" }
   const r = await db.category.updateMany({ where: { id, deletedAt: null }, data: names })
   if (r.count !== 1) return { ok: false, error: "category_not_found" }
   const { tenant } = await requireStaff(OWNER_ONLY)

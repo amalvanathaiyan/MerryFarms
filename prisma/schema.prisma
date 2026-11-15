@@ -285,6 +285,11 @@ model Category {
   showOnWhatsApp Boolean   @default(true)
   /// What it holds (egg, milk, oil, vegetables, pickles…; see domain/product-art). Picks the drawing.
   kind           String?
+  /// The Farm For You product kind it is (src/domain/product-kinds.ts); null = the farm's own category.
+  productKindId  String?
+  /// The farm's own pack sizes and details for this category, on top of the kind's ([{ta,en}], [DetailDef]).
+  packs          Json      @default("[]")
+  details        Json      @default("[]")
   deletedAt      DateTime? // removed by the farm; kept so old products and orders stay readable
 
   tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -316,6 +321,8 @@ model Product {
   eggsPerUnit     Int?
   hsn             String?
   gstRate         Int       @default(0) // percent; 0 = exempt
+  /// Answers to the details its category asks (egg type, fat %…), by detail key (src/domain/product-kinds.ts).
+  details         Json      @default("{}")
   imageUrl        String?
   onWeb           Boolean   @default(true)
   onWhatsApp      Boolean   @default(true)
@@ -835,6 +842,32 @@ model WhatsAppSignIn {
   @@index([phone, createdAt])
   @@index([tenantId, phone, createdAt])
   @@map("whatsapp_sign_ins")
+}
+
+/// A product kind, set by Farm For You admin (Admin → Products): how it's measured, its usual pack sizes, the details
+/// asked for each product, and defaults. Farms' categories are these kinds, or their own. Not a farm's table.
+model ProductKind {
+  id                String   @id @default(uuid())
+  key               String   @unique // stays the same; the starter list matches on it
+  module            String // poultry | livestock | fishery | crops | selling…
+  nameTa            String
+  nameEn            String
+  art               String // the drawing (src/domain/product-art.ts ART_KINDS)
+  measure           String // count | weight | volume
+  packs             Json     @default("[]")
+  details           Json     @default("[]")
+  /// Ordered as "about 1 kg"; the bill is set on weighing (fish, chicken).
+  weighedOnDelivery Boolean  @default(false)
+  shelfLifeDays     Int?
+  hsn               String?
+  gstRate           Int      @default(0)
+  sortOrder         Int      @default(0)
+  /// Not offered to farms any more; categories already made from it keep working.
+  retired           Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
+
+  @@map("product_kinds")
 }
 
 /// A day (or one slot on a day) with no deliveries: festival, family event, rest day.

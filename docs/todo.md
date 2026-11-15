@@ -3,6 +3,10 @@
 Things that are built or planned but need someone to do a step outside the code. Newest first. Remove a line once
 it's done.
 
+## Load the product kinds
+
+- [ ] In Admin → Products: **Add the starter list**, and change it as you like (the SQL is applied).
+
 ## Set up Brevo for email sign-in codes
 
 Email codes are built and stay off until this is done (the demo shows codes on screen).

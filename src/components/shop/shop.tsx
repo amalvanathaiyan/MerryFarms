@@ -77,6 +77,8 @@ export interface ShopData {
     /** Sizes of one product share this (src/domain/sizes.ts): one card, a button per size. */
     family: string
     pack: string
+    /** The details shown to customers ("Country hen · Large"), or null. */
+    details: string | null
     note: string | null
     /** Today's price (the offer price while an offer runs). */
     pricePaise: number
@@ -523,6 +525,7 @@ export function Shop({ data }: { data: ShopData }) {
                       ) : (
                         <p className="text-sm text-muted-foreground">{p.pack}</p>
                       )}
+                      {p.details && <p className="text-sm">{p.details}</p>}
                       {p.note && <p className="text-sm text-muted-foreground">{p.note}</p>}
                       <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-2">
                         <div className="flex flex-col">
