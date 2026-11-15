@@ -21,9 +21,11 @@ import { ensureToken } from "@/server/customers"
 import { shopUrl } from "@/lib/urls"
 import { PersonalLink } from "@/components/farm/personal-link"
 import { BackLink } from "@/components/farm/section-header"
+import { isCustomerKind } from "@/domain/customers"
 
-export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CustomerPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ known?: string }> }) {
   const { id } = await params
+  const { known } = await searchParams
   const { tenant, db, staff } = await requireStaff()
   const locale = await getLocale()
   const t = await getTranslations("farm.customers")
@@ -34,11 +36,12 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const customer = await db.customer.findFirst({ where: { id }, include: { addresses: { orderBy: { createdAt: "desc" }, take: 3 } } })
   if (!customer) notFound()
 
-  const [entries, orders, invoices, plans] = await Promise.all([
+  const [entries, orders, invoices, plans, consents] = await Promise.all([
     db.ledgerEntry.findMany({ where: { customerId: id }, orderBy: { at: "asc" } }),
     db.order.findMany({ where: { customerId: id }, orderBy: { createdAt: "desc" }, take: 20 }),
     db.invoice.findMany({ where: { customerId: id }, select: { id: true, orderId: true, number: true } }),
     db.subscription.findMany({ where: { customerId: id, status: { not: "cancelled" } }, select: { id: true, status: true } }),
+    db.customerConsent.findMany({ where: { customerId: id }, orderBy: { createdAt: "desc" }, take: 20 }),
   ])
   const statement = runningBalances(entries)
   const balance = statement.at(-1)?.balancePaise ?? 0
@@ -62,11 +65,16 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   return (
     <div className="flex flex-col gap-4">
       <BackLink href="/farm/customers" label={(await getTranslations("farm.sections"))("customers.title")} />
+      {known === "1" && <p className="rounded-lg bg-accent px-3 py-2 text-sm font-medium">{t("alreadyCustomer")}</p>}
       <section className="flex flex-col gap-3 rounded-2xl border bg-card p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-xl font-bold">{customer.name}</h1>
-            <p className="select-all text-sm text-muted-foreground tabular-nums">{formatIndianMobile(customer.phone)}</p>
+            <p className="text-sm text-muted-foreground">
+              <span className="select-all tabular-nums">{formatIndianMobile(customer.phone)}</span>
+              {customer.phoneVerifiedAt && <span className="ms-2 rounded bg-accent px-1.5 text-xs font-medium text-foreground">{t("phoneChecked")}</span>}
+            </p>
+            {customer.source && <p className="text-sm text-muted-foreground">{t("cameBy", { how: t(`source_${customer.source}`) })}</p>}
             {customer.addresses[0] && (
               <p className="text-sm text-muted-foreground">
                 {customer.addresses[0].line}
@@ -189,9 +197,24 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           isTrusted: customer.isTrusted,
           creditLimitRupees: customer.creditLimitPaise / 100,
           marketingOptIn: customer.marketingOptIn,
+          smsOptIn: customer.smsOptIn,
+          kind: isCustomerKind(customer.kind) ? customer.kind : "home",
           notes: customer.notes ?? "",
         }}
       />
+
+      {consents.length > 0 && (
+        <details className="rounded-2xl border bg-card p-4">
+          <summary className="cursor-pointer font-semibold">{t("consentLog")}</summary>
+          <ul className="mt-2 divide-y text-sm">
+            {consents.map((k) => (
+              <li key={k.id} className="py-2">
+                {t(k.given ? "consentGiven" : "consentStopped", { channel: t(`channel_${k.channel}`) })} · {t(`consent_${k.how}`)} · {dayLabel(istDate(k.createdAt), locale, labels)}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </div>
   )
 }

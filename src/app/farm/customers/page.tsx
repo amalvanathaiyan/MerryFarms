@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { featuresOf } from "@/lib/features"
 import { SectionHeader } from "@/components/farm/section-header"
+import { AddCustomer } from "@/components/farm/add-customer"
 
 export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string; dues?: string }> }) {
   const { q = "", dues } = await searchParams
-  const { tenant, db } = await requireStaff()
+  const { tenant, db, staff } = await requireStaff()
+  const canAdd = staff.roles.some((r) => r === "owner" || r === "order_desk")
   const t = await getTranslations("farm.customers")
   const { creditAccounts } = featuresOf(tenant)
   const query = q.trim()
@@ -39,7 +41,8 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
   return (
     <div className="flex flex-col gap-4">
       <SectionHeader section="customers" back={{ href: "/farm/more" }} />
-      <div className="flex items-baseline justify-end gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {canAdd ? <AddCustomer /> : <span />}
         {creditAccounts && (
         <Link href={onlyDues ? "/farm/customers" : "/farm/customers?dues=1"} className={cn("rounded-full border px-3 py-1 text-sm font-medium", onlyDues ? "border-primary bg-accent" : "bg-card")}>
           {t("withDues")} · <span className="tabular-nums">{formatRupees(totalDues)}</span>
@@ -60,6 +63,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
                 <div className="truncate font-semibold">{c.name}</div>
                 <div className="text-sm text-muted-foreground tabular-nums">{formatIndianMobile(c.phone)}</div>
                 <div className="mt-1 flex flex-wrap gap-1">
+                  {c.kind !== "home" && <span className="rounded border px-1.5 text-xs">{t(`kind_${c.kind}`)}</span>}
                   {c.isTrusted && <span className="rounded bg-accent px-1.5 text-xs font-medium">{t("trusted")}</span>}
                   {c.delivered <= 1 && <span className="rounded border px-1.5 text-xs">{t("new")}</span>}
                   {creditAccounts && c.creditLimitPaise > 0 && <span className="rounded border px-1.5 text-xs">{t("khata")}</span>}

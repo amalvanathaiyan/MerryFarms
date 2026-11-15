@@ -124,6 +124,18 @@ CREATE TABLE "platform_admins" (
 );
 
 -- CreateTable
+CREATE TABLE "platform_people" (
+    "id" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "language" "Language" NOT NULL DEFAULT 'ta',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "platform_people_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "login_usernames" (
     "username" TEXT NOT NULL,
     "authUserId" TEXT NOT NULL,
@@ -213,10 +225,31 @@ CREATE TABLE "customers" (
     "notes" TEXT,
     "accessToken" TEXT,
     "tokenIssuedAt" TIMESTAMP(3),
+    "personId" TEXT,
+    "phoneVerifiedAt" TIMESTAMP(3),
+    "source" TEXT,
+    "kind" TEXT NOT NULL DEFAULT 'home',
+    "smsOptIn" BOOLEAN NOT NULL DEFAULT false,
+    "addedByStaffId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "customers_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "customer_consents" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "customerId" TEXT NOT NULL,
+    "channel" TEXT NOT NULL,
+    "given" BOOLEAN NOT NULL,
+    "how" TEXT NOT NULL,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "customer_consents_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -1187,6 +1220,9 @@ CREATE UNIQUE INDEX "staff_members_tenantId_staffCode_key" ON "staff_members"("t
 CREATE UNIQUE INDEX "platform_admins_authUserId_key" ON "platform_admins"("authUserId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "platform_people_phone_key" ON "platform_people"("phone");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "login_usernames_authUserId_key" ON "login_usernames"("authUserId");
 
 -- CreateIndex
@@ -1202,7 +1238,13 @@ CREATE INDEX "delivery_slots_tenantId_idx" ON "delivery_slots"("tenantId");
 CREATE UNIQUE INDEX "customers_accessToken_key" ON "customers"("accessToken");
 
 -- CreateIndex
+CREATE INDEX "customers_personId_idx" ON "customers"("personId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "customers_tenantId_phone_key" ON "customers"("tenantId", "phone");
+
+-- CreateIndex
+CREATE INDEX "customer_consents_tenantId_customerId_createdAt_idx" ON "customer_consents"("tenantId", "customerId", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "addresses_tenantId_customerId_idx" ON "addresses"("tenantId", "customerId");
@@ -1467,6 +1509,9 @@ ALTER TABLE "delivery_slots" ADD CONSTRAINT "delivery_slots_tenantId_fkey" FOREI
 
 -- AddForeignKey
 ALTER TABLE "customers" ADD CONSTRAINT "customers_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "customer_consents" ADD CONSTRAINT "customer_consents_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "addresses" ADD CONSTRAINT "addresses_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
