@@ -23,6 +23,9 @@ import { InstallApp } from "@/components/install-app"
 import { alertsFor } from "@/server/reminders"
 import { announcementsFor, farmInvoices } from "@/server/platform-billing"
 import { FarmAnnouncements } from "@/components/farm/announcements"
+import { DoneButton } from "@/components/farm/task-forms"
+import { remindersFor } from "@/server/tasks"
+import { dueNow, seesTask } from "@/domain/tasks"
 
 /**
  * True when a batch on the farm has no entry for today (with poultry care on); otherwise, or with no batches,
@@ -54,6 +57,8 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const tu = await getTranslations("farm.units")
   const tv = await getTranslations("farm.vaccines")
   const te = await getTranslations("errors")
+  const tst = await getTranslations("farm.store")
+  const tt = await getTranslations("farm.tasks")
   const labels = { today: tc("today"), tomorrow: tc("tomorrow") }
   const unitName = (u: string) => (tu.has(u) ? tu(u) : u)
   const today = istDate(new Date())
@@ -76,6 +81,14 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const birdsNow = canRecord && features.poultryCare ? await birdsOnFarm(tenant.id, today) : null
   // Warnings worked out from the entries: unusual losses, feed running out, eggs dropping.
   const alerts = canRecord && features.poultryCare ? await alertsFor(tenant.id, today) : []
+  // Farm Core: jobs due today or late (each for whoever it's for), and, for the owner and managers, machines due for
+  // a service and the store running low (the hens' feed only when its own warning isn't already showing).
+  const boss = staff.roles.some((r) => r === "owner" || r === "manager")
+  const [openTasks, reminders] = await Promise.all([
+    db.farmTask.findMany({ where: { doneOn: null, dueOn: { lte: today } }, orderBy: { dueOn: "asc" } }),
+    boss ? remindersFor(db, today, alerts.some((a) => a.kind === "feed")) : Promise.resolve([]),
+  ])
+  const myTasks = dueNow(openTasks, today).filter((x) => seesTask(x, staff))
   const unreadMessages = features.messages ? await db.message.count({ where: { sender: "customer", seenAt: null } }) : 0
   const activePlans = features.subscriptions ? await db.subscription.count({ where: { status: "active" } }) : 0
 
@@ -164,6 +177,25 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           },
         ]
       : []),
+    ...reminders.map((r): Job =>
+      r.kind === "service"
+        ? {
+            key: `svc-${r.id}`,
+            section: "land",
+            icon: "assets",
+            title: t("jobService", { name: r.name }),
+            hint: r.days < 0 ? t("jobServiceLate", { day: dayLabel(r.on, locale, labels) }) : t("jobServiceDue", { day: dayLabel(r.on, locale, labels) }),
+            href: "/farm/land/assets",
+          }
+        : {
+            key: `low-${r.id}`,
+            section: "land",
+            icon: "store",
+            title: t("jobStoreLow", { name: r.name }),
+            hint: t("jobStoreLowHint", { left: r.left, unit: tst(`unit_${r.unit}`) }),
+            href: `/farm/land/store/${r.id}`,
+          }
+    ),
   ]
 
   // "Check these": the warnings, each opening where it can be looked into.
@@ -245,7 +277,21 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       )}
 
       <section className="flex flex-col gap-2.5">
-        <h2 className="text-base font-bold text-muted-foreground">{jobs.length ? t("doNow") : t("allDone")}</h2>
+        <h2 className="text-base font-bold text-muted-foreground">{jobs.length || myTasks.length ? t("doNow") : t("allDone")}</h2>
+        {myTasks.map((task) => (
+          <div key={task.id} className={cn("flex items-center gap-3 rounded-2xl border-2 border-transparent p-3", SECTION_LOOK.land.tint)}>
+            <span className={cn("grid size-12 shrink-0 place-items-center rounded-full", SECTION_LOOK.land.strong)}>
+              <SectionIcon name="tasks" className="size-6" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-lg leading-tight font-bold">{task.title}</span>
+              <span className={cn("line-clamp-2 block text-sm", task.dueOn < today ? "font-semibold text-destructive" : "text-muted-foreground")}>
+                {[task.dueOn < today ? tt("lateLine", { day: dayLabel(task.dueOn, locale, labels) }) : tc("today"), task.note].filter(Boolean).join(" · ")}
+              </span>
+            </span>
+            <DoneButton id={task.id} />
+          </div>
+        ))}
         {jobs.map((j) => {
           const look = SECTION_LOOK[j.section]
           return (

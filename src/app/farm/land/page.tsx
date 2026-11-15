@@ -5,6 +5,9 @@ import { landTabs } from "@/lib/farm-sections"
 import { formatRupees } from "@/domain/money"
 import { isOneOf, LAND_KINDS, totalLandAcres } from "@/domain/farm-core"
 import { farmCoreSpending } from "@/server/farm-core"
+import { labourByPlace } from "@/domain/workers"
+import { inputsByPlace } from "@/server/inputs"
+import { addDays, istDate } from "@/domain/ist"
 import { SectionHeader } from "@/components/farm/section-header"
 import { AddPlace, PlaceActions, type PlaceRow } from "@/components/farm/farm-core-forms"
 
@@ -18,7 +21,16 @@ const ICONS: Record<string, LucideIcon> = { block: Map, plot: LandPlot, shed: Wa
 export default async function PlacesPage() {
   const { db } = await requireStaff(["owner", "manager"])
   const t = await getTranslations("farm.land")
-  const [places, spend] = await Promise.all([db.farmPlace.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }), farmCoreSpending(db)])
+  const since = addDays(istDate(new Date()), -365)
+  const [places, spend, workers, days, inputs] = await Promise.all([
+    db.farmPlace.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
+    farmCoreSpending(db),
+    db.worker.findMany({ select: { id: true, payType: true, ratePaise: true } }),
+    db.workerDay.findMany({ where: { date: { gte: since }, placeId: { not: null } }, select: { workerId: true, state: true, placeId: true } }),
+    inputsByPlace(db, since),
+  ])
+  // Workers' days put on each place (from attendance), as labour worth
+  const labour = labourByPlace(workers, days)
   const live = places.filter((p) => !p.retiredAt)
   const retired = places.filter((p) => p.retiredAt)
   const blocks = live.filter((p) => p.kind === "block").map(({ id, name }) => ({ id, name }))
@@ -49,6 +61,8 @@ export default async function PlacesPage() {
               <div className="text-lg leading-tight font-bold">{p.name}</div>
               <div className="text-sm text-muted-foreground">{facts.join(" · ")}</div>
               {spent > 0 && <div className="text-sm font-medium">{t("spentYear", { amount: formatRupees(spent) })}</div>}
+              {(labour.get(p.id) ?? 0) > 0 && <div className="text-sm font-medium">{t("labourYear", { amount: formatRupees(labour.get(p.id)!) })}</div>}
+              {(inputs.get(p.id) ?? 0) > 0 && <div className="text-sm font-medium">{t("inputsYear", { amount: formatRupees(inputs.get(p.id)!) })}</div>}
               {p.notes && <div className="text-sm whitespace-pre-line">{p.notes}</div>}
             </div>
           </div>

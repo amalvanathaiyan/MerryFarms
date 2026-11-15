@@ -146,3 +146,15 @@ export async function alertFarmOnWhatsApp(tenant: Tenant, o: { code: string; cus
     })
   })
 }
+
+/** To the phones of these staff members (a job that is theirs). */
+export async function notifyStaffMembers(tenantId: string, staffIds: string[], note: Note): Promise<void> {
+  if (staffIds.length === 0) return
+  await quietly(async () => {
+    if (!(await pushOn(tenantId))) return
+    const db = tenantDb(tenantId)
+    const who = await db.staffMember.findMany({ where: { id: { in: staffIds }, isActive: true }, select: { id: true } })
+    const subs = await db.pushSubscription.findMany({ where: { staffId: { in: who.map((d) => d.id) } } })
+    await deliver(tenantId, subs, note)
+  })
+}

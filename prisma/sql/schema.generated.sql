@@ -669,6 +669,8 @@ CREATE TABLE "expenses" (
     "batchId" TEXT,
     "placeId" TEXT,
     "assetId" TEXT,
+    "inputId" TEXT,
+    "quantity" DOUBLE PRECISION,
     "spreadMonths" INTEGER,
     "note" TEXT,
     "byStaffId" TEXT,
@@ -1064,6 +1066,111 @@ CREATE TABLE "farm_assets" (
     CONSTRAINT "farm_assets_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "workers" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "phone" TEXT,
+    "role" TEXT,
+    "payType" TEXT NOT NULL DEFAULT 'daily',
+    "ratePaise" INTEGER NOT NULL,
+    "joinedOn" TEXT,
+    "leftOn" TEXT,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "workers_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "worker_days" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "workerId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "state" TEXT NOT NULL,
+    "placeId" TEXT,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "worker_days_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "worker_payments" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "workerId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "kind" TEXT NOT NULL,
+    "amountPaise" INTEGER NOT NULL,
+    "note" TEXT,
+    "expenseId" TEXT,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "worker_payments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "farm_inputs" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "kind" TEXT NOT NULL,
+    "unit" TEXT NOT NULL DEFAULT 'kg',
+    "lowAt" DOUBLE PRECISION,
+    "batchFeed" BOOLEAN NOT NULL DEFAULT false,
+    "retiredAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "farm_inputs_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "input_uses" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "inputId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "kind" TEXT NOT NULL DEFAULT 'used',
+    "quantity" DOUBLE PRECISION NOT NULL,
+    "placeId" TEXT,
+    "note" TEXT,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "input_uses_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "farm_tasks" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "note" TEXT,
+    "dueOn" TEXT NOT NULL,
+    "repeatEvery" INTEGER,
+    "repeatUnit" TEXT,
+    "placeId" TEXT,
+    "assetId" TEXT,
+    "forStaffId" TEXT,
+    "doneOn" TEXT,
+    "lastDoneOn" TEXT,
+    "lastDoneBy" TEXT,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "farm_tasks_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -1221,6 +1328,9 @@ CREATE INDEX "expenses_placeId_idx" ON "expenses"("placeId");
 CREATE INDEX "expenses_assetId_idx" ON "expenses"("assetId");
 
 -- CreateIndex
+CREATE INDEX "expenses_inputId_idx" ON "expenses"("inputId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "production_entries_tenantId_date_productId_key" ON "production_entries"("tenantId", "date", "productId");
 
 -- CreateIndex
@@ -1318,6 +1428,27 @@ CREATE INDEX "farm_places_tenantId_idx" ON "farm_places"("tenantId");
 
 -- CreateIndex
 CREATE INDEX "farm_assets_tenantId_idx" ON "farm_assets"("tenantId");
+
+-- CreateIndex
+CREATE INDEX "workers_tenantId_idx" ON "workers"("tenantId");
+
+-- CreateIndex
+CREATE INDEX "worker_days_tenantId_date_idx" ON "worker_days"("tenantId", "date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "worker_days_workerId_date_key" ON "worker_days"("workerId", "date");
+
+-- CreateIndex
+CREATE INDEX "worker_payments_tenantId_workerId_idx" ON "worker_payments"("tenantId", "workerId");
+
+-- CreateIndex
+CREATE INDEX "farm_inputs_tenantId_idx" ON "farm_inputs"("tenantId");
+
+-- CreateIndex
+CREATE INDEX "input_uses_tenantId_inputId_idx" ON "input_uses"("tenantId", "inputId");
+
+-- CreateIndex
+CREATE INDEX "farm_tasks_tenantId_dueOn_idx" ON "farm_tasks"("tenantId", "dueOn");
 
 -- AddForeignKey
 ALTER TABLE "staff_members" ADD CONSTRAINT "staff_members_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;

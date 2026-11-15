@@ -932,7 +932,7 @@ model BatchWeight {
 }
 
 /// Money spent running the farm (feed, medicine, chicks, labour…), for profit.
-/// batchId: spent on one batch (chicks, medicine). quantityKg: feed bought, which fills the feed store.
+/// batchId: spent on one batch (chicks, medicine). quantityKg: feed bought by the kg (the hens' feed in the store).
 /// spreadMonths: see src/domain/records.ts costInPeriod.
 model Expense {
   id           String   @id @default(uuid())
@@ -946,6 +946,10 @@ model Expense {
   /// whose repair and running costs it then shows; neither = the whole farm (common costs).
   placeId      String?
   assetId      String?
+  /// Bought into the farm store (src/server/inputs.ts): which item, and how much in its unit. The hens' feed is the
+  /// item with batchFeed; its quantity is kg (written to quantityKg too, as before the store).
+  inputId      String?
+  quantity     Float?
   /// A big cost (building, equipment) shared out over this many months in profit; null = counted on the day paid.
   spreadMonths Int?
   note         String?
@@ -957,6 +961,7 @@ model Expense {
   @@index([batchId])
   @@index([placeId])
   @@index([assetId])
+  @@index([inputId])
   @@map("expenses")
 }
 
@@ -1496,4 +1501,147 @@ model FarmAsset {
 
   @@index([tenantId])
   @@map("farm_assets")
+}
+
+// ─────────────────────────────────────────────────
+// FARM CORE: WORKERS, ATTENDANCE AND WAGES (docs/platform-plan.md §3.2; src/server/workers.ts)
+// ─────────────────────────────────────────────────
+
+/// Someone who works on the farm. No login: the owner or a manager marks their days and pays them.
+model Worker {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  phone     String?
+  /// What they mostly do ("milking", "tractor driver")
+  role      String?
+  /// daily | monthly (src/domain/workers.ts)
+  payType   String   @default("daily")
+  /// Pay for one day, or for a month
+  ratePaise Int
+  joinedOn  String?
+  /// Stopped working here; kept so old days and payments stay readable
+  leftOn    String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("workers")
+}
+
+/// One worker's day: present, half a day or absent, and where they worked (labour by place).
+model WorkerDay {
+  id        String   @id @default(uuid())
+  tenantId  String
+  workerId  String
+  date      String
+  /// present | half | absent
+  state     String
+  placeId   String?
+  byStaffId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workerId, date])
+  @@index([tenantId, date])
+  @@map("worker_days")
+}
+
+/// Money given to a worker: wages, or an advance before the work. Each is labour spending in Money (expenseId).
+model WorkerPayment {
+  id          String   @id @default(uuid())
+  tenantId    String
+  workerId    String
+  date        String
+  /// wage | advance
+  kind        String
+  amountPaise Int
+  note        String?
+  expenseId   String?
+  byStaffId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId, workerId])
+  @@map("worker_payments")
+}
+
+// ─────────────────────────────────────────────────
+// FARM CORE: THE STORE (docs/platform-plan.md §3.2; src/server/inputs.ts)
+// ─────────────────────────────────────────────────
+
+/// Something the farm buys and uses up: feed, seed, fertiliser, medicine, packing. Bought = expenses with inputId;
+/// used = InputUse rows, plus (for the batchFeed item) the kg given in each batch's daily entry.
+model FarmInput {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  /// feed | seed | fertiliser | medicine | packing | other (src/domain/inputs.ts)
+  kind      String
+  /// kg | litre | bag | packet | bottle | piece
+  unit      String    @default("kg")
+  /// Warn when this much or less is left; null = no warning
+  lowAt     Float?
+  /// The hens' feed: what batches are given in the daily entry comes out of it (one per farm; unit kg)
+  batchFeed Boolean   @default(false)
+  retiredAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@map("farm_inputs")
+}
+
+/// Taken out of the store (used), or a count that puts the store right (count: quantity is the change, + or -).
+model InputUse {
+  id        String   @id @default(uuid())
+  tenantId  String
+  inputId   String
+  date      String
+  /// used | count
+  kind      String   @default("used")
+  quantity  Float
+  /// Used on a place (fertiliser on a plot), so its cost shows there
+  placeId   String?
+  note      String?
+  byStaffId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, inputId])
+  @@map("input_uses")
+}
+
+// ─────────────────────────────────────────────────
+// FARM CORE: JOBS (docs/platform-plan.md §3.2; src/server/tasks.ts)
+// ─────────────────────────────────────────────────
+
+/// A job to do on the farm: once, or again every so many days, weeks or months. Due jobs show on Today with a Done
+/// button; a repeating job moves on to its next day when done.
+model FarmTask {
+  id          String   @id @default(uuid())
+  tenantId    String
+  title       String
+  note        String?
+  /// IST day it is due (for a repeating job: the next time)
+  dueOn       String
+  /// Repeats every repeatEvery repeatUnit (day | week | month); null = once
+  repeatEvery Int?
+  repeatUnit  String?
+  /// Where, or which machine (optional)
+  placeId     String?
+  assetId     String?
+  /// Only this staff member sees it on Today (null = the owner and managers)
+  forStaffId  String?
+  /// A one-off job done (null while to do)
+  doneOn      String?
+  lastDoneOn  String?
+  lastDoneBy  String?
+  byStaffId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId, dueOn])
+  @@map("farm_tasks")
 }
