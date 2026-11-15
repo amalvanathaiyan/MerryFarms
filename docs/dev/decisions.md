@@ -68,7 +68,7 @@ Dates are when it was decided. Newest decisions win. **Update this file whenever
   use `/f/<farm>` addresses, with the default farm at `/`.
 - **One address per app** (2026-11-13): shop, farm app and portal+admin each have their own address, so a phone
   can install them side by side. Now: `merry-farms.vercel.app`, `farmforyou-farm.vercel.app`,
-  `farmforyou.vercel.app`. With the domain: `<farm>.farmforyou.in`, `<farm>-farm.farmforyou.in`, `farmforyou.in`
+  `farmforyou-portal.vercel.app` (not farmforyou.vercel.app, which is someone else's site). With the domain: `<farm>.farmforyou.in`, `<farm>-farm.farmforyou.in`, `farmforyou.in`
   (admin stays on the portal, as the user chose). Farm slugs can't end in `-farm`. Before the domain, support visits
   stay on the portal address (vercel.app addresses can't share a sign-in).
 - **Backups:** the free plan keeps none. A nightly encrypted `pg_dump` runs on GitHub Actions (`docs/backups.md`).

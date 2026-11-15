@@ -16,7 +16,7 @@ https://developers.facebook.com/documentation/business-messaging/whatsapp/get-st
   call to verify. A number already used in the ordinary WhatsApp or WhatsApp Business app must be removed from that
   app first (or set up with Meta's "coexistence" option, which is more fiddly).
 - A Facebook account for yourself (it is never shown to customers).
-- The privacy page address: https://farmforyou.vercel.app/legal/privacy (Meta asks for one).
+- The privacy page address: https://farmforyou-portal.vercel.app/legal/privacy (Meta asks for one).
 
 ## Steps
 
@@ -49,7 +49,7 @@ https://developers.facebook.com/documentation/business-messaging/whatsapp/get-st
 
 8. **Webhook (the sign-in is built; do this once it's deployed).** In the app: *WhatsApp* → *Configuration* → *Webhook* →
    *Edit*:
-   - Callback URL: `https://farmforyou.vercel.app/api/whatsapp/webhook`
+   - Callback URL: `https://farmforyou-portal.vercel.app/api/whatsapp/webhook`
    - Verify token: the same `WHATSAPP_VERIFY_TOKEN`.
    - *Verify and save*, then under *Webhook fields* subscribe to **messages**.
 9. **Go live.** In the app, switch *App mode* from *Development* to *Live*. Until then, only numbers you add as

@@ -9,7 +9,7 @@
  *     merryfarms-farm.farmforyou.in   the farm's farm app, for its owner and staff
  *     farmforyou.in                   the portal, with FarmForYou admin at /admin
  *   Before the domain, one fixed address per app (SHOP_HOST, FARM_APP_HOST, PORTAL_HOST), e.g.
- *     merry-farms.vercel.app, farmforyou-farm.vercel.app, farmforyou.vercel.app;
+ *     merry-farms.vercel.app, farmforyou-farm.vercel.app, farmforyou-portal.vercel.app;
  *     the farm on them is the default farm, or the one a /f/<farm> link picked.
  *   Any other address (local development, preview deployments): every app on one address, as before.
  * Moving to the domain is a settings change: set ROOT_DOMAIN, add the domain in Vercel.

@@ -11,7 +11,7 @@ One Next.js app serves three installable PWAs, told apart by address (`src/domai
 |---|---|---|---|---|
 | **Shop** | customers | `/`, `/my`, `/i/[token]` | `merry-farms.vercel.app` | `<farm>.farmforyou.in` |
 | **Farm app** | farm admin (owner) and staff | `/farm/**` | `farmforyou-farm.vercel.app` | `<farm>-farm.farmforyou.in` |
-| **Portal** | public home page, farm directory, farm sign-up, super admin | `/welcome`, `/farms`, `/farms/[slug]`, `/join`, `/legal/*`, `/admin/**` | `farmforyou.vercel.app` | `farmforyou.in` |
+| **Portal** | public home page, farm directory, farm sign-up, super admin | `/welcome`, `/farms`, `/farms/[slug]`, `/join`, `/legal/*`, `/admin/**` | `farmforyou-portal.vercel.app` | `farmforyou.in` |
 
 - Each app has its own address because Android treats a second app on the same address as "already installed".
 - `SHOP_HOST`, `FARM_APP_HOST` and `PORTAL_HOST` set the addresses. Setting `NEXT_PUBLIC_ROOT_DOMAIN` switches to
