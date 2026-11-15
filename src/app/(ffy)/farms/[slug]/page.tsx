@@ -8,6 +8,7 @@ import { farmUrl } from "@/lib/farm-url"
 import { formatRupees } from "@/domain/money"
 import { formatIndianMobile } from "@/domain/phone"
 import { farmProfile } from "@/server/directory"
+import { groupSizes } from "@/domain/sizes"
 import { Button } from "@/components/ui/button"
 import { FarmMark } from "@/app/admin/farm-bits"
 import { FarmName } from "@/components/art/brand-mark"
@@ -95,14 +96,18 @@ export default async function FarmProfilePage({ params }: { params: Promise<{ sl
         <section className="flex flex-col gap-3">
           <h2 className="text-xl font-bold">{t("sells")}</h2>
           <ul className="grid gap-2 sm:grid-cols-2">
-            {f.products.map((p) => (
-              <li key={p.id} className="flex items-center gap-3 rounded-2xl border bg-card p-3">
-                <ProductPicture src={p.imageUrl} kind={p.art} alt="" className="size-16" />
+            {groupSizes(f.products, (p) => p.family).map(({ key, sizes }) => (
+              <li key={key} className="flex items-center gap-3 rounded-2xl border bg-card p-3">
+                <ProductPicture src={sizes.find((s) => s.imageUrl)?.imageUrl ?? null} kind={sizes[0].art} alt="" className="size-16" />
                 <span className="min-w-0 flex-1">
-                  <span className="block font-semibold">{pick(locale, p.nameTa, p.nameEn)}</span>
-                  <span className="block text-sm text-muted-foreground">{pick(locale, p.packTa, p.packEn)}</span>
+                  <span className="block font-semibold">{pick(locale, sizes[0].nameTa, sizes[0].nameEn)}</span>
+                  {sizes.map((p) => (
+                    <span key={p.id} className="flex justify-between gap-2 text-sm">
+                      <span className="text-muted-foreground">{pick(locale, p.packTa, p.packEn)}</span>
+                      <b className="tabular-nums">{formatRupees(p.pricePaise)}</b>
+                    </span>
+                  ))}
                 </span>
-                <b className="tabular-nums">{formatRupees(p.pricePaise)}</b>
               </li>
             ))}
           </ul>

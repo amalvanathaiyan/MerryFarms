@@ -12,6 +12,7 @@ import { dropPhoto, storePhoto } from "@/server/photos"
 import { planLimits } from "@/lib/features"
 import { atLimit } from "@/domain/entitlements"
 import { screenCategory, screenProduct, screenSafely } from "@/server/compliance"
+import { groupSizes, sizeFamily } from "@/domain/sizes"
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
 
@@ -85,8 +86,16 @@ export async function saveProduct(raw: unknown): Promise<ActionResult> {
   const ok = await db.$transaction(async (tx) => {
     let productId = id
     if (id) {
-      const before = await tx.product.findFirst({ where: { id, deletedAt: null }, select: { stockQty: true, eggsPerUnit: true, complianceHold: true } })
+      const before = await tx.product.findFirst({ where: { id, deletedAt: null }, select: { stockQty: true, eggsPerUnit: true, complianceHold: true, categoryId: true, nameTa: true, nameEn: true } })
       if (!before) return null
+      // Sizes are the products sharing a category and names (src/domain/sizes.ts): a new name or category for one
+      // size is the product's, so its other sizes come along and the sizes stay together.
+      if (sizeFamily(before) !== sizeFamily(rest)) {
+        const others = (await tx.product.findMany({ where: { categoryId: before.categoryId, deletedAt: null, NOT: { id } }, select: { id: true, categoryId: true, nameTa: true, nameEn: true } }))
+          .filter((o) => sizeFamily(o) === sizeFamily(before))
+          .map((o) => o.id)
+        if (others.length) await tx.product.updateMany({ where: { id: { in: others } }, data: { categoryId: rest.categoryId, nameTa: rest.nameTa, nameEn: rest.nameEn } })
+      }
       // Held by Farm For You: it stays hidden whatever the form says (screening below may lift the hold)
       await tx.product.updateMany({ where: { id }, data: { ...data, isActive: before.complianceHold ? false : data.isActive, eggsPerUnit, ...(eggsPerUnit ? {} : { stockQty }) } })
       if (eggsPerUnit && !before.eggsPerUnit) await joinEggStore(tx, tenant.id, stockQty, eggsPerUnit)
@@ -251,6 +260,7 @@ export async function moveCategory(id: string, dir: "up" | "down"): Promise<Acti
   return done()
 }
 
+/** Moves a product (with all its sizes) up or down its category. */
 export async function moveProduct(id: string, dir: "up" | "down"): Promise<ActionResult> {
   const { db } = await requireStaff(OWNER_ONLY)
   const product = await db.product.findFirst({ where: { id, deletedAt: null }, select: { categoryId: true } })
@@ -258,12 +268,15 @@ export async function moveProduct(id: string, dir: "up" | "down"): Promise<Actio
   const list = await db.product.findMany({
     where: { categoryId: product.categoryId, deletedAt: null },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    select: { id: true },
+    select: { id: true, categoryId: true, nameTa: true, nameEn: true },
   })
-  const next = reorder(list, id, dir)
+  // The product with all its sizes moves as one, past the next product with all of its.
+  const families = groupSizes(list, sizeFamily).map((f) => ({ id: f.key, sizes: f.sizes }))
+  const mine = families.find((f) => f.sizes.some((s) => s.id === id))
+  const next = mine && reorder(families, mine.id, dir)
   if (!next) return { ok: true }
   await db.$transaction(async (tx) => {
-    for (const [i, p] of next.entries()) await tx.product.updateMany({ where: { id: p.id }, data: { sortOrder: i } })
+    for (const [i, p] of next.flatMap((f) => f.sizes).entries()) await tx.product.updateMany({ where: { id: p.id }, data: { sortOrder: i } })
   })
   return done()
 }

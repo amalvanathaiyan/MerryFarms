@@ -138,7 +138,8 @@
       "admin": "Farm For You admin: you're seeing this farm's shop as customers do.",
       "backFarm": "Farm app",
       "backAdmin": "Admin"
-    }
+    },
+    "sizes": "Sizes"
   },
   "farm": {
     "nav": {
@@ -327,7 +328,12 @@
       "eggsPerUnitOff": "For eggs, pick how many are in one. Its stock then comes from the shared egg store.",
       "fromEggStore": "from the egg store",
       "heldChecking": "Hidden: Farm For You is checking this product.",
-      "heldKept": "Hidden by Farm For You."
+      "heldKept": "Hidden by Farm For You.",
+      "sizesCount": "{count} sizes",
+      "addSize": "Add a size",
+      "addSizeTitle": "Add a size of {name}",
+      "addSizeHint": "Its own pack, price and stock. The name stays the same, so it shows as a size of this product.",
+      "sizesHint": "Sold in more than one size (1 kg and ½ kg, 6 eggs and a tray)? Save one, then use Add a size."
     },
     "slots": {
       "title": "Delivery slots",

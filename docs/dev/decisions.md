@@ -30,6 +30,13 @@ Dates are when it was decided. Newest decisions win. **Update this file whenever
   and by product. Every farm is listed unless it turns off "Show my farm on Farm For You" (Settings → Choices); its
   page shows its story (Settings → Look), products, delivery area, videos, and shop / call / WhatsApp. It shows only
   what the farm's shop already shows publicly; the farm's exact location is never shown.
+- **Sizes / price per quantity** (Phase 4 part 1, built 2026-11-15): one product in several sizes (1 kg, ½ kg; 6
+  eggs, tray of 30), each its own price, stock and offer. Built with **no database change**: each size is its own
+  product row, and sizes are the products in one category with the same Tamil and English name
+  (`src/domain/sizes.ts`). So orders, stock, the egg store, offers and invoices are unchanged, and a farm that already
+  listed the same product in two packs got sizes at once. The shop shows one card with size buttons; the catalogue
+  shows one product with a line per size and "Add a size"; renaming or re-categorising one size takes the others
+  along; moving a product moves all its sizes.
 - **Catalogue** (2026-11-15): the platform admin defines product kinds (how measured, pack sizes, details). Farm
   owners can add their own categories, details and pack sizes. A full category catalogue per module; products
   priced per quantity.

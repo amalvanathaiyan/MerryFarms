@@ -194,7 +194,7 @@ Fish, Money, More.
 | **Today** (`/farm`) | | The day's jobs, announcements, alerts and the farm picture |
 | **Orders** | `/farm/orders` (new, counter, edit, return), `/farm/invoices/[id]`, `/farm/slots`, `/farm/plans` | Orders, counter sales (no name: one stand-in customer per farm, phone `counter`, `src/server/counter.ts`; left out of customer lists, search and counts), invoices, delivery slots, recurring plans |
 | **Customers** | `/farm/customers` (+ `[id]`), `/farm/messages` | Customers and messages |
-| **Catalogue** | `/farm/catalogue` | Products and categories |
+| **Catalogue** | `/farm/catalogue` | Products and categories; sizes of one product (same category and names, `src/domain/sizes.ts`) shown together with "Add a size" |
 | **Poultry** | `/farm/poultry/*` | entry, today, batches, feed, vaccines (+ plan), growth, costs, profit |
 | **Fish** | `/farm/fish`, `/farm/fish/entry`, `/farm/fish/[id]` | Ponds |
 | **My farm** | `/farm/land` (+ assets, store, tasks, workers) | Farm Core |

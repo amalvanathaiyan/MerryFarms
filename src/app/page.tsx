@@ -1,5 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server"
 import { listVideos } from "@/server/videos"
+import { sizeFamily } from "@/domain/sizes"
 import { shopVideos } from "@/domain/videos"
 import { sceneProps } from "@/lib/scene"
 import { getTenant } from "@/lib/tenant"
@@ -135,6 +136,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       id: p.id,
       categoryId: p.categoryId,
       name: pick(locale, p.nameTa, p.nameEn),
+      family: sizeFamily(p),
       pack: pick(locale, p.packTa, p.packEn),
       note: pick(locale, p.noteTa, p.noteEn),
       pricePaise: currentPrice(p, istDate(new Date())),
