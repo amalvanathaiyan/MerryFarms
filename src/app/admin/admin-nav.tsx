@@ -3,12 +3,12 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { Activity, Blocks, Bot, History, Inbox, LayoutDashboard, Layers, Megaphone, ReceiptIndianRupee, ShieldAlert, SlidersHorizontal, Tractor } from "lucide-react"
+import { Activity, Blocks, Bot, History, Inbox, LayoutDashboard, Layers, Megaphone, Package, ReceiptIndianRupee, ShieldAlert, SlidersHorizontal, Tractor } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 /**
  * Farm For You admin's menu: dashboard, farms (with how many want to join), requests (with how many are waiting),
- * compliance (with how many cases wait), billing, plans, modules, announcements, settings,
+ * compliance (with how many cases wait), billing, plans, modules, product kinds, announcements, settings,
  * automation, tech monitor and audit log. Words beside every icon.
  */
 export function AdminNav({ pending, joining, cases }: { pending: number; joining: number; cases: number }) {
@@ -22,6 +22,7 @@ export function AdminNav({ pending, joining, cases }: { pending: number; joining
     { href: "/admin/billing", key: "billing", icon: ReceiptIndianRupee, active: path.startsWith("/admin/billing") },
     { href: "/admin/plans", key: "plans", icon: Layers, active: path.startsWith("/admin/plans") },
     { href: "/admin/modules", key: "modules", icon: Blocks, active: path.startsWith("/admin/modules") },
+    { href: "/admin/products", key: "products", icon: Package, active: path.startsWith("/admin/products") },
     { href: "/admin/announcements", key: "announcements", icon: Megaphone, active: path.startsWith("/admin/announcements") },
     { href: "/admin/settings", key: "settings", icon: SlidersHorizontal, active: path.startsWith("/admin/settings") },
     { href: "/admin/automation", key: "automation", icon: Bot, active: path.startsWith("/admin/automation") },

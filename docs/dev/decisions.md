@@ -37,6 +37,12 @@ Dates are when it was decided. Newest decisions win. **Update this file whenever
   listed the same product in two packs got sizes at once. The shop shows one card with size buttons; the catalogue
   shows one product with a line per size and "Add a size"; renaming or re-categorising one size takes the others
   along; moving a product moves all its sizes.
+- **Product kinds** (Phase 4 part 2, built 2026-11-15): Admin → Products holds the kinds (measure, usual packs, the
+  details asked with answer type / required / shown to customers, weighed on delivery, shelf life, HSN, GST). A
+  starter list of ~24 South Indian kinds loads in one tap. Farms pick a kind for a category (or make their own) and
+  can add their own sizes and details; the product form offers the sizes as one tap, asks the details (required ones
+  enforced), and fills GST/HSN from the kind; the shop shows the details customers should see. "Weighed on delivery"
+  is stored but billing by weight isn't built yet.
 - **Catalogue** (2026-11-15): the platform admin defines product kinds (how measured, pack sizes, details). Farm
   owners can add their own categories, details and pack sizes. A full category catalogue per module; products
   priced per quantity.

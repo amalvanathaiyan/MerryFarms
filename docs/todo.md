@@ -3,6 +3,12 @@
 Things that are built or planned but need someone to do a step outside the code. Newest first. Remove a line once
 it's done.
 
+## Run the product kinds SQL (before product kinds go to main)
+
+- [ ] Run `prisma/sql/2026-11-15-product-kinds.sql` in the Supabase SQL editor, then `npm run db:rls`.
+      **Must be done before merging it to main:** the shop and catalogue read the new columns.
+- [ ] Then in Admin → Products: **Add the starter list**, and change it as you like.
+
 ## Set up Brevo for email sign-in codes
 
 Email codes are built and stay off until this is done (the demo shows codes on screen).

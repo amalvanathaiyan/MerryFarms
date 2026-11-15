@@ -31,9 +31,13 @@ import { cn } from "@/lib/utils"
 import { COMMON_EGG_PACKS } from "@/domain/eggs"
 import { useCheer } from "@/components/cheer"
 import { groupSizes, sizeFamily } from "@/domain/sizes"
+import { mergeDetails, mergePacks, type DetailDef, type DetailValue, type DetailValues, type PackDef } from "@/domain/product-kinds"
+import { cleanPacks, DetailsEditor, PacksEditor, withKeys, type DraftDetail } from "@/components/catalogue/kind-editors"
 import type { CheerKind } from "@/domain/cheers"
 
-type Category = { id: string; nameTa: string; nameEn: string; kind: string | null }
+type Category = { id: string; nameTa: string; nameEn: string; kind: string | null; productKindId: string | null; packs: PackDef[]; details: DetailDef[] }
+/** A Farm For You product kind (Admin → Products) a category can be. */
+type Kind = { id: string; nameTa: string; nameEn: string; art: ArtKind; packs: PackDef[]; details: DetailDef[]; hsn: string | null; gstRate: number; retired: boolean }
 type Product = {
   id: string
   categoryId: string
@@ -59,18 +63,22 @@ type Product = {
   offerLive: boolean
   /** Hidden by Farm For You (src/server/compliance.ts): why, in the farm's language; null = free */
   held: { reason: string | null; checking: boolean } | null
+  /** Answers to the details its category asks. */
+  details: DetailValues
 }
 type Draft = Omit<Product, "id" | "imageUrl" | "offerLive" | "held"> & { id?: string; sizeOf?: string }
 
 const UNITS = ["packs", "kg", "grams", "litres", "ml", "bottles", "jars", "pieces", "dozen", "bunches", "trays", "boxes", "bags", "birds"]
 
 export function CatalogueManager({
+  kinds,
   categories,
   products,
   canEdit,
   tracksStock,
   today,
 }: {
+  kinds: Kind[]
   categories: Category[]
   products: Product[]
   canEdit: boolean
@@ -88,7 +96,12 @@ export function CatalogueManager({
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [draft, setDraft] = useState<Draft | null>(null)
-  const [cat, setCat] = useState<{ id?: string; nameTa: string; nameEn: string; kind?: ArtKind } | null>(null)
+  const [cat, setCat] = useState<{ id?: string; nameTa: string; nameEn: string; kind?: ArtKind; productKindId: string | null; packs: PackDef[]; details: DraftDetail[]; own: boolean } | null>(null)
+  // A category's kind, and the pack sizes and details it offers (the kind's, then the farm's own).
+  const kindOf = (categoryId: string) => kinds.find((k) => k.id === categories.find((c) => c.id === categoryId)?.productKindId)
+  const packsFor = (categoryId: string) => mergePacks(kindOf(categoryId)?.packs ?? [], categories.find((c) => c.id === categoryId)?.packs ?? [])
+  const detailsFor = (categoryId: string) => mergeDetails(kindOf(categoryId)?.details ?? [], categories.find((c) => c.id === categoryId)?.details ?? [])
+  const newCategory = () => ({ nameTa: "", nameEn: "", productKindId: null, packs: [], details: [], own: false })
   const [bulk, setBulk] = useState<(Adjust & { categoryId: string }) | null>(null)
   const dayText = (d: string) => dayLabel(d, locale, { today: tc("today"), tomorrow: tc("tomorrow") })
   const [armedDelete, setArmedDelete] = useState(false)
@@ -105,6 +118,8 @@ export function CatalogueManager({
     })
 
   const blank = (): Draft => ({
+    ...kindDefaults(categories[0]?.id ?? ""),
+    details: {},
     categoryId: categories[0]?.id ?? "",
     nameTa: "",
     nameEn: "",
@@ -116,12 +131,15 @@ export function CatalogueManager({
     stockQty: 0,
     stockUnit: "packs",
     eggsPerUnit: null,
-    gstRate: 0,
-    hsn: "",
     isActive: true,
     offerRupees: null,
     offerEndsOn: "",
   })
+  /** A new product's GST and HSN from its category's kind (the farm can change them). */
+  function kindDefaults(categoryId: string): Pick<Draft, "gstRate" | "hsn"> {
+    const k = kindOf(categoryId)
+    return { gstRate: ([0, 5, 12, 18].includes(k?.gstRate ?? 0) ? k?.gstRate ?? 0 : 0) as Draft["gstRate"], hsn: k?.hsn ?? "" }
+  }
 
   const errorBox = error && (
     <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
@@ -144,7 +162,11 @@ export function CatalogueManager({
         <p className="-mt-2 text-sm text-muted-foreground">{draft.sizeOf ? t("addSizeHint") : t("sizesHint")}</p>
         {errorBox}
         <Labelled label={t("category")}>
-          <select className="h-11 rounded-md border border-input bg-transparent px-3" value={draft.categoryId} onChange={(e) => set("categoryId", e.target.value)}>
+          <select
+            className="h-11 rounded-md border border-input bg-transparent px-3"
+            value={draft.categoryId}
+            onChange={(e) => setDraft({ ...draft, categoryId: e.target.value, ...(draft.id ? {} : kindDefaults(e.target.value)) })}
+          >
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {pick(locale, c.nameTa, c.nameEn)}
@@ -172,6 +194,66 @@ export function CatalogueManager({
             <Input lang="en" value={draft.noteEn} onChange={(e) => set("noteEn", e.target.value)} />
           </Labelled>
         </div>
+        {packsFor(draft.categoryId).length > 0 && (
+          <div className="-mt-1 flex flex-col gap-1.5">
+            <span className="text-sm font-semibold">{t("pickPack")}</span>
+            <div className="flex flex-wrap gap-1.5">
+              {packsFor(draft.categoryId).map((p) => (
+                <button
+                  key={p.en}
+                  type="button"
+                  aria-pressed={draft.packEn === p.en}
+                  onClick={() => setDraft({ ...draft, packTa: p.ta, packEn: p.en })}
+                  className={cn("min-h-9 rounded-full border px-3 text-sm", draft.packEn === p.en ? "border-primary bg-accent font-semibold" : "bg-card")}
+                >
+                  {pick(locale, p.ta, p.en)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {detailsFor(draft.categoryId).length > 0 && (
+          <fieldset className="flex flex-col gap-3 rounded-xl border border-dashed p-3">
+            <legend className="px-1 text-sm font-semibold">{t("details")}</legend>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {detailsFor(draft.categoryId).map((d) => {
+                const v = draft.details[d.key]
+                const setV = (x: DetailValue | undefined) => {
+                  const next = { ...draft.details }
+                  if (x === undefined || x === "") delete next[d.key]
+                  else next[d.key] = x
+                  set("details", next)
+                }
+                const name = `${pick(locale, d.ta, d.en)}${d.required ? " *" : ""}`
+                if (d.type === "yesno")
+                  return (
+                    <label key={d.key} className="flex items-center gap-3 text-sm font-semibold">
+                      <input type="checkbox" className="size-5 accent-[hsl(var(--primary))]" checked={v === true} onChange={(e) => setV(e.target.checked)} />
+                      {name}
+                    </label>
+                  )
+                return (
+                  <Labelled key={d.key} label={name}>
+                    {d.type === "choice" ? (
+                      <select required={d.required} className="h-11 rounded-md border border-input bg-transparent px-3" value={typeof v === "string" ? v : ""} onChange={(e) => setV(e.target.value || undefined)}>
+                        <option value="">—</option>
+                        {d.choices.map((c) => (
+                          <option key={c.en} value={c.en}>
+                            {pick(locale, c.ta, c.en)}
+                          </option>
+                        ))}
+                      </select>
+                    ) : d.type === "number" ? (
+                      <Input required={d.required} type="number" step="any" inputMode="decimal" value={typeof v === "number" ? v : ""} onChange={(e) => setV(e.target.value === "" ? undefined : Number(e.target.value))} />
+                    ) : (
+                      <Input required={d.required} maxLength={80} value={typeof v === "string" ? v : ""} onChange={(e) => setV(e.target.value)} />
+                    )}
+                  </Labelled>
+                )
+              })}
+            </div>
+          </fieldset>
+        )}
         <div className={cn("grid gap-3", tracksStock ? "grid-cols-3" : "grid-cols-1")}>
           <Labelled label={t("price")}>
             <Input required type="number" min={1} step="0.5" inputMode="decimal" value={draft.priceRupees || ""} onChange={(e) => set("priceRupees", Number(e.target.value))} />
@@ -282,7 +364,7 @@ export function CatalogueManager({
           <Button size="lg" disabled={categories.length === 0} onClick={() => setDraft(blank())}>
             {t("addProduct")}
           </Button>
-          <Button size="lg" variant="outline" onClick={() => setCat({ nameTa: "", nameEn: "" })}>
+          <Button size="lg" variant="outline" onClick={() => setCat(newCategory())}>
             {t("addCategory")}
           </Button>
         </div>
@@ -293,7 +375,8 @@ export function CatalogueManager({
           className="flex flex-col gap-3 rounded-2xl border bg-card p-4"
           onSubmit={(e) => {
             e.preventDefault()
-            const withKind = { ...cat, kind: cat.kind ?? artKind(cat.nameEn, cat.nameTa) }
+            // "own" only opens the editors here; the server ignores fields it doesn't know.
+            const withKind = { ...cat, kind: cat.kind ?? artKind(cat.nameEn, cat.nameTa), packs: cleanPacks(cat.packs), details: withKeys(cat.details) }
             run(() => (cat.id ? renameCategory(withKind) : addCategory(withKind)), () => setCat(null), "product")
           }}
         >
@@ -301,12 +384,32 @@ export function CatalogueManager({
             <div className="flex flex-col gap-1.5">
               <span className="text-sm font-semibold">{t("quickCategories")}</span>
               <div className="flex flex-wrap gap-1.5">
-                {STARTER_CATEGORIES.filter((s) => !categories.some((c) => c.nameEn === s.nameEn)).map((s) => (
-                  <button key={s.nameEn} type="button" onClick={() => setCat({ nameTa: s.nameTa, nameEn: s.nameEn, kind: s.kind })} className={cn("flex items-center gap-1.5 rounded-full border py-1 pr-3 pl-1 text-sm", cat.nameEn === s.nameEn ? "border-primary bg-accent" : "bg-card")}>
-                    <ProductPicture src={null} kind={s.kind} alt="" className="size-7 rounded-full" />
-                    {pick(locale, s.nameTa, s.nameEn)}
+                {kinds.length > 0
+                  ? kinds
+                      .filter((k) => !k.retired && !categories.some((c) => c.productKindId === k.id))
+                      .map((k) => (
+                        <button
+                          key={k.id}
+                          type="button"
+                          aria-pressed={cat.productKindId === k.id}
+                          onClick={() => setCat({ ...cat, nameTa: k.nameTa, nameEn: k.nameEn, kind: k.art, productKindId: k.id })}
+                          className={cn("flex items-center gap-1.5 rounded-full border py-1 pr-3 pl-1 text-sm", cat.productKindId === k.id ? "border-primary bg-accent" : "bg-card")}
+                        >
+                          <ProductPicture src={null} kind={k.art} alt="" className="size-7 rounded-full" />
+                          {pick(locale, k.nameTa, k.nameEn)}
+                        </button>
+                      ))
+                  : STARTER_CATEGORIES.filter((s) => !categories.some((c) => c.nameEn === s.nameEn)).map((s) => (
+                      <button key={s.nameEn} type="button" onClick={() => setCat({ ...cat, nameTa: s.nameTa, nameEn: s.nameEn, kind: s.kind })} className={cn("flex items-center gap-1.5 rounded-full border py-1 pr-3 pl-1 text-sm", cat.nameEn === s.nameEn ? "border-primary bg-accent" : "bg-card")}>
+                        <ProductPicture src={null} kind={s.kind} alt="" className="size-7 rounded-full" />
+                        {pick(locale, s.nameTa, s.nameEn)}
+                      </button>
+                    ))}
+                {cat.productKindId && (
+                  <button type="button" onClick={() => setCat({ ...cat, productKindId: null })} className="rounded-full border px-3 py-1 text-sm text-muted-foreground">
+                    {t("ownCategory")}
                   </button>
-                ))}
+                )}
               </div>
             </div>
           )}
@@ -330,6 +433,23 @@ export function CatalogueManager({
               })}
             </div>
           </div>
+          {cat.own || cat.packs.length > 0 || cat.details.length > 0 ? (
+            <>
+              <fieldset className="flex flex-col gap-2">
+                <legend className="text-sm font-semibold">{t("ownPacks")}</legend>
+                <PacksEditor packs={cat.packs} onChange={(packs) => setCat({ ...cat, packs })} />
+              </fieldset>
+              <fieldset className="flex flex-col gap-2">
+                <legend className="text-sm font-semibold">{t("ownDetails")}</legend>
+                <p className="text-sm text-muted-foreground">{t("ownDetailsHint")}</p>
+                <DetailsEditor details={cat.details} onChange={(details) => setCat({ ...cat, details })} />
+              </fieldset>
+            </>
+          ) : (
+            <Button type="button" variant="ghost" className="self-start" onClick={() => setCat({ ...cat, own: true })}>
+              <Plus aria-hidden /> {t("addOwn")}
+            </Button>
+          )}
           <div className="flex gap-2">
             <Button type="submit" disabled={pending} className="flex-1">
               {tc("save")}
@@ -358,7 +478,7 @@ export function CatalogueManager({
                   <button type="button" className={icon} disabled={pending || ci === categories.length - 1} aria-label={t("moveDown")} onClick={() => run(() => moveCategory(c.id, "down"))}>
                     <ArrowDown className="size-4" />
                   </button>
-                  <button type="button" className={icon} aria-label={t("renameCategory")} onClick={() => setCat({ id: c.id, nameTa: c.nameTa, nameEn: c.nameEn, kind: (c.kind as ArtKind | null) ?? undefined })}>
+                  <button type="button" className={icon} aria-label={t("renameCategory")} onClick={() => setCat({ id: c.id, nameTa: c.nameTa, nameEn: c.nameEn, kind: (c.kind as ArtKind | null) ?? undefined, productKindId: c.productKindId, packs: c.packs, details: c.details, own: false })}>
                     <Pencil className="size-4" />
                   </button>
                   {list.length > 0 ? (

@@ -156,6 +156,9 @@ CREATE TABLE "categories" (
     "sortOrder" INTEGER NOT NULL DEFAULT 0,
     "showOnWhatsApp" BOOLEAN NOT NULL DEFAULT true,
     "kind" TEXT,
+    "productKindId" TEXT,
+    "packs" JSONB NOT NULL DEFAULT '[]',
+    "details" JSONB NOT NULL DEFAULT '[]',
     "deletedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -182,6 +185,7 @@ CREATE TABLE "products" (
     "eggsPerUnit" INTEGER,
     "hsn" TEXT,
     "gstRate" INTEGER NOT NULL DEFAULT 0,
+    "details" JSONB NOT NULL DEFAULT '{}',
     "imageUrl" TEXT,
     "onWeb" BOOLEAN NOT NULL DEFAULT true,
     "onWhatsApp" BOOLEAN NOT NULL DEFAULT true,
@@ -570,6 +574,29 @@ CREATE TABLE "whatsapp_sign_ins" (
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "whatsapp_sign_ins_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "product_kinds" (
+    "id" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "module" TEXT NOT NULL,
+    "nameTa" TEXT NOT NULL,
+    "nameEn" TEXT NOT NULL,
+    "art" TEXT NOT NULL,
+    "measure" TEXT NOT NULL,
+    "packs" JSONB NOT NULL DEFAULT '[]',
+    "details" JSONB NOT NULL DEFAULT '[]',
+    "weighedOnDelivery" BOOLEAN NOT NULL DEFAULT false,
+    "shelfLifeDays" INTEGER,
+    "hsn" TEXT,
+    "gstRate" INTEGER NOT NULL DEFAULT 0,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "retired" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "product_kinds_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -1439,6 +1466,9 @@ CREATE INDEX "whatsapp_sign_ins_phone_createdAt_idx" ON "whatsapp_sign_ins"("pho
 
 -- CreateIndex
 CREATE INDEX "whatsapp_sign_ins_tenantId_phone_createdAt_idx" ON "whatsapp_sign_ins"("tenantId", "phone", "createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "product_kinds_key_key" ON "product_kinds"("key");
 
 -- CreateIndex
 CREATE INDEX "closed_days_tenantId_date_idx" ON "closed_days"("tenantId", "date");

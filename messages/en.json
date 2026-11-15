@@ -19,7 +19,9 @@
     "settings": "Settings",
     "reports": "Reports",
     "backShort": "Back",
-    "account": "My account"
+    "account": "My account",
+    "yes": "Yes",
+    "no": "No"
   },
   "shop": {
     "hello": "Hello!",
@@ -333,7 +335,14 @@
       "addSize": "Add a size",
       "addSizeTitle": "Add a size of {name}",
       "addSizeHint": "Its own pack, price and stock. The name stays the same, so it shows as a size of this product.",
-      "sizesHint": "Sold in more than one size (1 kg and ½ kg, 6 eggs and a tray)? Save one, then use Add a size."
+      "sizesHint": "Sold in more than one size (1 kg and ½ kg, 6 eggs and a tray)? Save one, then use Add a size.",
+      "pickPack": "Pick a size (or type your own above)",
+      "details": "Details",
+      "ownCategory": "Make it my own",
+      "ownPacks": "Your own sizes",
+      "ownDetails": "Your own details",
+      "ownDetailsHint": "Asked for each product in this category, on top of Farm For You's.",
+      "addOwn": "Add your own sizes or details"
     },
     "slots": {
       "title": "Delivery slots",
@@ -2208,7 +2217,9 @@
     "email_invalid": "Please check the email address.",
     "email_in_use": "This email is already used by another customer of this farm.",
     "email_phone_known": "This number is already with the farm. Please sign in with WhatsApp, or call the farm.",
-    "phone_not_proven": "Please sign in with WhatsApp or a code to your phone first."
+    "phone_not_proven": "Please sign in with WhatsApp or a code to your phone first.",
+    "details_required": "Please fill in the details marked *.",
+    "choices_needed": "A detail with choices needs at least two choices."
   },
   "my": {
     "connectTitle": "Connect with the farm",
@@ -2436,7 +2447,8 @@
       "audit": "Audit log",
       "billing": "Billing",
       "announcements": "Announcements",
-      "compliance": "Compliance"
+      "compliance": "Compliance",
+      "products": "Products"
     },
     "plans": {
       "title": "Plans",
@@ -3511,5 +3523,50 @@
     "sells": "What we sell",
     "orderFrom": "Order from {farm}",
     "videos": "From the farm"
+  },
+  "kinds": {
+    "title": "Product kinds",
+    "hint": "What farms can sell, by module: how each is measured, its usual pack sizes, the details asked for each product, and defaults. Farms make their categories from these, and can add their own.",
+    "noneYet": "No product kinds yet. Start with the starter list (eggs, milk, fish, rice, vegetables, oils…) and change it as you like.",
+    "starterMissing": "{count, plural, one {# kind from the starter list isn't here.} other {# kinds from the starter list aren't here.}}",
+    "addStarters": "Add the starter list",
+    "newKind": "New product kind",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "retire": "Stop offering",
+    "restore": "Offer again",
+    "retired": "Not offered",
+    "nameTa": "Name in Tamil",
+    "nameEn": "Name in English",
+    "module": "Module",
+    "measure": "Measured by",
+    "measure_count": "Count",
+    "measure_weight": "Weight",
+    "measure_volume": "Volume",
+    "drawing": "Drawing",
+    "packs": "Usual pack sizes",
+    "addPack": "Add a size",
+    "details": "Details asked for each product",
+    "detailsHint": "E.g. eggs: type, size. Milk: animal, A2, fat %. Choose what kind of answer, whether it must be filled in, and whether customers see it.",
+    "addDetail": "Add a detail",
+    "detailTa": "Detail in Tamil",
+    "detailEn": "Detail in English",
+    "answer": "Answer",
+    "type_choice": "Choose one",
+    "type_number": "Number",
+    "type_text": "Words",
+    "type_yesno": "Yes or no",
+    "required": "Must fill in",
+    "shown": "Customers see it",
+    "choices": "Choices",
+    "addChoice": "Add a choice",
+    "inTamil": "In Tamil",
+    "inEnglish": "In English",
+    "remove": "Remove",
+    "shelfLife": "Keeps for (days)",
+    "weighed": "Weighed on delivery.",
+    "weighedHint": "Customers order about how much; the bill is set when it's weighed (fish, chicken).",
+    "asks": "Asks: {list}"
   }
 }
