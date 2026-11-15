@@ -43,6 +43,17 @@ Dates are when it was decided. Newest decisions win. **Update this file whenever
   can add their own sizes and details; the product form offers the sizes as one tap, asks the details (required ones
   enforced), and fills GST/HSN from the kind; the shop shows the details customers should see. "Weighed on delivery"
   is stored but billing by weight isn't built yet.
+- **Drawings for every product** (user, 2026-11-15: "draw all possible drawings… cross check all possibilities are
+  covered"): the library grew from 137 to 170 line drawings (turkey, chicken leg, sheep, calf, Kangayam bull with
+  hump, pig, rabbit, meat cut, paneer, dung cakes, compost, earthworm, panchagavya pot, hay bale, prawn, crab, dried
+  fish, fingerlings, pulses, sugarcane, jasmine string, marigold, rose, arecanut, coffee, tea, tamarind, cashew,
+  cotton, firewood, flour bag, silk cocoons, tractor), drawn as exact geometry in Python and checked rendered beside
+  the library's own. A product kind or category can use **any** library drawing (`isPicture`, `pictureFor` in
+  `src/components/art/drawing-library.ts`; `DrawingPicker`). The starter list is 63 kinds across poultry, livestock,
+  fishery, crops, value-added and services, each with its own drawing; `src/domain/product-kinds.test.ts` holds the
+  COVERAGE list (every product farms sell, by module) and fails if any is missing or any drawing doesn't exist.
+  "Update to the latest starter list" refreshes kinds admin never edited, adds new ones, and removes renamed old ones
+  nobody uses; edited kinds are never touched.
 - **Catalogue** (2026-11-15): the platform admin defines product kinds (how measured, pack sizes, details). Farm
   owners can add their own categories, details and pack sizes. A full category catalogue per module; products
   priced per quantity.
@@ -68,7 +79,7 @@ Dates are when it was decided. Newest decisions win. **Update this file whenever
   use `/f/<farm>` addresses, with the default farm at `/`.
 - **One address per app** (2026-11-13): shop, farm app and portal+admin each have their own address, so a phone
   can install them side by side. Now: `merry-farms.vercel.app`, `farmforyou-farm.vercel.app`,
-  `farmforyou.vercel.app`. With the domain: `<farm>.farmforyou.in`, `<farm>-farm.farmforyou.in`, `farmforyou.in`
+  `farmforyou-portal.vercel.app` (not farmforyou.vercel.app, which is someone else's site). With the domain: `<farm>.farmforyou.in`, `<farm>-farm.farmforyou.in`, `farmforyou.in`
   (admin stays on the portal, as the user chose). Farm slugs can't end in `-farm`. Before the domain, support visits
   stay on the portal address (vercel.app addresses can't share a sign-in).
 - **Backups:** the free plan keeps none. A nightly encrypted `pg_dump` runs on GitHub Actions (`docs/backups.md`).

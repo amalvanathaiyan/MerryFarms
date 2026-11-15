@@ -6,7 +6,7 @@ import { OWNER_ONLY, requireStaff } from "@/lib/auth"
 import { rupeesToPaise } from "@/domain/money"
 import { MAX_PHOTO_BYTES, sniffImage } from "@/domain/product-art"
 import { adjustPrice } from "@/domain/offers"
-import { ART_KINDS } from "@/domain/product-art"
+import { isPicture } from "@/components/art/drawing-library"
 import { addEggs, putStock, removeStockUpTo, setEggStore, syncEggStock, type Tx } from "@/server/stock"
 import { dropPhoto, storePhoto } from "@/server/photos"
 import { planLimits } from "@/lib/features"
@@ -27,7 +27,8 @@ const done = (): ActionResult => {
 const categorySchema = z.object({
   nameTa: z.string().trim().min(1).max(60),
   nameEn: z.string().trim().min(1).max(60),
-  kind: z.enum(ART_KINDS).optional(),
+  /** Its picture: one of the 14 coloured ones or any library drawing. */
+  kind: z.string().refine(isPicture).optional(),
   /** The Farm For You product kind it is (Admin → Products); null = the farm's own. */
   productKindId: z.string().min(1).nullable().optional(),
   /** The farm's own pack sizes and details, on top of the kind's. */

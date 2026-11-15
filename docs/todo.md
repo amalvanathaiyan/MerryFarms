@@ -5,7 +5,7 @@ it's done.
 
 ## Load the product kinds
 
-- [ ] In Admin → Products: **Add the starter list**, and change it as you like (the SQL is applied).
+- [ ] In Admin → Products (farmforyou-portal.vercel.app/admin/products): **Update to the latest starter list** (63 kinds with drawings), then change it as you like.
 
 ## Set up Brevo for email sign-in codes
 

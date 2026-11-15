@@ -110,7 +110,7 @@ On a `*.vercel.app` address the site is one farm (`DEFAULT_TENANT_SLUG`) and reg
 |---|---|---|
 | Shop (customers) | `SHOP_HOST=merry-farms.vercel.app` | `merryfarms.farmforyou.in` |
 | Farm app (owners, staff) | `FARM_APP_HOST=farmforyou-farm.vercel.app` (labelled FarmForYou) | `merryfarms-farm.farmforyou.in` (labelled with the farm's name) |
-| Portal and admin (`/admin`) | `PORTAL_HOST=farmforyou.vercel.app` | `farmforyou.in` |
+| Portal and admin (`/admin`) | `PORTAL_HOST=farmforyou-portal.vercel.app` | `farmforyou.in` |
 
 A page asked for on another app's address is sent there. Before the domain the addresses can't share a sign-in, so a support visit stays on the portal's address. Any other address (local development, preview deployments) keeps every app on one address. Moving to the domain is settings only: set `NEXT_PUBLIC_ROOT_DOMAIN`, add `farmforyou.in` and `*.farmforyou.in` in Vercel; the three `*_HOST` settings are then not needed. Vercel's free Hobby plan is for non-commercial use only; a business needs Pro.
 

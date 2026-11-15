@@ -1,8 +1,8 @@
 import { getTranslations } from "next-intl/server"
-import { listKinds } from "@/server/product-kinds"
+import { listKinds, starterChanges } from "@/server/product-kinds"
 import { MODULE_KEYS, isModuleKey } from "@/domain/modules"
-import { isArtKind } from "@/domain/product-art"
-import { MEASURES, STARTER_KINDS, type Measure } from "@/domain/product-kinds"
+import { isPicture } from "@/components/art/drawing-library"
+import { MEASURES, type Measure } from "@/domain/product-kinds"
 import { KindCard, StarterKindsButton, type KindView } from "./kind-form"
 
 /**
@@ -18,7 +18,7 @@ export default async function AdminProductsPage() {
     module: isModuleKey(k.module) ? k.module : "selling",
     nameTa: k.nameTa,
     nameEn: k.nameEn,
-    art: isArtKind(k.art) ? k.art : "basket",
+    art: isPicture(k.art) ? k.art : "basket",
     measure: (MEASURES as readonly string[]).includes(k.measure) ? (k.measure as Measure) : "count",
     packs: k.packs,
     details: k.details,
@@ -29,7 +29,7 @@ export default async function AdminProductsPage() {
     retired: k.retired,
   })
   const blank: KindView = { id: null, module: "crops", nameTa: "", nameEn: "", art: "basket", measure: "weight", packs: [], details: [], weighedOnDelivery: false, shelfLifeDays: null, hsn: null, gstRate: 0, retired: false }
-  const missing = STARTER_KINDS.filter((s) => !kinds.some((k) => k.key === s.key)).length
+  const changes = await starterChanges()
 
   return (
     <div className="flex flex-col gap-5">
@@ -37,10 +37,10 @@ export default async function AdminProductsPage() {
         <h1 className="text-2xl font-bold sm:text-3xl">{t("title")}</h1>
         <p className="text-muted-foreground">{t("hint")}</p>
       </div>
-      {missing > 0 && (
+      {changes.count > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed p-4">
-          <p>{kinds.length === 0 ? t("noneYet") : t("starterMissing", { count: missing })}</p>
-          <StarterKindsButton label={t("addStarters")} />
+          <p>{kinds.length === 0 ? t("noneYet") : t("starterChanges", { count: changes.count })}</p>
+          <StarterKindsButton label={kinds.length === 0 ? t("addStarters") : t("updateStarters")} />
         </div>
       )}
       <ul>
