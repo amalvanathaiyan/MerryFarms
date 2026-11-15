@@ -26,7 +26,7 @@ is the first step of the Meta setup in `docs/todo.md`. RLS is on for every table
 | 2. Farm Core | Places and machines, workers and wages, farm store, jobs and reminders |
 | 3. Customers (part) | Part 1: PlatformPerson, customer source and kind, staff-added customers, consent log. Part 2: free WhatsApp sign-in (off until the Meta setup), 90-day sign-in. Part 3: email codes through Brevo (off until set up). Part 4: counter sale. Part 5: farm directory and farm pages |
 | 4. Selling v2 (part) | Part 1: sizes / price per quantity, no database change. Part 2: product kinds in admin, category kinds, product details |
-| Drawings & coverage | 170 drawings; any kind/category can use any; 63 starter kinds covering every product on the coverage list (branch `feature/phase4-drawings`) |
+| Drawings & coverage | 170 drawings; any kind/category can use any; 63 starter kinds covering every product on the coverage list |
 | 7. Fishery | Ponds, cycles, stocking, day entry, water checks, samples, harvests, cycle money, reminders |
 
 ## Next
