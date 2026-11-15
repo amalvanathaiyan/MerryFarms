@@ -12,6 +12,7 @@ export type SectionKey =
   | "today"
   | "orders"
   | "poultry"
+  | "fish"
   | "money"
   | "more"
   | "products"
@@ -39,6 +40,7 @@ export const SECTION_LOOK: Record<SectionKey, SectionLook> = {
   today: { strong: "bg-sec-today text-sec-on", tint: "bg-sec-today-tint", text: "text-sec-today", border: "border-sec-today" },
   orders: { strong: "bg-sec-orders text-sec-on", tint: "bg-sec-orders-tint", text: "text-sec-orders", border: "border-sec-orders" },
   poultry: { strong: "bg-sec-poultry text-sec-on", tint: "bg-sec-poultry-tint", text: "text-sec-poultry", border: "border-sec-poultry" },
+  fish: { strong: "bg-sec-fish text-sec-on", tint: "bg-sec-fish-tint", text: "text-sec-fish", border: "border-sec-fish" },
   money: { strong: "bg-sec-money text-sec-on", tint: "bg-sec-money-tint", text: "text-sec-money", border: "border-sec-money" },
   more: { strong: "bg-sec-more text-sec-on", tint: "bg-sec-more-tint", text: "text-sec-more", border: "border-sec-more" },
   products: { strong: "bg-sec-products text-sec-on", tint: "bg-sec-products-tint", text: "text-sec-products", border: "border-sec-products" },
@@ -91,6 +93,14 @@ export function poultryTabs(who: Who): Tab[] {
   ]
 }
 
+/** Fishery's tabs: the ponds (owner and manager start cycles there) and the day's entry (staff too). */
+export function fishTabs(who: Who): Tab[] {
+  if (!who.features.fishCare || !has(who, "owner", "packing")) return []
+  const ponds = { key: "ponds", href: "/farm/fish" }
+  const entry = { key: "entry", href: "/farm/fish/entry" }
+  return has(who, "owner") ? [ponds, entry] : [entry, ponds]
+}
+
 /** Money's tabs: packing staff only enter what was made; the rest is the owner's (and a manager's). */
 export function moneyTabs(who: Who): Tab[] {
   const owner = has(who, "owner")
@@ -126,31 +136,40 @@ export function settingsTabs(features: { farmVideos: boolean }): Tab[] {
 }
 
 export interface MenuItem {
-  key: "today" | "orders" | "poultry" | "money" | "more"
+  key: "today" | "orders" | "poultry" | "fish" | "money" | "more"
   href: string
   /** Paths that light this button up. */
   prefixes: string[]
 }
 
 /** Pages reached from More: they light up the More button. */
-const MORE_PATHS = ["/farm/more", "/farm/land", "/farm/catalogue", "/farm/customers", "/farm/slots", "/farm/messages", "/farm/whatsapp", "/farm/plans", "/farm/staff", "/farm/settings", "/farm/account"]
+const MORE_PATHS = ["/farm/more", "/farm/fish", "/farm/land", "/farm/catalogue", "/farm/customers", "/farm/slots", "/farm/messages", "/farm/whatsapp", "/farm/plans", "/farm/staff", "/farm/settings", "/farm/account"]
 
-/** The bottom menu for this person: at most five big buttons. */
+/**
+ * The bottom menu for this person: at most five big buttons. One farming section gets a button (poultry first);
+ * a farm with both keeps fish on the More page.
+ */
+export function fishOnMenu(who: Who) {
+  return fishTabs(who).length > 0 && poultryTabs(who).length === 0
+}
+
 export function mainMenu(who: Who): MenuItem[] {
   const poultry = poultryTabs(who)
+  const fish = fishOnMenu(who) ? fishTabs(who) : []
   const money = moneyTabs(who)
   return [
     { key: "today" as const, href: "/farm", prefixes: [] },
     { key: "orders" as const, href: "/farm/orders", prefixes: ["/farm/orders", "/farm/invoices"] },
     ...(poultry.length ? [{ key: "poultry" as const, href: poultry[0].href, prefixes: ["/farm/poultry"] }] : []),
+    ...(fish.length ? [{ key: "fish" as const, href: fish[0].href, prefixes: ["/farm/fish"] }] : []),
     ...(money.length ? [{ key: "money" as const, href: money[0].href, prefixes: ["/farm/money"] }] : []),
-    { key: "more" as const, href: "/farm/more", prefixes: MORE_PATHS },
+    { key: "more" as const, href: "/farm/more", prefixes: fish.length ? MORE_PATHS.filter((p) => p !== "/farm/fish") : MORE_PATHS },
   ]
 }
 
 export const menuItemActive = (item: MenuItem, path: string) => (item.key === "today" ? path === "/farm" : item.prefixes.some((p) => path === p || path.startsWith(`${p}/`)))
 
-export type MoreKey = "land" | "products" | "customers" | "slots" | "messages" | "whatsapp" | "plans" | "staff" | "settings" | "account"
+export type MoreKey = "fish" | "land" | "products" | "customers" | "slots" | "messages" | "whatsapp" | "plans" | "staff" | "settings" | "account"
 
 export interface MoreTile {
   key: MoreKey
@@ -161,7 +180,9 @@ export interface MoreTile {
 export function moreTiles(who: Who): MoreTile[] {
   const desk = has(who, "owner", "order_desk")
   const f = who.features
+  const fish = fishTabs(who)
   const tiles: (MoreTile | false)[] = [
+    fish.length > 0 && !fishOnMenu(who) && { key: "fish", href: fish[0].href },
     // My farm: the owner and a manager keep the farm's places and assets
     has(who, "owner") && { key: "land", href: "/farm/land" },
     has(who, "owner", "order_desk", "packing") && { key: "products", href: "/farm/catalogue" },

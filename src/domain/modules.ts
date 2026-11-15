@@ -28,7 +28,7 @@ export const MODULES: Record<ModuleKey, ModuleDef> = {
   buying: { alwaysOn: false, available: false, requires: [], icon: "truck" },
   poultry: { alwaysOn: false, available: true, requires: [], icon: "egg" },
   livestock: { alwaysOn: false, available: false, requires: [], icon: "milk" },
-  fishery: { alwaysOn: false, available: false, requires: [], icon: "fish" },
+  fishery: { alwaysOn: false, available: true, requires: [], icon: "fish" },
   crops: { alwaysOn: false, available: false, requires: [], icon: "sprout" },
 }
 

@@ -25,6 +25,8 @@ import { announcementsFor, farmInvoices } from "@/server/platform-billing"
 import { FarmAnnouncements } from "@/components/farm/announcements"
 import { DoneButton } from "@/components/farm/task-forms"
 import { remindersFor } from "@/server/tasks"
+import { fishBook } from "@/server/fish"
+import { pondReminders } from "@/domain/fish"
 import { dueNow, seesTask } from "@/domain/tasks"
 
 /**
@@ -59,6 +61,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const te = await getTranslations("errors")
   const tst = await getTranslations("farm.store")
   const tt = await getTranslations("farm.tasks")
+  const tf = await getTranslations("farm.fish")
   const labels = { today: tc("today"), tomorrow: tc("tomorrow") }
   const unitName = (u: string) => (tu.has(u) ? tu(u) : u)
   const today = istDate(new Date())
@@ -89,6 +92,10 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     boss ? remindersFor(db, today, alerts.some((a) => a.kind === "feed")) : Promise.resolve([]),
   ])
   const myTasks = dueNow(openTasks, today).filter((x) => seesTask(x, staff))
+  // Fish ponds (owner, manager, packing): ponds not entered today, water out of range lately, size checks due.
+  const ponds = canRecord && features.fishCare ? (await fishBook(db, today)).open : []
+  const pondsToEnter = ponds.filter((p) => !p.enteredToday)
+  const pondJobs = pondReminders(ponds, today)
   const unreadMessages = features.messages ? await db.message.count({ where: { sender: "customer", seenAt: null } }) : 0
   const activePlans = features.subscriptions ? await db.subscription.count({ where: { status: "active" } }) : 0
 
@@ -158,6 +165,22 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       hint: `${v.batch.name} · #${v.batch.number} · ${v.dueDate === today ? tv("dueToday") : tv("lateSince", { day: dayLabel(v.dueDate!, locale, labels) })}`,
       href: "/farm/poultry/vaccines",
     })),
+    ...pondJobs
+      .filter((r) => r.kind === "water")
+      .map((r) => ({
+        key: `water-${r.cycleId}`,
+        section: "fish" as const,
+        icon: "fish",
+        title: tf("jobWater", { pond: r.pond }),
+        hint: r.kind === "water" ? `${r.warnings.map((w) => tf(`warn_${w.check}_${w.side}`)).join(" ")} ${tf(`do_${r.warnings[0].check}_${r.warnings[0].side}`)}` : "",
+        href: `/farm/fish/${r.cycleId}`,
+      })),
+    ...(pondsToEnter.length > 0
+      ? [{ key: "ponds", section: "fish" as const, icon: "entry", title: tf("jobEnter", { count: pondsToEnter.length }), hint: pondsToEnter.map((p) => p.pond).join(", "), href: "/farm/fish/entry" }]
+      : []),
+    ...pondJobs
+      .filter((r) => r.kind === "sample")
+      .map((r) => ({ key: `sample-${r.cycleId}`, section: "fish" as const, icon: "growth", title: tf("jobSample", { pond: r.pond }), hint: tf("jobSampleHint"), href: `/farm/fish/${r.cycleId}` })),
     ...(toConfirm > 0 && features.callConfirmation && staff.roles.some((r) => r === "owner" || r === "order_desk")
       ? [{ key: "confirm", section: "orders" as const, icon: "orders", title: t("jobConfirm", { count: toConfirm }), hint: t("jobConfirmHint"), href: "/farm/orders" }]
       : []),
