@@ -39,8 +39,12 @@ https://developers.facebook.com/documentation/business-messaging/whatsapp/get-st
    | `WHATSAPP_API_TOKEN` | Step 5 |
    | `WHATSAPP_APP_SECRET` | Step 6 |
    | `WHATSAPP_VERIFY_TOKEN` | Any long random word you make up; also typed in step 8 |
+   | `OTP_SECRET` | Any 32+ random characters (`node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`), if not set already |
 
-8. **Webhook (after the sign-in is built and deployed).** In the app: *WhatsApp* → *Configuration* → *Webhook* →
+   The free sign-in switches on by itself once `WHATSAPP_NUMBER` and `WHATSAPP_APP_SECRET` are set (and the farm's
+   "Sign in with a code" choice is on). Admin → Tech shows "WhatsApp, customer sends the code (free)".
+
+8. **Webhook (the sign-in is built; do this once it's deployed).** In the app: *WhatsApp* → *Configuration* → *Webhook* →
    *Edit*:
    - Callback URL: `https://farmforyou.vercel.app/api/whatsapp/webhook`
    - Verify token: the same `WHATSAPP_VERIFY_TOKEN`.

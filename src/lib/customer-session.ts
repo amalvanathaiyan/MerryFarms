@@ -17,9 +17,10 @@ export const getSessionCustomer = cache(async () => {
   return customerByToken(tenant.id, token)
 })
 
-/** Remember this phone as the customer's. Only from server actions and route handlers. */
-export async function rememberCustomer(token: string) {
-  ;(await cookies()).set(CUSTOMER_COOKIE, token, CUSTOMER_COOKIE_OPTIONS)
+/** Remember this phone as the customer's. Only from server actions and route handlers. `days`: how long (a code
+ *  sign-in keeps them signed in for SIGNED_IN_DAYS; a personal link, a year). */
+export async function rememberCustomer(token: string, days?: number) {
+  ;(await cookies()).set(CUSTOMER_COOKIE, token, days ? { ...CUSTOMER_COOKIE_OPTIONS, maxAge: 60 * 60 * 24 * days } : CUSTOMER_COOKIE_OPTIONS)
 }
 
 export async function forgetCustomer() {

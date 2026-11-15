@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { generateAllPlanOrders } from "@/server/plans"
 import { pruneCodes } from "@/server/otp"
+import { pruneSignIns } from "@/server/whatsapp-sign-in"
 import { eveningReminders } from "@/server/reminders"
 
 /**
@@ -18,6 +19,7 @@ export async function POST(request: Request) {
   }
   const farms = await generateAllPlanOrders()
   await pruneCodes()
+  await pruneSignIns()
   const notEntered = await eveningReminders()
   return NextResponse.json({ farms, notEntered })
 }

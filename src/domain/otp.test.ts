@@ -33,3 +33,16 @@ describe("one-time codes", () => {
     expect(checkCode(null, h, now)).toBe("no_code")
   })
 })
+
+describe("customer sends the code on WhatsApp", () => {
+  it("finds the code in what they sent, and builds the ready-made message", async () => {
+    const { codeFromMessage, inboundText, waLink } = await import("./otp")
+    expect(codeFromMessage("Farm For You sign-in code 482913")).toBe("482913")
+    expect(codeFromMessage("Farm For You உள்நுழைவுக் குறியீடு 004211")).toBe("004211")
+    expect(codeFromMessage(" 123456 ")).toBe("123456")
+    expect(codeFromMessage("call 9876543210")).toBeNull()
+    expect(codeFromMessage("hello")).toBeNull()
+    expect(codeFromMessage(inboundText("777888", "ta"))).toBe("777888")
+    expect(waLink("+91 98765 43210", "code 1")).toBe("https://wa.me/919876543210?text=code%201")
+  })
+})

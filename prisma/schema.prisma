@@ -805,6 +805,27 @@ model OtpCode {
   @@map("otp_codes")
 }
 
+/// Free sign-in: the customer SENDS a code to Farm For You's WhatsApp number (src/server/whatsapp-sign-in.ts). WhatsApp
+/// vouches for the sender, so a message from the typed number with the right code proves the number. browserHash ties
+/// the request to the phone that started it, so only that browser can use the proof.
+model WhatsAppSignIn {
+  id          String    @id @default(uuid())
+  tenantId    String
+  phone       String // E.164
+  language    Language  @default(ta)
+  codeHash    String
+  browserHash String
+  expiresAt   DateTime
+  provenAt    DateTime?
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([phone, createdAt])
+  @@index([tenantId, phone, createdAt])
+  @@map("whatsapp_sign_ins")
+}
+
 /// A day (or one slot on a day) with no deliveries: festival, family event, rest day.
 model ClosedDay {
   id        String   @id @default(uuid())

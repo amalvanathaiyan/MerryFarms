@@ -1,18 +1,20 @@
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { checkCodeAction, registerAction, sendCodeAction } from "@/app/actions/sign-in"
+import { Loader2, MessageCircle } from "lucide-react"
+import { checkCodeAction, checkWhatsAppAction, registerAction, sendCodeAction, startSignInAction } from "@/app/actions/sign-in"
 import { formatIndianMobile, normaliseIndianMobile } from "@/domain/phone"
 
-type Step = "phone" | "code" | "register"
+type Step = "phone" | "whatsapp" | "code" | "register"
 
 /**
- * Mobile number → one-time code → (new customers only) name and address.
- * Nothing to remember: after this the phone keeps them signed in.
+ * Mobile number → proof it's theirs → (new customers only) name and address.
+ * The proof, free first: they send us a code on WhatsApp and come back (signed in by itself); otherwise a code we
+ * send them, typed in. Nothing to remember: after this the phone keeps them signed in.
  */
 export function SignInFlow({ onDone }: { onDone?: () => void }) {
   const t = useTranslations("signIn")
@@ -30,6 +32,8 @@ export function SignInFlow({ onDone }: { onDone?: () => void }) {
   const [waitUntil, setWaitUntil] = useState(0)
   const [now, setNow] = useState(0)
   const [pending, start] = useTransition()
+  const [wa, setWa] = useState<{ link: string; code: string; number: string; canSendCode: boolean; over: boolean } | null>(null)
+  const checking = useRef(false)
 
   // Countdown for "send again".
   useEffect(() => {
@@ -48,6 +52,58 @@ export function SignInFlow({ onDone }: { onDone?: () => void }) {
   }
 
   const finish = () => (onDone ? onDone() : router.refresh())
+  // New to this farm but known to Farm For You: their name is filled in for them.
+  const fillKnown = (known: { name: string } | null) => known && setReg((x) => ({ ...x, name: x.name || known.name }))
+
+  // Away on WhatsApp: ask every few seconds, and at once when they come back to this screen.
+  useEffect(() => {
+    if (step !== "whatsapp" || wa?.over) return
+    const check = async () => {
+      if (checking.current || document.visibilityState !== "visible") return
+      checking.current = true
+      try {
+        const r = await checkWhatsAppAction()
+        if (!r.ok) {
+          setWa((w) => (w ? { ...w, over: true } : w))
+          setError(te.has(r.error) ? te(r.error) : te("generic"))
+        } else if (r.next === "done") finish()
+        else if (r.next === "register") {
+          fillKnown(r.known)
+          setStep("register")
+        }
+      } catch {
+        // A dropped connection: the next tick tries again.
+      } finally {
+        checking.current = false
+      }
+    }
+    const id = setInterval(check, 3000)
+    document.addEventListener("visibilitychange", check)
+    window.addEventListener("focus", check)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener("visibilitychange", check)
+      window.removeEventListener("focus", check)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, wa?.over])
+
+  const begin = () =>
+    start(async () => {
+      setError(null)
+      const r = await startSignInAction({ phone, language: lang })
+      if (!r.ok) return fail(r)
+      if (r.way === "whatsapp") {
+        setWa({ link: r.link, code: r.code, number: r.number, canSendCode: r.canSendCode, over: false })
+        setStep("whatsapp")
+        return
+      }
+      setDemoCode(r.demoCode ?? null)
+      setCode("")
+      setStep("code")
+      setNow(Date.now())
+      setWaitUntil(Date.now() + 30_000)
+    })
 
   const send = () =>
     start(async () => {
@@ -75,7 +131,7 @@ export function SignInFlow({ onDone }: { onDone?: () => void }) {
         onSubmit={(e) => {
           e.preventDefault()
           if (!normaliseIndianMobile(phone)) return setError(te("phone_invalid"))
-          send()
+          begin()
         }}
       >
         <label className={label}>
@@ -84,10 +140,63 @@ export function SignInFlow({ onDone }: { onDone?: () => void }) {
         </label>
         {errorBox}
         <Button type="submit" size="lg" className="h-12 text-base" disabled={pending}>
-          {t("sendCode")}
+          {t("next")}
         </Button>
         <p className="text-sm text-muted-foreground">{t("phoneHint")}</p>
       </form>
+    )
+  }
+
+  if (step === "whatsapp" && wa) {
+    const normal = normaliseIndianMobile(phone)
+    const shown = normal ? formatIndianMobile(normal) : phone
+    const again = () => (setStep("phone"), setWa(null), setError(null))
+    return (
+      <div className="flex flex-col gap-4">
+        <h2 className="text-lg font-semibold">{t("waTitle")}</h2>
+        {/* Steps are plain text, not buttons: only the green button is tapped. */}
+        <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-base">
+          <li>{t("waStep1")}</li>
+          <li>{t("waStep2")}</li>
+          <li>{t("waStep3")}</li>
+        </ol>
+        <p className="text-sm">
+          {t("waFrom", { phone: shown })}{" "}
+          <button type="button" className="font-semibold text-primary underline underline-offset-4" onClick={again}>
+            {t("changeNumber")}
+          </button>
+        </p>
+        {wa.over ? (
+          <>
+            {errorBox}
+            <Button type="button" size="lg" className="h-12 text-base" onClick={again}>
+              {t("startAgain")}
+            </Button>
+          </>
+        ) : (
+          <>
+            <a
+              href={wa.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-sec-whatsapp px-4 text-lg font-semibold text-sec-on hover:bg-sec-whatsapp/90"
+            >
+              <MessageCircle aria-hidden className="size-6" /> {t("waButton")}
+            </a>
+            <p role="status" className="flex items-center justify-center gap-2 text-muted-foreground">
+              <Loader2 aria-hidden className="size-4 animate-spin" /> {t("waWaiting")}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {t("waManual", { code: wa.code, number: wa.number ? formatIndianMobile(`+${wa.number}`) : "" })}
+            </p>
+          </>
+        )}
+        {wa.canSendCode && (
+          <Button type="button" variant="ghost" disabled={pending} onClick={send}>
+            {t("smsInstead")}
+          </Button>
+        )}
+      </div>
     )
   }
 
@@ -103,7 +212,7 @@ export function SignInFlow({ onDone }: { onDone?: () => void }) {
             const r = await checkCodeAction({ phone, code })
             if (!r.ok) return fail(r)
             if (r.next === "register") {
-              if (r.known) setReg((x) => ({ ...x, name: x.name || r.known!.name }))
+              fillKnown(r.known)
               setStep("register")
             }
             else finish()

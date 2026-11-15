@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { statusLabel } from "@/domain/tenants"
 import { checkServices, FREE_LIMITS, monthlyFeePaise, tickHealth, fillLevel } from "@/domain/admin-overview"
 import { otpProvider } from "./otp"
+import { inboundReady } from "./whatsapp-cloud"
 import { listFarms } from "./platform"
 
 const DAY = 86_400_000
@@ -120,7 +121,7 @@ export async function techMonitor() {
     },
     services: checkServices((name) => !!env[name]),
     providers: {
-      otp: otpProvider(),
+      otp: inboundReady() ? "whatsapp_inbound" : otpProvider(),
       whatsapp: env.WHATSAPP_API_TOKEN && env.WHATSAPP_PHONE_NUMBER_ID ? "cloud" : null,
       push: env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY ? "web_push" : null,
     },
