@@ -89,3 +89,16 @@ export async function setShopArt(raw: unknown): Promise<Result> {
   await noteSupportWrite(tenant.id, "Tenant", "update", { id: tenant.id })
   return refresh()
 }
+
+const storySchema = z.object({ storyTa: z.string().trim().max(1200), storyEn: z.string().trim().max(1200) })
+
+/** About the farm, in its own words (Tamil and English), for its Farm For You profile page. Empty = none. */
+export async function setFarmStory(raw: unknown): Promise<Result> {
+  const parsed = storySchema.safeParse(raw)
+  if (!parsed.success) return { ok: false, error: "invalid_form" }
+  const { tenant } = await requireStaff(OWNER_ONLY)
+  await prisma.tenant.update({ where: { id: tenant.id }, data: { storyTa: parsed.data.storyTa || null, storyEn: parsed.data.storyEn || null } })
+  await noteSupportWrite(tenant.id, "Tenant", "update", { id: tenant.id })
+  revalidatePath("/farms", "layout")
+  return refresh()
+}

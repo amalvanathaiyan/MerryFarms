@@ -95,19 +95,22 @@ export function appBase(app: Exclude<HostApp, "all">, slug: string | null, cfg: 
 }
 
 /** Which app a path belongs to on an address that holds them all. */
+/** The farm app's own paths: /farm and below (not /farms, Farm For You's directory). */
+export const isFarmPath = (p: string) => /^\/farm(\/|\?|#|$)/.test(p)
+
 export function appOfPath(pathname: string, search = ""): InstalledApp {
   const nextAdmin = pathname === "/login" && /[?&]next=%2Fadmin|[?&]next=\/admin/.test(search)
   if (pathname.startsWith("/admin") || nextAdmin) return "admin"
-  if (pathname.startsWith("/farm") || pathname === "/login") return "farm"
+  if (isFarmPath(pathname) || pathname === "/login") return "farm"
   return "shop"
 }
 
 /** Pages every address serves: sign-in links from emails, images, the install manifest, background jobs, legal pages. */
 const EVERYWHERE = /^\/(auth|forgot-password|app-manifest|img|api|offline|_next|legal)(\/|$)/
 
-/** Farm For You's own pages, on the portal: the home page (the portal's "/") and "Register your farm". */
+/** Farm For You's own pages, on the portal: the home page (the portal's "/"), "Register your farm" and the farm directory. */
 export const HOME_PATH = "/welcome"
-const PORTAL_PAGES = /^\/(welcome|join)(\/|$)/
+const PORTAL_PAGES = /^\/(welcome|join|farms)(\/|$)/
 
 /**
  * Where a request belongs, when this address is for another app: the app to send it to, or null to serve it here.
@@ -137,6 +140,6 @@ export function belongsElsewhere(app: HostApp, pathname: string, search: string,
 export function openingApp(app: HostApp, pathname: string, search = ""): InstalledApp {
   if (app === "shop") return "shop"
   if (app === "farm") return "farm"
-  if (app === "portal") return pathname.startsWith("/farm") ? "farm" : "admin"
+  if (app === "portal") return isFarmPath(pathname) ? "farm" : "admin"
   return appOfPath(pathname, search)
 }

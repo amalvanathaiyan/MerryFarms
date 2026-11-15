@@ -1,9 +1,9 @@
 import Link from "next/link"
 import { getLocale, getTranslations } from "next-intl/server"
-import { ArrowRight, Check, ChevronDown, Egg, Fish, Milk, PhoneCall, Sprout, Store, Tractor, Truck, ClipboardCheck, type LucideIcon } from "lucide-react"
+import { ArrowRight, Check, ChevronDown, Egg, MapPin, Fish, Milk, PhoneCall, Sprout, Store, Tractor, Truck, ClipboardCheck, type LucideIcon } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { pick } from "@/lib/i18n-helpers"
-import { farmLogoUrl, farmUrl } from "@/lib/farm-url"
+import { listedFarmCards } from "@/server/directory"
 import { formatRupees } from "@/domain/money"
 import { MODULE_KEYS, MODULES, isModuleKey, type ModuleKey } from "@/domain/modules"
 import { Button } from "@/components/ui/button"
@@ -25,7 +25,7 @@ export default async function HomePage() {
   const locale = await getLocale()
   const [plans, farms] = await Promise.all([
     prisma.platformPlan.findMany({ where: { isPublic: true, retired: false }, orderBy: [{ sortOrder: "asc" }, { monthlyPaise: "asc" }] }),
-    prisma.tenant.findMany({ where: { status: { not: "suspended" } }, orderBy: { createdAt: "asc" }, take: 12, select: { slug: true, nameTa: true, nameEn: true, logoUrl: true, taglineTa: true, taglineEn: true, invoicePrefix: true } }),
+    listedFarmCards(12),
   ])
   const modules = MODULE_KEYS.filter((k) => k !== "core")
 
@@ -142,18 +142,25 @@ export default async function HomePage() {
       {farms.length > 0 && (
         <section className="bg-card">
           <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-10 sm:px-6">
-            <h2 className="text-2xl font-bold sm:text-3xl">{t("farmsTitle")}</h2>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <h2 className="text-2xl font-bold sm:text-3xl">{t("farmsTitle")}</h2>
+              <Button asChild size="lg" variant="outline" className="h-12">
+                <Link href="/farms">
+                  <MapPin aria-hidden /> {t("findFarms")}
+                </Link>
+              </Button>
+            </div>
             <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {farms.map((f) => (
                 <li key={f.slug}>
-                  <a href={farmUrl(f.slug)} className="flex min-h-20 items-center gap-3 rounded-2xl border bg-background p-3 hover:border-primary">
-                    <FarmMark logoUrl={farmLogoUrl(f.slug, f.logoUrl)} initials={f.invoicePrefix} />
+                  <Link href={`/farms/${f.slug}`} className="flex min-h-20 items-center gap-3 rounded-2xl border bg-background p-3 hover:border-primary">
+                    <FarmMark logoUrl={f.logoUrl} initials={f.invoicePrefix} />
                     <span className="min-w-0">
                       <span className="block font-bold">{pick(locale, f.nameTa, f.nameEn)}</span>
                       {pick(locale, f.taglineTa, f.taglineEn) && <span className="block truncate text-sm text-muted-foreground">{pick(locale, f.taglineTa, f.taglineEn)}</span>}
-                      <span className="text-sm font-semibold text-primary">{t("visitShop")}</span>
+                      <span className="text-sm font-semibold text-primary">{t("seeFarm")}</span>
                     </span>
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

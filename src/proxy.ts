@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr"
 import { isLocale } from "./i18n/routing"
 import { DEMO_AUTH_PREFIX, DEMO_COOKIE, isDemoLoginEnabled } from "./lib/demo-auth"
 import { authCookieOptions } from "./lib/supabase/cookie-options"
-import { appBase, belongsElsewhere, HOME_PATH, hostConfigFromEnv, openingApp, readHost } from "./domain/app-hosts"
+import { appBase, belongsElsewhere, HOME_PATH, hostConfigFromEnv, isFarmPath, openingApp, readHost } from "./domain/app-hosts"
 
 /**
  * Multi-tenant proxy (Next.js 16 — renamed from middleware)
@@ -43,7 +43,7 @@ export async function proxy(request: NextRequest) {
   if (link) {
     const [, slug, rest = "/"] = link
     if (hosts.rootDomain) {
-      const app = rest.startsWith("/farm") || here.app === "farm" ? "farm" : "shop"
+      const app = isFarmPath(rest) || here.app === "farm" ? "farm" : "shop"
       return NextResponse.redirect(new URL(`${rest}${request.nextUrl.search}`, appBase(app, slug, hosts)!))
     }
     const url = request.nextUrl.clone()
@@ -80,7 +80,7 @@ export async function proxy(request: NextRequest) {
   let response = next()
 
   // The farm app and the platform admin both need a signed-in user; each page then checks who they are.
-  const isFarmApp = pathname.startsWith("/farm") || pathname.startsWith("/admin")
+  const isFarmApp = isFarmPath(pathname) || pathname.startsWith("/admin")
   // Demo mode (local only): the page itself checks the demo staff member belongs to this farm.
   if (isFarmApp && isDemoLoginEnabled() && request.cookies.get(DEMO_COOKIE)?.value.startsWith(DEMO_AUTH_PREFIX)) {
     return response

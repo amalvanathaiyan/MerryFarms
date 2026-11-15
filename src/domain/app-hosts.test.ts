@@ -109,3 +109,15 @@ describe("openingApp", () => {
     expect(openingApp("all", "/admin")).toBe("admin")
   })
 })
+
+describe("the farm directory is Farm For You's, not the farm app's", () => {
+  it("tells /farm from /farms", async () => {
+    const { isFarmPath, appOfPath, belongsElsewhere } = await import("./app-hosts")
+    expect(["/farm", "/farm/orders", "/farm?x=1"].every(isFarmPath)).toBe(true)
+    expect(["/farms", "/farms/merryfarms", "/farmers"].some(isFarmPath)).toBe(false)
+    expect(appOfPath("/farms")).toBe("shop")
+    expect(belongsElsewhere("shop", "/farms", "", false)).toBe("portal")
+    expect(belongsElsewhere("farm", "/farms/merryfarms", "", false)).toBe("portal")
+    expect(belongsElsewhere("portal", "/farms", "", false)).toBeNull()
+  })
+})

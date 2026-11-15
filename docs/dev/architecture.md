@@ -11,7 +11,7 @@ One Next.js app serves three installable PWAs, told apart by address (`src/domai
 |---|---|---|---|---|
 | **Shop** | customers | `/`, `/my`, `/i/[token]` | `merry-farms.vercel.app` | `<farm>.farmforyou.in` |
 | **Farm app** | farm admin (owner) and staff | `/farm/**` | `farmforyou-farm.vercel.app` | `<farm>-farm.farmforyou.in` |
-| **Portal** | public home page, farm sign-up, super admin | `/welcome`, `/join`, `/legal/*`, `/admin/**` | `farmforyou.vercel.app` | `farmforyou.in` |
+| **Portal** | public home page, farm directory, farm sign-up, super admin | `/welcome`, `/farms`, `/farms/[slug]`, `/join`, `/legal/*`, `/admin/**` | `farmforyou.vercel.app` | `farmforyou.in` |
 
 - Each app has its own address because Android treats a second app on the same address as "already installed".
 - `SHOP_HOST`, `FARM_APP_HOST` and `PORTAL_HOST` set the addresses. Setting `NEXT_PUBLIC_ROOT_DOMAIN` switches to
@@ -52,6 +52,14 @@ scripts/            demo, dev-db, apply-sql, add-staff/add-admin, photo move, va
   `OrderError(code)` (in `src/server/orders.ts`) carries those keys from deeper code.
 - **Money** is integer paise (`*Paise`). Dates the farm thinks in are `YYYY-MM-DD` strings in IST
   (`src/domain/ist.ts`); moments are `DateTime`.
+
+**Farm directory** (`/farms`, `src/server/directory.ts`, rules in `src/domain/directory.ts`): listed farms are not
+suspended, have `webShop` on and the `listedOnFfy` setting on (default on). The search takes a PIN code (farms that
+serve by distance are judged from the PIN's centre, one Nominatim lookup per search, with `PIN_SLACK_KM` of "ask"),
+or the phone's spot, plus product words. Farms that deliver come first (nearest first), then "call to check"; farms
+that don't are left out. `/farms/[slug]` is a farm's page: story, what it sells (the shop's products; photos via
+`/img/p/[id]?farm=<slug>`), where it delivers, YouTube videos, shop / call / WhatsApp. Path checks use
+`isFarmPath()` so `/farms` is never taken for the farm app's `/farm`.
 
 ## 3. Multi-tenancy and security
 

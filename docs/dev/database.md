@@ -43,6 +43,7 @@ without consent; see decisions.md). Since then, every change has gone through a 
 | `2026-11-15-fishery.sql` | `fish_cycles`, `fish_stockings`, `fish_days`, `fish_samples`, `fish_harvests` |
 | `2026-11-15-whatsapp-sign-in.sql` | `whatsapp_sign_ins`. **NOT live yet**: run it as the first step of the Meta setup (`docs/todo.md`). The code never touches the table until the WhatsApp settings are set |
 | `2026-11-15-email-sign-in.sql` | `customers.email`, `customers.emailVerifiedAt` (unique per farm); `otp_codes.email`. Applied live 2026-11-15 |
+| `2026-11-15-farm-story.sql` | `tenants.storyTa`, `tenants.storyEn`. **NOT live yet**: run before the directory goes to main |
 | `rls.sql` | Not a migration: run after every new table (`npm run db:rls`) |
 
 **Columns added by `db push` before the SQL files** (2026-11-08 to 2026-11-12):
@@ -63,7 +64,7 @@ without consent; see decisions.md). Since then, every change has gone through a 
 ### Platform (not one farm's)
 | Table | Model | Holds | Since |
 |---|---|---|---|
-| `tenants` | Tenant | A farm: slug, names (ta/en), phone, plan, status, brand (tagline, name colours, opening, theme), eggStore, entitlements, settings | 2026-10-21 `72471b5` |
+| `tenants` | Tenant | A farm: slug, names (ta/en), phone, plan, status, brand (tagline, name colours, opening, theme), story (ta/en, for its directory page), eggStore, entitlements, settings | 2026-10-21 `72471b5` |
 | `platform_admins` | PlatformAdmin | Super admins (Supabase user ids) | 2026-10-21 |
 | `login_usernames` | LoginUsername | Username sign-in for super admins and farm admins, unique, lowercase | 2026-11-08 `ffc7bef` |
 | `platform_people` | PlatformPerson | One person per proven phone across FFY (name, language) | 2026-11-15 `23be0dd` |

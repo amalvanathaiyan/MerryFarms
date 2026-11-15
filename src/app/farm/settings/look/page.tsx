@@ -7,8 +7,10 @@ import { ShopArtPicker } from "@/components/farm/shop-art-picker"
 import { DRAWINGS, defaultShopArt } from "@/components/art/drawing-library"
 import { artFor } from "@/domain/product-art"
 import { SectionHeader } from "@/components/farm/section-header"
+import { StoryForm } from "@/components/farm/story-form"
+import { directoryUrl } from "@/lib/farm-url"
 
-/** Settings · Look (owner): the farm's logo, its name colours and tagline, and the drawings on its shop. */
+/** Settings · Look (owner): the farm's logo, its name colours and tagline, its story for Farm For You, and the drawings on its shop. */
 export default async function SettingsLookPage() {
   const { tenant, db } = await requireStaff(OWNER_ONLY)
   // What the farm sells decides the suggested shop drawings, and which drawing groups come first.
@@ -21,6 +23,7 @@ export default async function SettingsLookPage() {
       <SectionHeader section="settings" tabs={settingsTabs(featuresOf(tenant))} active="look" back={{ href: "/farm/more" }} />
       <LogoForm logoUrl={tenant.logoUrl} initials={tenant.invoicePrefix} />
       <BrandForm nameTa={tenant.nameTa} nameEn={tenant.nameEn} taglineTa={tenant.taglineTa} taglineEn={tenant.taglineEn} nameColours={tenant.nameColours} themePrimary={tenant.themePrimary} themeAccent={tenant.themeAccent} />
+      <StoryForm storyTa={tenant.storyTa} storyEn={tenant.storyEn} profileUrl={directoryUrl(tenant.slug)} />
       <ShopArtPicker picked={picked.length ? picked : suggested} isDefault={picked.length === 0} kinds={kinds} suggested={suggested} />
     </div>
   )

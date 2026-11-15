@@ -85,6 +85,8 @@ CREATE TABLE "tenants" (
     "openingMark" TEXT,
     "themePrimary" TEXT,
     "themeAccent" TEXT,
+    "storyTa" TEXT,
+    "storyEn" TEXT,
     "entitlements" JSONB,
     "videoSpaceMb" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

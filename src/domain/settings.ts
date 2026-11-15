@@ -19,7 +19,7 @@ export type SettingWho = "platform" | "owner" | "staff" | "customer"
 export type SettingUnit = "hours" | "days" | "minutes" | "times" | "orders" | "units" | "rupees"
 
 /** Headings on the Settings page, in this order inside each module. */
-export const SETTING_GROUPS = ["orders", "calls", "stock", "trial"] as const
+export const SETTING_GROUPS = ["orders", "calls", "stock", "directory", "trial"] as const
 export type SettingGroup = (typeof SETTING_GROUPS)[number]
 
 interface Base {
@@ -69,6 +69,9 @@ export const SETTINGS = {
   // Selling · Stock: a product down to this many: the owner and packing staff get one alert that day.
   lowStockOn: { type: "boolean", default: true, module: "selling", group: "stock", who: "owner", feature: "stockTracking" },
   lowStockAt: { type: "number", default: 5, min: 0, max: 100_000, step: 1, unit: "units", module: "selling", group: "stock", who: "owner", feature: "stockTracking", shownWhen: "lowStockOn" },
+
+  // Selling · Farm For You's directory: the farm shows in the list of farms at farmforyou.in/farms, with its profile.
+  listedOnFfy: { type: "boolean", default: true, module: "selling", group: "directory", who: "owner", feature: "webShop" },
 
   // Farm Core · Free trial (Farm For You only): each farm's owner is reminded before their free trial ends.
   trialReminderOn: { type: "boolean", default: true, module: "core", group: "trial", who: "platform" },

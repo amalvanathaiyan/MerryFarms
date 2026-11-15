@@ -183,6 +183,9 @@ model Tenant {
   // null = Farm For You's colours. Adjusted automatically for readability in light, dark and soft modes.
   themePrimary String?
   themeAccent  String?
+  // About the farm, in its own words (Settings → Look), shown on its Farm For You profile page (/farms/<slug>).
+  storyTa      String?
+  storyEn      String?
 
   // What the farm may use, worked out from its plan, add-ons and admin's overrides (src/domain/entitlements.ts) and
   // saved here whenever they change; null = not on an admin-made plan yet (the old `plan` level applies).
