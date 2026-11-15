@@ -85,6 +85,14 @@ scripts/            demo, dev-db, apply-sql, add-staff/add-admin, photo move, va
   1. *WhatsApp, the customer sends the code*: `src/server/whatsapp-sign-in.ts`, `/api/whatsapp/webhook`.
   2. A code we send: `OTP_PROVIDER=whatsapp` (paid template) or `msg91` (SMS). The local demo shows the code on
      screen. `src/server/otp.ts`.
+  3. A code to their **email** (Brevo, `src/server/email.ts`; `requestEmailCode`/`verifyEmailCode` in otp.ts, rows in
+     `otp_codes` with `email` set). It proves the email, not the phone (`emailSignInCase` in `src/domain/otp.ts`):
+     - it signs in the farm's customer with that phone **and** that proven email
+     - a number new to the farm may register by email, with the phone **unchecked** (no PlatformPerson link; its web
+       orders always need a call, and a call that confirms one checks the phone)
+     - a number the farm already knows without that email is refused (WhatsApp or a call instead)
+
+     Customers with a proven phone add or remove an email for signing in on `/my`.
 
   A proven phone becomes or joins a `platform_people` row (one person across all farms, `src/server/people.ts`).
   With no sign-in way set up, the shop falls back to personal links (`/i/[token]`, `/my/[token]`) and the
@@ -210,6 +218,7 @@ See `.env.local.template`, which has the same names with comments. Vercel holds 
 | `SUPPORT_SECRET` | Signs the support-mode cookie |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Web push (`node scripts/vapid-keys.mjs`) |
 | `OTP_SECRET`, `OTP_PROVIDER`, `WHATSAPP_OTP_TEMPLATE`, `MSG91_*` | Customer sign-in codes |
+| `BREVO_API_KEY`, `EMAIL_FROM`, `EMAIL_FROM_NAME` | Email sign-in codes (Brevo) |
 | `WHATSAPP_API_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ALERT_TEMPLATE` | Cloud API sending |
 | `WHATSAPP_NUMBER`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN` | Free sign-in webhook |
 | `GEO_CONTACT_EMAIL`, `NOMINATIM_URL`, `NEXT_PUBLIC_MAP_TILES_URL` | Maps and place lookup |

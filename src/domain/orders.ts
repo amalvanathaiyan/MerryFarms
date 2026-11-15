@@ -74,6 +74,8 @@ export interface CallContext {
     isTrusted: boolean
     deliveredOrders: number
     usualOrderPaise: number | null // median of recent orders, null if none
+    /** The phone was never proven (an email sign-up): web orders always need a call, which checks it. */
+    phoneUnchecked?: boolean
   }
 }
 
@@ -87,6 +89,7 @@ export type CallDecision = { needsCall: true; reason: string } | { needsCall: fa
 export function decideCall(rules: CallRules, ctx: CallContext): CallDecision {
   if (ctx.channel === "phone" || ctx.channel === "walk_in") return { needsCall: false, reason: "taken_in_person" }
   if (ctx.isPlanOrder) return { needsCall: false, reason: "plan_order" }
+  if (ctx.channel === "web" && ctx.customer.phoneUnchecked) return { needsCall: true, reason: "phone_unchecked" }
 
   if (rules.callAboveTotalPaise > 0 && ctx.totalPaise > rules.callAboveTotalPaise) {
     return { needsCall: true, reason: "large_order" }

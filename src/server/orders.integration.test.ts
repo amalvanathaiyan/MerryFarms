@@ -178,6 +178,16 @@ describe("confirmation calls", () => {
     expect(after!.status).toBe("confirmed")
     expect(after!.events.map((e) => e.toStatus)).toEqual(["to_confirm", "confirmed"])
     await expect(svc.recordCall(merry.id, o!.id, "confirmed", "staff-1")).rejects.toThrow("not_waiting_for_call")
+    // The customer answered on that number: it's checked now.
+    expect((await tenantDb(merry.id).customer.findFirst({ where: { id: o!.customerId } }))!.phoneVerifiedAt).not.toBeNull()
+  })
+
+  it("always calls about a web order from an email sign-up whose number isn't checked", async () => {
+    await tenantDb(merry.id).customer.create({
+      data: { tenantId: merry.id, phone: "+919000010077", name: "Meena", email: "meena@example.com", emailVerifiedAt: NOW },
+    })
+    const { decision } = await svc.placeOrder(merry, order({ customer: { phone: "+919000010077", name: "Meena", language: "ta" }, items: [{ productId: "p-eggs", qty: 1 }], slotKey: "2026-10-23|slot-am" }), NOW)
+    expect(decision).toEqual({ needsCall: true, reason: "phone_unchecked" })
   })
 
   it("puts stock back when an order is cancelled", async () => {

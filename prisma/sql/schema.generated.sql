@@ -227,6 +227,8 @@ CREATE TABLE "customers" (
     "tokenIssuedAt" TIMESTAMP(3),
     "personId" TEXT,
     "phoneVerifiedAt" TIMESTAMP(3),
+    "email" TEXT,
+    "emailVerifiedAt" TIMESTAMP(3),
     "source" TEXT,
     "kind" TEXT NOT NULL DEFAULT 'home',
     "smsOptIn" BOOLEAN NOT NULL DEFAULT false,
@@ -540,6 +542,7 @@ CREATE TABLE "otp_codes" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
+    "email" TEXT,
     "codeHash" TEXT NOT NULL,
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "attempts" INTEGER NOT NULL DEFAULT 0,
@@ -1350,6 +1353,9 @@ CREATE INDEX "customers_personId_idx" ON "customers"("personId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "customers_tenantId_phone_key" ON "customers"("tenantId", "phone");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "customers_tenantId_email_key" ON "customers"("tenantId", "email");
 
 -- CreateIndex
 CREATE INDEX "customer_consents_tenantId_customerId_createdAt_idx" ON "customer_consents"("tenantId", "customerId", "createdAt");

@@ -458,7 +458,8 @@
       "consentStopped": "Stopped offers {channel}",
       "channel_whatsapp": "on WhatsApp",
       "channel_sms": "by SMS",
-      "alreadyCustomer": "This number is already your customer. Here they are."
+      "alreadyCustomer": "This number is already your customer. Here they are.",
+      "phoneUnchecked": "Number not checked yet: the call checks it"
     },
     "settings": {
       "title": "Farm settings",
@@ -2171,7 +2172,11 @@
     "last_stocking": "This is the only stocking. Close the cycle instead.",
     "too_many_dead": "That's more fish than are left in the pond.",
     "busy": "Too many changes at once. Please try again.",
-    "too_many_fish": "That's more fish than are left in the pond."
+    "too_many_fish": "That's more fish than are left in the pond.",
+    "email_invalid": "Please check the email address.",
+    "email_in_use": "This email is already used by another customer of this farm.",
+    "email_phone_known": "This number is already with the farm. Please sign in with WhatsApp, or call the farm.",
+    "phone_not_proven": "Please sign in with WhatsApp or a code to your phone first."
   },
   "my": {
     "connectTitle": "Connect with the farm",
@@ -2268,7 +2273,21 @@
     "waManual": "WhatsApp didn't open? In WhatsApp, send {code} to {number}.",
     "waWaiting": "Waiting for your message…",
     "startAgain": "Start again",
-    "smsInstead": "No WhatsApp on this number? Get a code by SMS"
+    "smsInstead": "No WhatsApp on this number? Get a code by SMS",
+    "emailInstead": "No WhatsApp on this number? Use email instead",
+    "emailTitle": "Confirm with your email",
+    "emailHint": "We'll send a 6-digit code to your email, for {phone}.",
+    "email": "Email",
+    "emailSend": "Send code to email",
+    "emailCodeSent": "We sent a code to {email}. Check your inbox (and spam).",
+    "changeEmail": "Change email",
+    "emailAdd": "Add an email for signing in",
+    "emailAddHint": "Optional: sign in with a code to your email when WhatsApp isn't at hand.",
+    "emailSaved": "Your email for signing in",
+    "emailSave": "Save email",
+    "emailRemove": "Remove email",
+    "emailRemoveSure": "Tap again to remove",
+    "cancel": "Cancel"
   },
   "help": {
     "button": "Help",
@@ -2677,7 +2696,8 @@
       "backupsOpen": "Open nightly backups",
       "tablesTitle": "Rows per table",
       "tablesHint": "About how many rows each table holds.",
-      "tablesShow": "Show {count} tables"
+      "tablesShow": "Show {count} tables",
+      "providerEmail": "Email codes"
     },
     "billing": {
       "title": "Billing",

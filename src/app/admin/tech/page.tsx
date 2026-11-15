@@ -105,6 +105,8 @@ export default async function AdminTechPage() {
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
           <dt className="text-muted-foreground">{t("providerOtp")}</dt>
           <dd className="font-semibold">{m.providers.otp ? t(`otp_${m.providers.otp}`) : t("providerNone")}</dd>
+          <dt className="text-muted-foreground">{t("providerEmail")}</dt>
+          <dd className="font-semibold">{m.providers.email ? "Brevo" : t("providerNone")}</dd>
           <dt className="text-muted-foreground">{t("providerWhatsapp")}</dt>
           <dd className="font-semibold">{m.providers.whatsapp ? t("whatsappCloud") : t("providerNone")}</dd>
           <dt className="text-muted-foreground">{t("providerPush")}</dt>

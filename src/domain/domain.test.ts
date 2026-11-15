@@ -170,6 +170,12 @@ describe("confirmation-call rules", () => {
   }
   const regular = { isTrusted: false, deliveredOrders: 10, usualOrderPaise: 40_000 }
 
+  it("calls about web orders from a number never checked (an email sign-up), even prepaid or trusted", () => {
+    const unchecked = { ...regular, isTrusted: true, phoneUnchecked: true }
+    expect(decideCall(rules, { channel: "web", paymentMethod: "upi_prepaid", totalPaise: 9_000, customer: unchecked })).toEqual({ needsCall: true, reason: "phone_unchecked" })
+    expect(decideCall(rules, { channel: "phone", paymentMethod: "cash_on_delivery", totalPaise: 9_000, customer: unchecked }).needsCall).toBe(false)
+  })
+
   it("calls every WhatsApp order by default", () => {
     expect(decideCall(rules, { channel: "whatsapp", paymentMethod: "upi_on_delivery", totalPaise: 39_000, customer: regular }))
       .toEqual({ needsCall: true, reason: "whatsapp_order" })
