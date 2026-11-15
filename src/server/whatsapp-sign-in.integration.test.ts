@@ -103,8 +103,12 @@ describe("customer sends the code on WhatsApp", () => {
     expect(cloud.signedByMeta(body, sig, undefined)).toBe(false)
   })
 
-  it("clears old requests", async () => {
+  it("clears old requests (only once the sign-in is set up)", async () => {
     await wa.pruneSignIns(at(3 * 24 * 3600))
+    expect(await prisma.whatsAppSignIn.count()).toBeGreaterThan(0)
+    process.env.WHATSAPP_APP_SECRET = "s3cret"
+    await wa.pruneSignIns(at(3 * 24 * 3600))
+    delete process.env.WHATSAPP_APP_SECRET
     expect(await prisma.whatsAppSignIn.count()).toBe(0)
   })
 

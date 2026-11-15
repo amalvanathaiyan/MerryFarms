@@ -6,7 +6,7 @@ import type { Tenant } from "@/lib/tenant"
 import { normaliseIndianMobile } from "@/domain/phone"
 import { canSend, codeFromMessage, hashCode, inboundText, INBOUND_TTL_MS, newCode, sameHash, waLink } from "@/domain/otp"
 import { secret } from "./otp"
-import { replyText } from "./whatsapp-cloud"
+import { inboundReady, replyText } from "./whatsapp-cloud"
 
 /**
  * Free sign-in (docs/whatsapp-setup.md): the shop shows a code and a "Send code on WhatsApp" button; the customer sends
@@ -96,7 +96,9 @@ export async function checkSignIn(tenantId: string, id: string, browserKey: stri
   return row.expiresAt.getTime() <= now.getTime() ? { status: "expired" } : { status: "waiting" }
 }
 
-/** Old requests are useless after a day; keeps the table small. */
+/** Old requests are useless after a day; keeps the table small. Only once this sign-in is set up: until then the
+ *  table may not exist on the live database yet (its migration goes with the Meta setup, docs/todo.md). */
 export async function pruneSignIns(now = new Date()) {
+  if (!inboundReady()) return
   await prisma.whatsAppSignIn.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - 2 * 24 * 3600_000) } } })
 }
