@@ -53,3 +53,26 @@ export function checkCode(
   if (latest.expiresAt.getTime() <= now.getTime()) return "expired"
   return sameHash(latest.codeHash, typedHash) ? "ok" : "wrong"
 }
+
+// ── Free sign-in: the customer sends the code to us on WhatsApp ────────────────────────────────────────────────
+
+/** Time to send the message and come back. */
+export const INBOUND_TTL_MS = 10 * 60_000
+/** Signed in on that phone for this long after a code sign-in (until sign-out sooner). */
+export const SIGNED_IN_DAYS = 90
+
+/** The ready-made message: the code, with words the customer recognises. */
+export function inboundText(code: string, lang: "ta" | "en") {
+  return lang === "en" ? `Farm For You sign-in code ${code}` : `Farm For You உள்நுழைவுக் குறியீடு ${code}`
+}
+
+/** The 6-digit code in a message the customer sent (they may have typed it, or added words). */
+export function codeFromMessage(text: string): string | null {
+  const m = /(?:^|\D)(\d{6})(?!\d)/.exec(text.normalize("NFKC"))
+  return m ? m[1] : null
+}
+
+/** Opens WhatsApp with the message ready, addressed to Farm For You's number (digits, with country code). */
+export function waLink(number: string, text: string) {
+  return `https://wa.me/${number.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`
+}

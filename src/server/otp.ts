@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { tenantDb } from "@/lib/tenant-db"
 import { featuresOf } from "@/lib/features"
 import type { Tenant } from "@/lib/tenant"
-import { sendTemplate } from "./whatsapp-cloud"
+import { inboundReady, sendTemplate } from "./whatsapp-cloud"
 import { canSend, checkCode, CODE_TTL_MS, hashCode, newCode, type CheckResult } from "@/domain/otp"
 
 /**
@@ -24,16 +24,18 @@ export function otpProvider(): Provider | null {
   return null
 }
 
-function secret() {
+/** The key that signs codes and notes; required live (OTP_SECRET, 32+ characters). */
+export function secret() {
   const s = process.env.OTP_SECRET
   if (s && s.length >= 32) return s
   if (otpProvider() === "screen") return "farmforyou-local-demo-only-otp-secret"
   throw new Error("OTP_SECRET (32+ characters) is required to send sign-in codes")
 }
 
-/** Code sign-in is in use for this farm: switched on and a way to send codes exists. */
+/** Code sign-in is in use for this farm: switched on, and customers can send us a code on WhatsApp (free) or we can
+ *  send them one. */
 export function otpOn(tenant: Tenant) {
-  return featuresOf(tenant).otpLogin && otpProvider() !== null
+  return featuresOf(tenant).otpLogin && (inboundReady() || otpProvider() !== null)
 }
 
 type Send = (phone: string, code: string, lang: "ta" | "en") => Promise<void>
