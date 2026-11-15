@@ -244,6 +244,20 @@ model PlatformAdmin {
   @@map("platform_admins")
 }
 
+/// One person across Farm For You, known by a phone number they proved (a sign-in code). Each farm keeps its own
+/// Customer record (credit, notes, type), linked here by personId; farms never see each other's customers. Not a
+/// farm table. Only the person themself, after proving the number, sees it (e.g. their name filled in at a new farm).
+model PlatformPerson {
+  id        String   @id @default(uuid())
+  phone     String   @unique // E.164
+  name      String
+  language  Language @default(ta)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("platform_people")
+}
+
 /// A username a super admin or farm admin (owner) can sign in with instead of their email.
 /// One per login, unique across the platform, stored lowercase. Not a farm table: a login isn't one farm's.
 model LoginUsername {
@@ -360,9 +374,21 @@ model Customer {
   /// their phone and in their personal link; the farm can reset it.
   accessToken      String?   @unique
   tokenIssuedAt    DateTime?
+  /// The PlatformPerson this customer is, once they proved the phone online (src/server/people.ts).
+  personId         String?
+  /// When the phone was last proven with a sign-in code. Null: typed by staff or by the customer, not proven.
+  phoneVerifiedAt  DateTime?
+  /// How they first came (src/domain/customers.ts CUSTOMER_SOURCES); null for customers from before it was kept.
+  source           String?
+  /// Home, shop, hotel… (CUSTOMER_KINDS); price lists by kind come later.
+  kind             String    @default("home")
+  /// Offers by SMS (marketingOptIn is offers on WhatsApp). Every change is in customer_consents.
+  smsOptIn         Boolean   @default(false)
+  addedByStaffId   String?
   createdAt        DateTime  @default(now())
 
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  consents      CustomerConsent[]
   addresses     Address[]
   messages      Message[]
   orders        Order[]
@@ -373,7 +399,27 @@ model Customer {
   updatedAt     DateTime       @default(now()) @updatedAt
 
   @@unique([tenantId, phone])
+  @@index([personId])
   @@map("customers")
+}
+
+/// Proof of consent (DPDP Act): every time a customer agreed to, or stopped, offers on a channel, how and by whom.
+model CustomerConsent {
+  id         String   @id @default(uuid())
+  tenantId   String
+  customerId String
+  channel    String // "whatsapp" | "sms"
+  given      Boolean
+  /// "shop" (the customer ticked it), "in_person" or "phone" (told the farm; byStaffId records who).
+  how        String
+  byStaffId  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, customerId, createdAt])
+  @@map("customer_consents")
 }
 
 model Address {

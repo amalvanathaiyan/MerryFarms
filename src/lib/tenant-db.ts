@@ -9,6 +9,7 @@ const TENANT_MODELS = new Set([
   "Product",
   "DeliverySlot",
   "Customer",
+  "CustomerConsent",
   "Address",
   "Order",
   "OrderItem",

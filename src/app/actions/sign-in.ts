@@ -7,6 +7,7 @@ import { tenantDb } from "@/lib/tenant-db"
 import { normaliseIndianMobile } from "@/domain/phone"
 import { rememberCustomer } from "@/lib/customer-session"
 import { ensureToken, registerVerified } from "@/server/customers"
+import { knownPerson, phoneProven } from "@/server/people"
 import { otpOn, readVerified, requestCode, signVerified, verifyCode, VERIFIED_COOKIE } from "@/server/otp"
 
 type Fail = { ok: false; error: string; seconds?: number }
@@ -23,7 +24,7 @@ export async function sendCodeAction(raw: unknown): Promise<{ ok: true; demoCode
 }
 
 /** Step 2: the code. A known number is signed in; a new one goes on to register. */
-export async function checkCodeAction(raw: unknown): Promise<{ ok: true; next: "done" | "register" } | Fail> {
+export async function checkCodeAction(raw: unknown): Promise<{ ok: true; next: "done" } | { ok: true; next: "register"; known: { name: string; language: "ta" | "en" } | null } | Fail> {
   const parsed = z.object({ phone: z.string().trim(), code: z.string().trim() }).safeParse(raw)
   if (!parsed.success) return { ok: false, error: "otp_wrong" }
   const phone = normaliseIndianMobile(parsed.data.phone)
@@ -36,11 +37,13 @@ export async function checkCodeAction(raw: unknown): Promise<{ ok: true; next: "
 
   const customer = await tenantDb(tenant.id).customer.findFirst({ where: { phone }, select: { id: true } })
   if (customer) {
+    await phoneProven(tenant.id, customer.id)
     await rememberCustomer(await ensureToken(tenant.id, customer.id))
     return { ok: true, next: "done" }
   }
   ;(await cookies()).set(VERIFIED_COOKIE, signVerified(tenant.id, phone), { path: "/", httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 20 * 60 })
-  return { ok: true, next: "register" }
+  // New to this farm but known to Farm For You: their name is filled in for them (only they see it).
+  return { ok: true, next: "register", known: await knownPerson(phone) }
 }
 
 const registerSchema = z.object({
@@ -49,6 +52,7 @@ const registerSchema = z.object({
   addressLine: z.string().trim().max(300).optional(),
   landmark: z.string().trim().max(120).optional(),
   pincode: z.union([z.literal(""), z.string().trim().regex(/^[1-9]\d{5}$/)]).optional(),
+  offers: z.boolean().optional(),
 })
 
 /** Step 3 (new numbers only): name and, optionally, the delivery address. */
@@ -59,11 +63,12 @@ export async function registerAction(raw: unknown): Promise<{ ok: true } | Fail>
   const jar = await cookies()
   const phone = readVerified(tenant.id, jar.get(VERIFIED_COOKIE)?.value)
   if (!phone) return { ok: false, error: "otp_verify_again" }
-  const { name, language, addressLine, landmark, pincode } = parsed.data
+  const { name, language, addressLine, landmark, pincode, offers } = parsed.data
   const { token } = await registerVerified(tenant, {
     phone,
     name,
     language,
+    offers,
     address: addressLine && addressLine.length >= 5 ? { line: addressLine, landmark, pincode: pincode || undefined } : undefined,
   })
   await rememberCustomer(token)
