@@ -95,6 +95,17 @@ Rev. 2 adds the user's decisions (§7), the configuration framework (§4) and th
   - **Value-added:** cold-pressed oils (gingelly, groundnut, coconut), pickles, *podi*, flours and *maavu*, honey,
     snacks.
   - **Services:** farm visits, ploughing or tractor hire, consultation.
+- **Product kinds are set in the platform admin, not in code (user, 2026-11-15).** Each category says:
+  - **how it's measured:** counted (eggs, coconuts, birds), weighed (rice, fish, chicken) or by volume (milk, oil);
+  - **the pack sizes allowed:** kg, 500 g, tray of 30, dozen, litre, ½ litre, bunch (*kattu*), *padi*, bag, bottle;
+  - **weighed on delivery:** for fish and chicken the customer orders "about 1 kg" and the bill is set on weighing
+    (and whether fish is weighed before or after cleaning);
+  - **the details asked for each product:** Tamil and English name, choice / number / text / yes-no, required or
+    not, shown to customers or not. E.g. eggs: type, size; dressed chicken: cut, skin; milk: animal, A2, fat %;
+    fish: species, live / fresh / cleaned, whole or slices; rice: variety, raw or boiled, hand-pounded;
+  - **defaults:** shelf life, HSN and GST rate, FSSAI licence needed.
+- **Farm owners can add their own categories and their own extra details and pack sizes** (user, 2026-11-15), on
+  top of the platform's. These stay in that farm only, and pass the restricted-items check like everything else.
 - **Products** sit under a category, with **price per quantity** (variants): e.g. 1 kg ₹X, 500 g ₹Y, tray of 30 ₹Z,
   1 litre, ½ litre, a bunch (*kattu*), a *padi*. Each has its own price, MRP, stock unit, perishable shelf life, and
   stock source (made by a module, bought in, or untracked).
@@ -117,12 +128,14 @@ Rev. 2 adds the user's decisions (§7), the configuration framework (§4) and th
 - **How they came:** online, WhatsApp, phone, walk-in, market, referral, or through Farm For You. Staff create
   offline customers; their records join up automatically when they later sign in online (matched by phone).
 - **Consent log:** WhatsApp and SMS opt-in, with date and channel.
-- **Sign-in (configurable per platform, opt-in per farm):**
-  1. Call-verified (free, default): the farm's confirmation call verifies the phone and keeps that device signed
-     in.
-  2. WhatsApp OTP, once the Cloud API is set up.
-  3. SMS OTP (MSG91).
-  4. Personal link (fallback).
+- **Sign-in (user, 2026-11-15): the phone number is the customer's identity; a one-time code, no passwords.** A code
+  at sign-in, then that phone stays signed in until sign-out or 90 days. Ways, free first (each a platform setting):
+  1. **WhatsApp, customer sends the code (free, default):** the screen shows a code and a *Send on WhatsApp* button;
+     the message to Farm For You's Cloud API number proves the number. Setup: docs/whatsapp-setup.md.
+  2. **Email code (free)** for customers who have email, through Supabase with a free mail service.
+  3. **SMS code through Firebase:** only its 10 free a day, for people without WhatsApp.
+  4. Paid, off: we send the code on WhatsApp (about ₹0.115 + GST), SMS through MSG91.
+  The farm's confirmation call still marks a phone as checked for offline customers.
 
 ### 3.5 Subscription plans, modules and platform billing (everything set by the platform admin)
 
@@ -343,6 +356,13 @@ develop → you apply the schema on Supabase → main.
     after 4 hours, red. Both hour marks are farm settings (each farm's working times), so unnoticed orders get attended.
     Built with the settings registry (§4) and the automation engine (§5), which can also alert staff when an order
     turns red. Phase 1, steps 2–3.
+
+12. **Customer sign-in (user, 2026-11-15):** phone number as identity, a one-time code at sign-in (or email code),
+    then signed in on that phone until sign-out or 90 days. Free channels first: WhatsApp with the customer sending
+    the code (§3.4). Farm staff logins are unchanged.
+13. **Catalogue (user, 2026-11-15):** how each kind of product is measured, its pack sizes and its details are set
+    in the platform admin; farm owners can add their own categories, details and pack sizes (§3.3). Phase 3
+    (customers) still comes before Phase 4 (catalogue).
 
 **Still open:**
 
