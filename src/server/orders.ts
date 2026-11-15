@@ -1,5 +1,6 @@
 import "server-only"
 import { Prisma, type OrderStatus } from "@prisma/client"
+import { sourceOfChannel } from "@/domain/customers"
 import { tenantDb, type TenantTx } from "@/lib/tenant-db"
 import type { Tenant } from "@/lib/tenant"
 import { afterCall, canTransition, customerMayChange, decideCall, orderCode, isEditable, stockDeltas, type CallOutcome, type CallRules } from "@/domain/orders"
@@ -174,7 +175,14 @@ export async function placeOrder(tenant: Tenant, input: PlaceOrderInput, now = n
         const customer = await tx.customer.upsert({
           where: { tenantId_phone: { tenantId: tenant.id, phone: input.customer.phone } },
           update: { name: input.customer.name },
-          create: { tenantId: tenant.id, phone: input.customer.phone, name: input.customer.name, language: input.customer.language },
+          create: {
+            tenantId: tenant.id,
+            phone: input.customer.phone,
+            name: input.customer.name,
+            language: input.customer.language,
+            source: sourceOfChannel(input.channel),
+            addedByStaffId: input.byStaffId ?? null,
+          },
         })
 
         let address: { id: string; lat: number | null; lng: number | null; pincode: string | null } | null = null

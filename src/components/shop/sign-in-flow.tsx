@@ -25,7 +25,7 @@ export function SignInFlow({ onDone }: { onDone?: () => void }) {
   const [phone, setPhone] = useState("")
   const [code, setCode] = useState("")
   const [demoCode, setDemoCode] = useState<string | null>(null)
-  const [reg, setReg] = useState({ name: "", addressLine: "", landmark: "", pincode: "" })
+  const [reg, setReg] = useState({ name: "", addressLine: "", landmark: "", pincode: "", offers: false })
   const [error, setError] = useState<string | null>(null)
   const [waitUntil, setWaitUntil] = useState(0)
   const [now, setNow] = useState(0)
@@ -102,7 +102,10 @@ export function SignInFlow({ onDone }: { onDone?: () => void }) {
             setError(null)
             const r = await checkCodeAction({ phone, code })
             if (!r.ok) return fail(r)
-            if (r.next === "register") setStep("register")
+            if (r.next === "register") {
+              if (r.known) setReg((x) => ({ ...x, name: x.name || r.known!.name }))
+              setStep("register")
+            }
             else finish()
           })
         }}
@@ -187,6 +190,10 @@ export function SignInFlow({ onDone }: { onDone?: () => void }) {
           <Input inputMode="numeric" maxLength={6} autoComplete="postal-code" value={reg.pincode} onChange={(e) => setReg({ ...reg, pincode: e.target.value.replace(/\D/g, "") })} className="h-12 font-normal tabular-nums" />
         </label>
       </div>
+      <label className="flex items-start gap-3 text-sm">
+        <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-[hsl(var(--primary))]" checked={reg.offers} onChange={(e) => setReg({ ...reg, offers: e.target.checked })} />
+        <span>{t("offers")}</span>
+      </label>
       {errorBox}
       <Button type="submit" size="lg" className="h-12 text-base" disabled={pending}>
         {t("register")}

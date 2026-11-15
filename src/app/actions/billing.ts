@@ -15,6 +15,8 @@ import { parsePincodes } from "@/domain/delivery-area"
 import { OrderError } from "@/server/orders"
 import { notifyOrderStatus } from "@/server/notify"
 import { featureSource } from "@/lib/features"
+import { CUSTOMER_KINDS, STAFF_SOURCES } from "@/domain/customers"
+import { addCustomerByStaff, logConsent } from "@/server/customers"
 
 type Result = { ok: true; invoiceId?: string } | { ok: false; error: string }
 
@@ -75,6 +77,10 @@ const customerSchema = z.object({
   isTrusted: z.boolean(),
   creditLimitRupees: z.number().min(0).max(1_000_000),
   marketingOptIn: z.boolean(),
+  smsOptIn: z.boolean(),
+  /** How the customer told the farm about offers, when they changed. */
+  consentHow: z.enum(["in_person", "phone"]),
+  kind: z.enum(CUSTOMER_KINDS),
   notes: z.string().trim().max(500).optional(),
 })
 
@@ -82,10 +88,11 @@ export async function updateCustomer(raw: unknown): Promise<Result> {
   const parsed = customerSchema.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "invalid" }
   // Trust and credit decide whether orders skip the call or go on khata: order desk and owner only.
-  const { db } = await requireStaff(ORDER_DESK)
-  const { id, creditLimitRupees, marketingOptIn, notes, ...rest } = parsed.data
+  const { db, tenant, staff } = await requireStaff(ORDER_DESK)
+  const { id, creditLimitRupees, marketingOptIn, smsOptIn, consentHow, notes, ...rest } = parsed.data
   const current = await db.customer.findFirst({ where: { id } })
   if (!current) return { ok: false, error: "customer_not_found" }
+  await logConsent(db, tenant.id, id, { whatsapp: current.marketingOptIn, sms: current.smsOptIn }, { whatsapp: marketingOptIn, sms: smsOptIn }, consentHow, staff.id)
   await db.customer.updateMany({
     where: { id },
     data: {
@@ -93,6 +100,7 @@ export async function updateCustomer(raw: unknown): Promise<Result> {
       notes: notes || null,
       creditLimitPaise: rupeesToPaise(creditLimitRupees),
       marketingOptIn,
+      smsOptIn,
       // Keep proof of when the customer agreed to offers (DPDP Act).
       optInAt: marketingOptIn && !current.marketingOptIn ? new Date() : marketingOptIn ? current.optInAt : null,
     },
@@ -198,4 +206,39 @@ export async function saveDeliveryArea(raw: unknown): Promise<Result> {
   await noteSupportWrite(tenant.id, "Tenant", "update", { id: tenant.id })
   revalidatePath("/", "layout")
   return { ok: true }
+}
+
+const newCustomerSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  phone: z.string().trim().min(10).max(20),
+  language: z.enum(["ta", "en"]),
+  source: z.enum(STAFF_SOURCES),
+  kind: z.enum(CUSTOMER_KINDS),
+  whatsappOffers: z.boolean(),
+  smsOffers: z.boolean(),
+  consentHow: z.enum(["in_person", "phone"]),
+  addressLine: z.string().trim().max(300),
+  landmark: z.string().trim().max(120),
+  pincode: z.union([z.literal(""), z.string().trim().regex(/^[1-9]d{5}$/)]),
+})
+
+/** Staff add a customer who came in person, by phone or at the market. A number already known opens that customer. */
+export async function addCustomerAction(raw: unknown): Promise<{ ok: true; id: string; existed: boolean } | { ok: false; error: string }> {
+  const parsed = newCustomerSchema.safeParse(raw)
+  if (!parsed.success) return { ok: false, error: "invalid_form" }
+  const phone = normaliseIndianMobile(parsed.data.phone)
+  if (!phone) return { ok: false, error: "phone_invalid" }
+  const { db, tenant, staff } = await requireStaff(ORDER_DESK)
+  const { addressLine, landmark, pincode, ...f } = parsed.data
+  try {
+    const r = await addCustomerByStaff(db, tenant.id, staff.id, {
+      ...f,
+      phone,
+      address: addressLine.length >= 5 ? { line: addressLine, landmark: landmark || undefined, pincode: pincode || undefined } : null,
+    })
+    revalidatePath("/farm/customers")
+    return { ok: true, id: r.id, existed: r.status === "exists" }
+  } catch (e) {
+    return fail(e) as { ok: false; error: string }
+  }
 }

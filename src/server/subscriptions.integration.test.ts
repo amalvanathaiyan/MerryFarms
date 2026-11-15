@@ -83,7 +83,7 @@ describe("plans and subscriptions", () => {
     await expect(subs.requestAddOn("f1", null, "poultry", null)).rejects.toMatchObject({ code: "already_have" })
     // the Free plan holds Farm Core and Selling only; Poultry starts from Starter
     expect((await planNamed("Free")).modules).toEqual(["selling"])
-    expect((await planNamed("Starter")).modules.sort()).toEqual(["poultry", "selling"])
+    expect((await planNamed("Starter")).modules.sort()).toEqual(["fishery", "poultry", "selling"])
     // poultryCare is off on the Free plan (its rule), so the module is there but that feature stays off
     expect(resolveFeatures({ planId: null, modules: ["core", "selling", "poultry"], features: {}, limits: {}, status: "active" }, {}).poultryScenes).toBe(false)
   })

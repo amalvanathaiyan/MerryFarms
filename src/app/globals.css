@@ -59,6 +59,8 @@
   --color-sec-orders-tint: hsl(var(--sec-orders-tint));
   --color-sec-poultry: hsl(var(--sec-poultry));
   --color-sec-poultry-tint: hsl(var(--sec-poultry-tint));
+  --color-sec-fish: hsl(var(--sec-fish));
+  --color-sec-fish-tint: hsl(var(--sec-fish-tint));
   --color-sec-money: hsl(var(--sec-money));
   --color-sec-money-tint: hsl(var(--sec-money-tint));
   --color-sec-more: hsl(var(--sec-more));
@@ -142,6 +144,8 @@
     --sec-orders-tint: 213 60% 92%;
     --sec-poultry: 22 46% 35%;
     --sec-poultry-tint: 30 38% 93%;
+    --sec-fish: 196 70% 30%;
+    --sec-fish-tint: 195 50% 92%;
     --sec-money: 150 56% 27%;
     --sec-money-tint: 124 27% 89%;
     --sec-more: 138 12% 33%;
@@ -203,6 +207,8 @@
       --sec-orders-tint: 213 30% 18%;
       --sec-poultry: 24 45% 64%;
       --sec-poultry-tint: 22 16% 17%;
+      --sec-fish: 195 50% 62%;
+      --sec-fish-tint: 196 25% 17%;
       --sec-money: 150 42% 58%;
       --sec-money-tint: 150 22% 16%;
       --sec-more: 130 10% 68%;
@@ -265,6 +271,8 @@
     --sec-orders-tint: 213 30% 18%;
     --sec-poultry: 24 45% 64%;
     --sec-poultry-tint: 22 16% 17%;
+    --sec-fish: 195 50% 62%;
+    --sec-fish-tint: 196 25% 17%;
     --sec-money: 150 42% 58%;
     --sec-money-tint: 150 22% 16%;
     --sec-more: 130 10% 68%;
@@ -326,6 +334,8 @@
     --sec-orders-tint: 213 25% 89%;
     --sec-poultry: 20 40% 38%;
     --sec-poultry-tint: 24 30% 89%;
+    --sec-fish: 196 45% 33%;
+    --sec-fish-tint: 195 35% 89%;
     --sec-money: 150 30% 31%;
     --sec-money-tint: 124 14% 87%;
     --sec-more: 138 8% 35%;
@@ -384,6 +394,8 @@
       --sec-orders-tint: 213 14% 21%;
       --sec-poultry: 22 35% 62%;
       --sec-poultry-tint: 20 14% 20%;
+      --sec-fish: 195 38% 62%;
+      --sec-fish-tint: 196 18% 20%;
       --sec-money: 150 25% 55%;
       --sec-money-tint: 150 12% 19%;
       --sec-more: 130 6% 62%;
@@ -442,6 +454,8 @@
     --sec-orders-tint: 213 14% 21%;
     --sec-poultry: 22 35% 62%;
     --sec-poultry-tint: 20 14% 20%;
+    --sec-fish: 195 38% 62%;
+    --sec-fish-tint: 196 18% 20%;
     --sec-money: 150 25% 55%;
     --sec-money-tint: 150 12% 19%;
     --sec-more: 130 6% 62%;

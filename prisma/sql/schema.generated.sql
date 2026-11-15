@@ -124,6 +124,18 @@ CREATE TABLE "platform_admins" (
 );
 
 -- CreateTable
+CREATE TABLE "platform_people" (
+    "id" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "language" "Language" NOT NULL DEFAULT 'ta',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "platform_people_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "login_usernames" (
     "username" TEXT NOT NULL,
     "authUserId" TEXT NOT NULL,
@@ -213,10 +225,31 @@ CREATE TABLE "customers" (
     "notes" TEXT,
     "accessToken" TEXT,
     "tokenIssuedAt" TIMESTAMP(3),
+    "personId" TEXT,
+    "phoneVerifiedAt" TIMESTAMP(3),
+    "source" TEXT,
+    "kind" TEXT NOT NULL DEFAULT 'home',
+    "smsOptIn" BOOLEAN NOT NULL DEFAULT false,
+    "addedByStaffId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "customers_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "customer_consents" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "customerId" TEXT NOT NULL,
+    "channel" TEXT NOT NULL,
+    "given" BOOLEAN NOT NULL,
+    "how" TEXT NOT NULL,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "customer_consents_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -1171,6 +1204,97 @@ CREATE TABLE "farm_tasks" (
     CONSTRAINT "farm_tasks_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "fish_cycles" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "number" INTEGER NOT NULL,
+    "placeId" TEXT NOT NULL,
+    "startDate" TEXT NOT NULL,
+    "closedDate" TEXT,
+    "note" TEXT,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "fish_cycles_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "fish_stockings" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "cycleId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "species" TEXT NOT NULL,
+    "count" INTEGER NOT NULL,
+    "sizeGrams" DOUBLE PRECISION,
+    "costPaise" INTEGER NOT NULL DEFAULT 0,
+    "supplier" TEXT,
+    "expenseId" TEXT,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "fish_stockings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "fish_days" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "cycleId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "feedKg" DOUBLE PRECISION,
+    "feedInputId" TEXT,
+    "feedUseId" TEXT,
+    "dead" INTEGER NOT NULL DEFAULT 0,
+    "ph" DOUBLE PRECISION,
+    "oxygen" DOUBLE PRECISION,
+    "tempC" DOUBLE PRECISION,
+    "ammonia" DOUBLE PRECISION,
+    "note" TEXT,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "fish_days_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "fish_samples" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "cycleId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "species" TEXT,
+    "count" INTEGER NOT NULL,
+    "totalGrams" DOUBLE PRECISION NOT NULL,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "fish_samples_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "fish_harvests" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "cycleId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "species" TEXT,
+    "kg" DOUBLE PRECISION NOT NULL,
+    "count" INTEGER,
+    "soldPaise" INTEGER NOT NULL DEFAULT 0,
+    "buyer" TEXT,
+    "byStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "fish_harvests_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 
@@ -1185,6 +1309,9 @@ CREATE UNIQUE INDEX "staff_members_tenantId_staffCode_key" ON "staff_members"("t
 
 -- CreateIndex
 CREATE UNIQUE INDEX "platform_admins_authUserId_key" ON "platform_admins"("authUserId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "platform_people_phone_key" ON "platform_people"("phone");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "login_usernames_authUserId_key" ON "login_usernames"("authUserId");
@@ -1202,7 +1329,13 @@ CREATE INDEX "delivery_slots_tenantId_idx" ON "delivery_slots"("tenantId");
 CREATE UNIQUE INDEX "customers_accessToken_key" ON "customers"("accessToken");
 
 -- CreateIndex
+CREATE INDEX "customers_personId_idx" ON "customers"("personId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "customers_tenantId_phone_key" ON "customers"("tenantId", "phone");
+
+-- CreateIndex
+CREATE INDEX "customer_consents_tenantId_customerId_createdAt_idx" ON "customer_consents"("tenantId", "customerId", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "addresses_tenantId_customerId_idx" ON "addresses"("tenantId", "customerId");
@@ -1450,6 +1583,30 @@ CREATE INDEX "input_uses_tenantId_inputId_idx" ON "input_uses"("tenantId", "inpu
 -- CreateIndex
 CREATE INDEX "farm_tasks_tenantId_dueOn_idx" ON "farm_tasks"("tenantId", "dueOn");
 
+-- CreateIndex
+CREATE INDEX "fish_cycles_tenantId_closedDate_idx" ON "fish_cycles"("tenantId", "closedDate");
+
+-- CreateIndex
+CREATE INDEX "fish_cycles_tenantId_placeId_idx" ON "fish_cycles"("tenantId", "placeId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "fish_cycles_tenantId_number_key" ON "fish_cycles"("tenantId", "number");
+
+-- CreateIndex
+CREATE INDEX "fish_stockings_tenantId_cycleId_idx" ON "fish_stockings"("tenantId", "cycleId");
+
+-- CreateIndex
+CREATE INDEX "fish_days_tenantId_date_idx" ON "fish_days"("tenantId", "date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "fish_days_cycleId_date_key" ON "fish_days"("cycleId", "date");
+
+-- CreateIndex
+CREATE INDEX "fish_samples_tenantId_cycleId_date_idx" ON "fish_samples"("tenantId", "cycleId", "date");
+
+-- CreateIndex
+CREATE INDEX "fish_harvests_tenantId_cycleId_date_idx" ON "fish_harvests"("tenantId", "cycleId", "date");
+
 -- AddForeignKey
 ALTER TABLE "staff_members" ADD CONSTRAINT "staff_members_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -1467,6 +1624,9 @@ ALTER TABLE "delivery_slots" ADD CONSTRAINT "delivery_slots_tenantId_fkey" FOREI
 
 -- AddForeignKey
 ALTER TABLE "customers" ADD CONSTRAINT "customers_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "customer_consents" ADD CONSTRAINT "customer_consents_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "addresses" ADD CONSTRAINT "addresses_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1560,4 +1720,16 @@ ALTER TABLE "platform_payments" ADD CONSTRAINT "platform_payments_tenantId_fkey"
 
 -- AddForeignKey
 ALTER TABLE "platform_payments" ADD CONSTRAINT "platform_payments_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "platform_invoices"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "fish_stockings" ADD CONSTRAINT "fish_stockings_cycleId_fkey" FOREIGN KEY ("cycleId") REFERENCES "fish_cycles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "fish_days" ADD CONSTRAINT "fish_days_cycleId_fkey" FOREIGN KEY ("cycleId") REFERENCES "fish_cycles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "fish_samples" ADD CONSTRAINT "fish_samples_cycleId_fkey" FOREIGN KEY ("cycleId") REFERENCES "fish_cycles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "fish_harvests" ADD CONSTRAINT "fish_harvests_cycleId_fkey" FOREIGN KEY ("cycleId") REFERENCES "fish_cycles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

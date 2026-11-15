@@ -6,6 +6,8 @@ import { addDays, istDate } from "@/domain/ist"
 import { batchesNotEntered, farmAlerts, type Alert } from "@/domain/alerts"
 import { staffFarmJobsNote, staffNotEnteredNote, staffVaccinesDueNote, staffWarningsNote } from "@/domain/notifications"
 import type { FarmReminder } from "@/domain/tasks"
+import type { PondReminder } from "@/domain/fish"
+import { fishRemindersFor } from "./fish"
 import { remindersFor } from "./tasks"
 import { batchBook } from "./batches"
 import { notifyStaff, notifyStaffMembers } from "./notify"
@@ -89,6 +91,11 @@ export function reminderLine(r: FarmReminder): string {
   return r.kind === "service" ? `${r.name}: சர்வீஸ் / service` : `${r.name}: குறைவு / low`
 }
 
+/** A pond reminder in both languages: water out of range, or a size check due. */
+export function pondLine(r: PondReminder): string {
+  return r.kind === "water" ? `${r.pond}: தண்ணீர் சரியில்லை / water needs attention` : `${r.pond}: அளவுச் சோதனை / size check due`
+}
+
 /**
  * Morning (about 7 am), every farm with notifications on: the owner and managers get the jobs due today or late that
  * are theirs, machines due for a service and the store running low; anyone a job is for gets their own jobs.
@@ -101,7 +108,7 @@ export async function farmJobReminders(now = new Date()) {
     const f = featuresOf(t)
     if (!f.pushNotifications) continue
     try {
-      out.push(await farmJobsFor(t, f.poultryCare, today))
+      out.push(await farmJobsFor(t, f.poultryCare, f.fishCare, today))
     } catch (e) {
       console.error("[farm jobs]", t.slug, (e as Error).message)
     }
@@ -109,16 +116,17 @@ export async function farmJobReminders(now = new Date()) {
   return out
 }
 
-async function farmJobsFor(t: { id: string; slug: string }, poultry: boolean, today: string) {
+async function farmJobsFor(t: { id: string; slug: string }, poultry: boolean, fish: boolean, today: string) {
   const db = tenantDb(t.id)
   const due = await db.farmTask.findMany({ where: { doneOn: null, dueOn: { lte: today } }, orderBy: { dueOn: "asc" } })
   const feedWarned = poultry && (await alertsFor(t.id, today)).some((a) => a.kind === "feed")
   const reminders = await remindersFor(db, today, feedWarned)
+  const ponds = fish ? await fishRemindersFor(db, today) : []
   const late = (x: { dueOn: string; title: string }) => (x.dueOn < today ? `${x.title} (தாமதம் / late)` : x.title)
-  const bossLines = [...due.filter((x) => !x.forStaffId).map(late), ...reminders.map(reminderLine)]
+  const bossLines = [...ponds.filter((p) => p.kind === "water").map(pondLine), ...due.filter((x) => !x.forStaffId).map(late), ...reminders.map(reminderLine), ...ponds.filter((p) => p.kind === "sample").map(pondLine)]
   if (bossLines.length) await notifyStaff(t.id, staffFarmJobsNote(bossLines), ["owner"])
   for (const staffId of new Set(due.map((x) => x.forStaffId).filter((x): x is string => !!x))) {
     await notifyStaffMembers(t.id, [staffId], staffFarmJobsNote(due.filter((x) => x.forStaffId === staffId).map(late)))
   }
-  return { slug: t.slug, jobs: due.length, reminders: reminders.length }
+  return { slug: t.slug, jobs: due.length, reminders: reminders.length + ponds.length }
 }

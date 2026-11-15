@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { resolveFeatures } from "@/domain/features"
-import { mainMenu, menuItemActive, moneyTabs, moreTiles, poultryTabs } from "./farm-sections"
+import { fishTabs, mainMenu, menuItemActive, moneyTabs, moreTiles, poultryTabs } from "./farm-sections"
 
 const withPoultry = resolveFeatures("pro", { poultryCare: true })
 const plain = resolveFeatures("pro", {})
@@ -69,5 +69,28 @@ describe("the More page", () => {
   it("keeps Staff and Settings for the owner; delivery staff get only their account", () => {
     expect(keys(moreTiles({ roles: ["order_desk"], features: plain }))).not.toContain("settings")
     expect(keys(moreTiles({ roles: ["delivery"], features: plain }))).toEqual(["account"])
+  })
+})
+
+describe("fish ponds in the menu", () => {
+  const withFish = resolveFeatures("pro", { fishCare: true })
+  const withBoth = resolveFeatures("pro", { fishCare: true, poultryCare: true })
+
+  it("gets the farming button on a fish farm, with staff landing on Entry", () => {
+    const menu = mainMenu({ roles: ["owner"], features: withFish })
+    expect(keys(menu)).toEqual(["today", "orders", "fish", "money", "more"])
+    expect(keys(fishTabs({ roles: ["packing"], features: withFish }))).toEqual(["entry", "ponds"])
+    expect(mainMenu({ roles: ["packing"], features: withFish }).find((m) => m.key === "fish")?.href).toBe("/farm/fish/entry")
+    expect(keys(moreTiles({ roles: ["owner"], features: withFish }))).not.toContain("fish")
+    // On the menu, fish pages light Fish, not More.
+    expect(menu.filter((m) => menuItemActive(m, "/farm/fish/entry")).map((m) => m.key)).toEqual(["fish"])
+  })
+
+  it("keeps a farm with hens and fish at five buttons: fish moves to More", () => {
+    const who = { roles: ["owner"], features: withBoth }
+    expect(keys(mainMenu(who))).toEqual(["today", "orders", "poultry", "money", "more"])
+    expect(keys(moreTiles(who))[0]).toBe("fish")
+    expect(mainMenu(who).filter((m) => menuItemActive(m, "/farm/fish")).map((m) => m.key)).toEqual(["more"])
+    expect(keys(mainMenu({ roles: ["delivery"], features: withFish }))).toEqual(["today", "orders", "more"])
   })
 })

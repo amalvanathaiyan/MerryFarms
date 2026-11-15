@@ -31,6 +31,7 @@ export type FeatureKey =
   | "whatsappAlerts"
   | "farmRecords"
   | "poultryCare"
+  | "fishCare"
   | "poultryScenes"
   | "farmVideos"
   | "videoUploads"
@@ -70,6 +71,8 @@ export const FEATURES: Record<FeatureKey, FeatureDef> = {
   farmRecords: { module: "core", defaultOn: true, minPlan: "free", requires: [], available: true },
   // Batches of birds, feed store, losses, per-batch profit and vaccinations: for farms that keep poultry and pay for it.
   poultryCare: { module: "poultry", defaultOn: false, minPlan: "starter", requires: ["farmRecords"], available: true },
+  // Ponds and their cycles: stocking, daily feed and water checks, net samples, harvest and profit per cycle.
+  fishCare: { module: "fishery", defaultOn: false, minPlan: "starter", requires: ["farmRecords"], available: true },
   // The shop shows the farm's own live pictures (gate, stall, hen) instead of only FarmForYou's bullock cart.
   poultryScenes: { module: "selling", defaultOn: false, minPlan: "free", requires: [], available: true },
   // Videos on the shop. YouTube links cost the platform nothing, so every farm has them.

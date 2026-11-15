@@ -14,7 +14,7 @@ describe("computeEntitlement", () => {
   })
 
   it("adds add-ons and admin's overrides, but never modules that aren't built or are switched off platform-wide", () => {
-    const e = computeEntitlement(plan, { ...sub, addOns: ["poultry", "fishery"], moduleOverrides: { selling: false, crops: true, core: false } })
+    const e = computeEntitlement(plan, { ...sub, addOns: ["poultry", "livestock"], moduleOverrides: { selling: false, crops: true, core: false } })
     expect(e.modules.sort()).toEqual(["core", "poultry"])
     expect(computeEntitlement(plan, { ...sub, addOns: ["poultry"] }, ["poultry"]).modules).not.toContain("poultry")
   })
