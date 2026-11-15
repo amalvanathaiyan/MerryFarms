@@ -3528,7 +3528,6 @@
     "title": "Product kinds",
     "hint": "What farms can sell, by module: how each is measured, its usual pack sizes, the details asked for each product, and defaults. Farms make their categories from these, and can add their own.",
     "noneYet": "No product kinds yet. Start with the starter list (eggs, milk, fish, rice, vegetables, oils…) and change it as you like.",
-    "starterMissing": "{count, plural, one {# kind from the starter list isn't here.} other {# kinds from the starter list aren't here.}}",
     "addStarters": "Add the starter list",
     "newKind": "New product kind",
     "edit": "Edit",
@@ -3567,6 +3566,8 @@
     "shelfLife": "Keeps for (days)",
     "weighed": "Weighed on delivery.",
     "weighedHint": "Customers order about how much; the bill is set when it's weighed (fish, chicken).",
-    "asks": "Asks: {list}"
+    "asks": "Asks: {list}",
+    "starterChanges": "{count, plural, one {The latest starter list has # change for kinds you haven't edited (your own edits stay as they are).} other {The latest starter list has # changes for kinds you haven't edited (your own edits stay as they are).}}",
+    "updateStarters": "Update to the latest starter list"
   }
 }

@@ -1,20 +1,31 @@
 import type { ArtKind } from "@/domain/product-art"
+import { DRAWINGS as LIBRARY } from "@/components/art/drawing-library"
 import { cn } from "@/lib/utils"
 
 /**
  * A product's photo, or a soft drawing of its type (eggs, milk, oil, vegetables…) until
- * the farm adds one.
+ * the farm adds one. `kind` is one of the 14 coloured pictures (ART_KINDS), or any drawing from the library
+ * (src/components/art/drawing-library.ts) a product kind or category chose (goat, prawn, tractor…).
  * Square; size it with className (e.g. "size-20").
  */
-export function ProductPicture({ src, kind, alt, className }: { src: string | null; kind: ArtKind; alt: string; className?: string }) {
+export function ProductPicture({ src, kind, alt, className }: { src: string | null; kind: string; alt: string; className?: string }) {
   const box = cn("shrink-0 overflow-hidden rounded-xl bg-[#eef4e8]", className)
   if (src) {
     // eslint-disable-next-line @next/next/no-img-element -- small, already-shrunk photos served by our own route
     return <img src={src} alt={alt} loading="lazy" decoding="async" className={cn(box, "object-cover")} />
   }
+  const coloured = DRAWINGS[kind as ArtKind]
+  const line = !coloured ? LIBRARY.get(kind) : undefined
+  if (line) {
+    return (
+      <svg viewBox={line.vb} role="img" aria-label={alt} className={cn(box, "text-primary")} style={{ padding: "12%" }} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+        <path d={line.d} strokeWidth="1.6" vectorEffect="non-scaling-stroke" />
+      </svg>
+    )
+  }
   return (
     <svg viewBox="0 0 80 80" role="img" aria-label={alt} className={box}>
-      {DRAWINGS[kind]()}
+      {(coloured ?? DRAWINGS.basket)()}
     </svg>
   )
 }

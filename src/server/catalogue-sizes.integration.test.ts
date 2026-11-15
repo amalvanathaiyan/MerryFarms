@@ -120,3 +120,30 @@ describe("product kinds", () => {
     expect(await prisma.productKind.count()).toBeGreaterThan(10)
   })
 })
+
+describe("bringing an older starter list up to date", () => {
+  it("updates kinds admin never edited, keeps edited ones, removes renamed old ones nobody uses", async () => {
+    const kinds = await import("./product-kinds")
+    const at = new Date("2026-11-15T06:00:00Z")
+    // An older list: eggs with the old picture (never edited), honey edited by admin, and two old keys (one in use).
+    await prisma.productKind.updateMany({ where: { key: "eggs" }, data: { art: "egg", createdAt: at, updatedAt: at } })
+    await prisma.productKind.updateMany({ where: { key: "honey" }, data: { nameEn: "Our honey", createdAt: at, updatedAt: new Date("2026-11-15T07:00:00Z") } })
+    const base = { module: "poultry", nameTa: "x", nameEn: "x", art: "chicken", measure: "weight", createdAt: at, updatedAt: at }
+    await prisma.productKind.create({ data: { ...base, key: "dressed_chicken" } })
+    const kept = await prisma.productKind.create({ data: { ...base, key: "mutton" } })
+    await prisma.category.create({ data: { tenantId: "f1", nameTa: "இறைச்சி", nameEn: "Meat", productKindId: kept.id } })
+
+    const before = await kinds.starterChanges()
+    expect(before.update.map((k) => k.key)).toEqual(["eggs"])
+    expect(before.remove.map((r) => r.key)).toEqual(["dressed_chicken"])
+    expect(await kinds.addStarterKinds()).toBe(2)
+
+    const eggs = await prisma.productKind.findUniqueOrThrow({ where: { key: "eggs" } })
+    expect(eggs.art).toBe("eggTray")
+    expect(eggs.updatedAt.getTime()).toBe(eggs.createdAt.getTime())
+    expect((await prisma.productKind.findUniqueOrThrow({ where: { key: "honey" } })).nameEn).toBe("Our honey")
+    expect(await prisma.productKind.findUnique({ where: { key: "dressed_chicken" } })).toBeNull()
+    expect(await prisma.productKind.findUnique({ where: { key: "mutton" } })).not.toBeNull()
+    expect((await kinds.starterChanges()).count).toBe(0)
+  })
+})

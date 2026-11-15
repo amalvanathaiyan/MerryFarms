@@ -7,7 +7,7 @@ import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { addStarterKindsAction, retireKindAction, saveKindAction } from "@/app/actions/product-kinds"
-import { ART_KINDS, type ArtKind } from "@/domain/product-art"
+import { DrawingPicker } from "@/components/catalogue/drawing-picker"
 import { MODULE_KEYS, type ModuleKey } from "@/domain/modules"
 import { MEASURES, type DetailDef, type Measure, type PackDef } from "@/domain/product-kinds"
 import { cleanPacks, DetailsEditor, PacksEditor, withKeys, type DraftDetail } from "@/components/catalogue/kind-editors"
@@ -18,7 +18,8 @@ export interface KindView {
   module: ModuleKey
   nameTa: string
   nameEn: string
-  art: ArtKind
+  /** One of the 14 coloured pictures, or any library drawing (src/components/art/drawing-library.ts). */
+  art: string
   measure: Measure
   packs: PackDef[]
   details: DetailDef[]
@@ -125,16 +126,7 @@ export function KindCard({ kind }: { kind: KindView }) {
             </select>
           </label>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-sm font-semibold">{t("drawing")}</span>
-          <div className="flex flex-wrap gap-1.5">
-            {ART_KINDS.map((a) => (
-              <button key={a} type="button" aria-pressed={k.art === a} aria-label={a} onClick={() => setK({ ...k, art: a })} className={k.art === a ? "rounded-xl border-2 border-primary p-0.5" : "rounded-xl border-2 border-transparent p-0.5"}>
-                <ProductPicture src={null} kind={a} alt="" className="size-10" />
-              </button>
-            ))}
-          </div>
-        </div>
+        <DrawingPicker label={t("drawing")} value={k.art} onChange={(art) => setK({ ...k, art })} />
         <fieldset className="flex flex-col gap-2">
           <legend className="text-sm font-semibold">{t("packs")}</legend>
           <PacksEditor packs={k.packs} onChange={(packs) => setK({ ...k, packs })} />

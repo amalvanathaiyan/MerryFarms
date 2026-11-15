@@ -24,13 +24,15 @@ import { adjustPrice, type Adjust } from "@/domain/offers"
 import { formatRupees } from "@/domain/money"
 import { dayLabel } from "@/lib/i18n-helpers"
 import { ProductPicture } from "@/components/product-picture"
-import { ART_KINDS, artFor, artKind, STARTER_CATEGORIES, type ArtKind } from "@/domain/product-art"
+import { artKind, STARTER_CATEGORIES, type ArtKind } from "@/domain/product-art"
+import { DrawingPicker } from "@/components/catalogue/drawing-picker"
 import { shrinkPhoto } from "@/lib/shrink-photo"
 import { pick } from "@/lib/i18n-helpers"
 import { cn } from "@/lib/utils"
 import { COMMON_EGG_PACKS } from "@/domain/eggs"
 import { useCheer } from "@/components/cheer"
 import { groupSizes, sizeFamily } from "@/domain/sizes"
+import { pictureFor } from "@/components/art/drawing-library"
 import { mergeDetails, mergePacks, type DetailDef, type DetailValue, type DetailValues, type PackDef } from "@/domain/product-kinds"
 import { cleanPacks, DetailsEditor, PacksEditor, withKeys, type DraftDetail } from "@/components/catalogue/kind-editors"
 import type { CheerKind } from "@/domain/cheers"
@@ -96,7 +98,7 @@ export function CatalogueManager({
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [draft, setDraft] = useState<Draft | null>(null)
-  const [cat, setCat] = useState<{ id?: string; nameTa: string; nameEn: string; kind?: ArtKind; productKindId: string | null; packs: PackDef[]; details: DraftDetail[]; own: boolean } | null>(null)
+  const [cat, setCat] = useState<{ id?: string; nameTa: string; nameEn: string; kind?: string; productKindId: string | null; packs: PackDef[]; details: DraftDetail[]; own: boolean } | null>(null)
   // A category's kind, and the pack sizes and details it offers (the kind's, then the farm's own).
   const kindOf = (categoryId: string) => kinds.find((k) => k.id === categories.find((c) => c.id === categoryId)?.productKindId)
   const packsFor = (categoryId: string) => mergePacks(kindOf(categoryId)?.packs ?? [], categories.find((c) => c.id === categoryId)?.packs ?? [])
@@ -419,20 +421,7 @@ export function CatalogueManager({
           <Labelled label={t("categoryNameEn")}>
             <Input required lang="en" value={cat.nameEn} onChange={(e) => setCat({ ...cat, nameEn: e.target.value })} placeholder="Cold-pressed oils" />
           </Labelled>
-          <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-semibold">{t("categoryType")}</span>
-            <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
-              {ART_KINDS.map((k) => {
-                const chosen = (cat.kind ?? artKind(cat.nameEn, cat.nameTa)) === k
-                return (
-                  <button key={k} type="button" aria-pressed={chosen} onClick={() => setCat({ ...cat, kind: k })} className={cn("flex flex-col items-center gap-1 rounded-xl border p-1.5 text-xs", chosen ? "border-primary bg-accent font-semibold" : "bg-card")}>
-                    <ProductPicture src={null} kind={k} alt="" className="size-10" />
-                    {t(`art_${k}`)}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+          <DrawingPicker label={t("categoryType")} value={cat.kind ?? artKind(cat.nameEn, cat.nameTa)} onChange={(kind) => setCat({ ...cat, kind })} />
           {cat.own || cat.packs.length > 0 || cat.details.length > 0 ? (
             <>
               <fieldset className="flex flex-col gap-2">
@@ -478,7 +467,7 @@ export function CatalogueManager({
                   <button type="button" className={icon} disabled={pending || ci === categories.length - 1} aria-label={t("moveDown")} onClick={() => run(() => moveCategory(c.id, "down"))}>
                     <ArrowDown className="size-4" />
                   </button>
-                  <button type="button" className={icon} aria-label={t("renameCategory")} onClick={() => setCat({ id: c.id, nameTa: c.nameTa, nameEn: c.nameEn, kind: (c.kind as ArtKind | null) ?? undefined, productKindId: c.productKindId, packs: c.packs, details: c.details, own: false })}>
+                  <button type="button" className={icon} aria-label={t("renameCategory")} onClick={() => setCat({ id: c.id, nameTa: c.nameTa, nameEn: c.nameEn, kind: c.kind ?? undefined, productKindId: c.productKindId, packs: c.packs, details: c.details, own: false })}>
                     <Pencil className="size-4" />
                   </button>
                   {list.length > 0 ? (
@@ -540,7 +529,7 @@ export function CatalogueManager({
                   <li key={key} className="flex flex-col gap-2 py-3">
                     <div className="flex items-start gap-3">
                       <div className="flex flex-col items-center gap-1">
-                        <ProductPicture src={photo.imageUrl} kind={artFor(c.kind, first.nameEn, first.nameTa, c.nameEn, c.nameTa)} alt={name} className="size-16" />
+                        <ProductPicture src={photo.imageUrl} kind={pictureFor(c.kind, first.nameEn, first.nameTa, c.nameEn, c.nameTa)} alt={name} className="size-16" />
                         {canEdit && (
                           <label className={cn("flex cursor-pointer items-center gap-1 text-xs font-medium text-primary", pending && "pointer-events-none opacity-50")}>
                             <Camera className="size-3.5" /> {photo.imageUrl ? t("changePhoto") : t("addPhoto")}
